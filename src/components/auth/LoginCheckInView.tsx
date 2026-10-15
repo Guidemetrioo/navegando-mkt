@@ -6,6 +6,12 @@ import { Employee, PontoStatus } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { verifyCredentials, DEFAULT_EMPLOYEE_CREDENTIALS } from '@/lib/auth-users';
 import {
+  calculateDistanceMeters,
+  MAX_GEOFENCE_RADIUS_METERS,
+  DEFAULT_CLIENT_COORDINATES,
+  formatDistance,
+} from '@/lib/geo-utils';
+import {
   Camera,
   MapPin,
   Lock,
@@ -36,7 +42,7 @@ export function LoginCheckInView() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Estados de Câmera / Foto
+  // Estados de Câmera / Foto Real
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
@@ -45,13 +51,14 @@ export function LoginCheckInView() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Estados de GPS
-  const [latitude, setLatitude] = useState<number | null>(-23.5605);
-  const [longitude, setLongitude] = useState<number | null>(-46.5985);
-  const [accuracy, setAccuracy] = useState<number | null>(15);
-  const [address, setAddress] = useState<string>('Rua da Mooca, 1420 - Mooca, São Paulo - SP');
+  // Estados de GPS Real & Preciso (Sem simulações)
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [address, setAddress] = useState<string>('');
+  const [gpsError, setGpsError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
-  const [selectedClientId, setSelectedClientId] = useState<string>('cli-1');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
 
   // Relógio em Tempo Real
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -125,116 +132,105 @@ export function LoginCheckInView() {
     };
   }, [startCamera, stopCamera]);
 
-  // Capturar Foto do Rosto
+  // Capturar Foto Real do Rosto (Câmera ao Vivo)
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
-      // Fallback para selfie padrão com horário gravado
-      generateFallbackSelfie();
+      setCameraError('Câmera indisponível. Por favor, tente reativar a câmera ou envie a foto real.');
       return;
     }
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 480;
-    canvas.height = video.videoHeight || 480;
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setCameraError('Aguarde o vídeo da câmera carregar antes de bater a foto.');
+      return;
+    }
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 640;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
       setPhotoDataUrl(dataUrl);
-      stopCamera();
-    } else {
-      generateFallbackSelfie();
-    }
-  };
-
-  const generateFallbackSelfie = () => {
-    // Gera avatar facial verificado para ambientes sem webcam
-    const fallbackCanvas = document.createElement('canvas');
-    fallbackCanvas.width = 400;
-    fallbackCanvas.height = 400;
-    const ctx = fallbackCanvas.getContext('2d');
-    if (ctx) {
-      // Fundo escuro com gradiente
-      const grad = ctx.createLinearGradient(0, 0, 400, 400);
-      grad.addColorStop(0, '#1c1d22');
-      grad.addColorStop(1, '#0e0f12');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 400, 400);
-
-      // Círculo central com iniciais
-      ctx.fillStyle = '#FF5A3C';
-      ctx.beginPath();
-      ctx.arc(200, 180, 80, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Texto
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(selectedMember.nome.slice(0, 2).toUpperCase(), 200, 192);
-
-      // Tag de Ponto
-      ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('CHECK-IN FACIAL VALIDADO', 200, 310);
-
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '14px monospace';
-      ctx.fillText(new Date().toLocaleTimeString('pt-BR'), 200, 335);
-
-      setPhotoDataUrl(fallbackCanvas.toDataURL('image/jpeg', 0.9));
+      setCameraError(null);
       stopCamera();
     }
   };
 
-  // Upload Manual de Foto
+  // Upload Real de Foto (Via Câmera do Smartphone ou Arquivo)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setCameraError('Formato inválido. Por favor, tire ou selecione uma imagem.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       setPhotoDataUrl(event.target?.result as string);
+      setCameraError(null);
       stopCamera();
     };
     reader.readAsDataURL(file);
   };
 
-  // Obter GPS Real
+  // Obter Localização GPS Real e Precisa (Via Satélite do Dispositivo)
   const refreshLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setAddress('Geolocalização indisponível. Usando endereço da agência.');
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setGpsError('Geolocalização não é suportada pelo seu navegador/dispositivo.');
       return;
     }
 
     setIsLocating(true);
+    setGpsError(null);
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-        setAccuracy(Math.round(pos.coords.accuracy));
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy);
+
+        setLatitude(lat);
+        setLongitude(lng);
+        setAccuracy(acc);
 
         try {
-          const res = await fetch(
-            `/api/geocode/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
-          );
+          const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.address) setAddress(data.address);
+            if (data.success && data.address) {
+              setAddress(data.address);
+            } else {
+              setAddress(`Posição GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m)`);
+            }
+          } else {
+            setAddress(`Posição GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m)`);
           }
-        } catch (e) {
-          setAddress(
-            `GPS Real: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`
-          );
+        } catch {
+          setAddress(`Posição GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${acc}m)`);
         } finally {
           setIsLocating(false);
         }
       },
       (err) => {
-        console.warn('Erro ao obter GPS:', err);
         setIsLocating(false);
-        setAddress('São Paulo - SP (Raio operacional Navegando MKT)');
+        let msg = 'Erro ao capturar sinal de GPS do aparelho.';
+        if (err.code === err.PERMISSION_DENIED) {
+          msg = 'Permissão de GPS bloqueada. Ative a localização no navegador para comprovar o ponto.';
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          msg = 'Sinal de GPS indisponível no momento.';
+        } else if (err.code === err.TIMEOUT) {
+          msg = 'Tempo esgotado ao buscar satélite GPS. Toque em "Atualizar GPS".';
+        }
+        setGpsError(msg);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
     );
   }, []);
 
@@ -242,31 +238,52 @@ export function LoginCheckInView() {
     refreshLocation();
   }, [refreshLocation]);
 
-  // Submissão do Login + Ponto
+  // Submissão do Login + Ponto Obrigatório
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+
+    // 1. Validação estrita de Foto Real
+    if (!photoDataUrl) {
+      setLoginError('A FOTO REAL DO ROSTO É OBRIGATÓRIA. Por favor, ligue a câmera ou tire a foto para registrar o ponto.');
+      return;
+    }
+
+    // 2. Validação estrita de GPS Real
+    if (latitude === null || longitude === null) {
+      setLoginError('A LOCALIZAÇÃO GPS PRECISA É OBRIGATÓRIA. Por favor, clique em "Atualizar GPS" e autorize o acesso à localização.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const photoToUse =
-        photoDataUrl ||
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
+      // 3. Cálculo de distância real caso tenha selecionado um restaurante
+      let distMeters: number | undefined;
+      let statusLoc: PontoStatus = 'no_local';
+
+      if (selectedClientId && DEFAULT_CLIENT_COORDINATES[selectedClientId]) {
+        const clientCoord = DEFAULT_CLIENT_COORDINATES[selectedClientId];
+        distMeters = calculateDistanceMeters(latitude, longitude, clientCoord.lat, clientCoord.lng);
+        statusLoc = distMeters <= MAX_GEOFENCE_RADIUS_METERS ? 'no_local' : 'fora_do_raio';
+      }
 
       const result = loginWithCheckIn(selectedEmployeeId, password, {
-        photoUrl: photoToUse,
-        lat: latitude || -23.5605,
-        lng: longitude || -46.5985,
-        address: address || 'São Paulo - SP',
+        photoUrl: photoDataUrl,
+        lat: latitude,
+        lng: longitude,
+        address: address || `Coordenadas GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+        accuracy: accuracy ?? undefined,
+        distancia_metros: distMeters,
         clientId: selectedClientId || undefined,
-        status_localizacao: 'no_local',
+        status_localizacao: statusLoc,
       });
 
       if (!result.success) {
         setLoginError(result.error || 'Falha na autenticação.');
       }
     } catch (err: any) {
-      setLoginError(err.message || 'Erro ao processar o login.');
+      setLoginError(err.message || 'Erro ao processar o ponto e login.');
     } finally {
       setIsSubmitting(false);
     }
@@ -410,25 +427,30 @@ export function LoginCheckInView() {
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-6 text-center gap-3 text-zinc-400">
-                    <Camera className="w-10 h-10 text-zinc-500 animate-bounce" />
-                    <p className="text-xs max-w-xs">
-                      {cameraError || 'Aguardando inicialização da câmera do dispositivo...'}
+                    <Camera className="w-10 h-10 text-zinc-500 animate-pulse" />
+                    <p className="text-xs max-w-xs text-zinc-300">
+                      {cameraError || 'Ative a câmera do seu dispositivo para capturar a foto do ponto.'}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
                         onClick={() => startCamera()}
-                        className="px-3 py-1.5 rounded-xl bg-[#1c1d22] border border-[#2b2d35] text-white text-xs font-semibold hover:bg-[#282a32] cursor-pointer"
+                        className="px-3.5 py-2 rounded-xl bg-[#1c1d22] border border-[#2b2d35] text-white text-xs font-semibold hover:bg-[#282a32] active:scale-95 cursor-pointer flex items-center gap-1.5"
                       >
-                        Tentar Câmera
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Ligar Câmera</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={generateFallbackSelfie}
-                        className="px-3 py-1.5 rounded-xl bg-[#FF5A3C]/15 border border-[#FF5A3C]/30 text-[#FF5A3C] text-xs font-bold hover:bg-[#FF5A3C]/25 cursor-pointer"
-                      >
-                        Selfie Automática
-                      </button>
+                      <label className="px-3.5 py-2 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white text-xs font-bold shadow-lg shadow-[#FF5A3C]/30 flex items-center gap-1.5 cursor-pointer">
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>Abrir Câmera do Celular</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="user"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
                   </div>
                 )}
@@ -436,15 +458,16 @@ export function LoginCheckInView() {
                 <canvas ref={canvasRef} className="hidden" />
               </div>
 
-              {/* Botão de Upload Alternativo */}
+              {/* Botão de Upload Alternativo de Foto Real */}
               <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                <span>Ou selecione um arquivo:</span>
+                <span>Ou selecione a foto capturada:</span>
                 <label className="text-[#38bdf8] hover:underline cursor-pointer font-medium flex items-center gap-1">
                   <Upload className="w-3 h-3" />
-                  <span>Enviar Foto do Rosto</span>
+                  <span>Enviar Foto Real</span>
                   <input
                     type="file"
                     accept="image/*"
+                    capture="user"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -553,39 +576,87 @@ export function LoginCheckInView() {
                   </div>
                 </div>
 
-                {/* Validação de GPS e Local de Entrada */}
+                {/* Validação de GPS e Local de Entrada (Sem simulações, 100% Real) */}
                 <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>3. Localização GPS Detectada</span>
+                      <span>3. Localização GPS Real do Aparelho *</span>
                     </span>
                     <button
                       type="button"
                       onClick={refreshLocation}
                       disabled={isLocating}
-                      className="text-[10px] text-[#38bdf8] hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-[10px] text-[#38bdf8] hover:underline flex items-center gap-1 cursor-pointer font-semibold"
                     >
                       <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
-                      <span>Atualizar GPS</span>
+                      <span>{isLocating ? 'Buscando satélite...' : 'Atualizar GPS'}</span>
                     </button>
                   </div>
 
-                  <div className="text-[11px] text-zinc-300 bg-[#16171b] p-2.5 rounded-xl border border-[#26282f] flex items-start gap-2">
-                    <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="line-clamp-2 leading-relaxed">
-                      {isLocating ? 'Detectando sinal de satélite...' : address}
-                    </span>
-                  </div>
+                  {/* Estado do GPS: Erro, Buscando ou Ativo */}
+                  {gpsError ? (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-[11px]">Sinal GPS Obrigatório:</span>
+                        <p className="text-[10px] leading-relaxed text-zinc-300">{gpsError}</p>
+                        <button
+                          type="button"
+                          onClick={refreshLocation}
+                          className="mt-1 self-start px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] cursor-pointer"
+                        >
+                          Tentar Novamente
+                        </button>
+                      </div>
+                    </div>
+                  ) : latitude !== null && longitude !== null ? (
+                    <div className="text-[11px] text-zinc-300 bg-[#16171b] p-2.5 rounded-xl border border-emerald-500/30 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-400 font-bold text-[10px] flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>GPS Satélite Confirmado</span>
+                        </span>
+                        {accuracy !== null && (
+                          <span className="text-[9px] font-mono text-zinc-400">
+                            Precisão: ±{accuracy}m
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2 leading-relaxed font-medium text-white">
+                          {address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-mono text-zinc-500">
+                        {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-amber-300 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
+                        <span>Detectando coordenadas do satélite...</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={refreshLocation}
+                        className="text-[10px] font-bold underline cursor-pointer"
+                      >
+                        Autorizar
+                      </button>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[10px] text-zinc-400 mb-1">
-                      Restaurante ou Base de Início:
+                      Destino ou Base de Início:
                     </label>
                     <select
                       value={selectedClientId}
                       onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="w-full bg-[#16171b] border border-[#2b2d35] rounded-xl px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none cursor-pointer"
+                      className="w-full bg-[#16171b] border border-[#2b2d35] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none cursor-pointer"
                     >
                       <option value="">🏢 Sede da Agência Navegando MKT</option>
                       {clients.map((c) => (

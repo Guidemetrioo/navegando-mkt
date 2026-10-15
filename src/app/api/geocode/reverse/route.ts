@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
-  const lng = searchParams.get('lng');
+  const lng = searchParams.get('lng') || searchParams.get('lon');
 
   if (!lat || !lng) {
     return NextResponse.json({ error: 'Parâmetros lat e lng são obrigatórios.' }, { status: 400 });

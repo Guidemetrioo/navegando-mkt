@@ -151,6 +151,8 @@ interface AgendaContextType {
       lat: number;
       lng: number;
       address: string;
+      accuracy?: number;
+      distancia_metros?: number;
       clientId?: string;
       status_localizacao?: PontoStatus;
     }
@@ -340,6 +342,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         lat: number;
         lng: number;
         address: string;
+        accuracy?: number;
+        distancia_metros?: number;
         clientId?: string;
         status_localizacao?: PontoStatus;
       }
@@ -358,11 +362,12 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         foto_url: pontoData.photoUrl,
         latitude: pontoData.lat,
         longitude: pontoData.lng,
-        precisao_metros: 15,
+        precisao_metros: pontoData.accuracy ?? 10,
+        distancia_metros: pontoData.distancia_metros,
         endereco: pontoData.address,
         client_id: pontoData.clientId || null,
         status_localizacao: pontoData.status_localizacao || 'no_local',
-        observacao: 'Check-in e Ponto de Entrada realizado no Login do Aplicativo',
+        observacao: 'Check-in e Ponto de Entrada presencial com Foto e GPS Real',
         created_at: nowIso,
       };
 

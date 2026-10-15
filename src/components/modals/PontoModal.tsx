@@ -55,7 +55,7 @@ export function PontoModal() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Estados de GPS / Geolocalização
+  // Estados de GPS / Geolocalização Real
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
@@ -63,7 +63,6 @@ export function PontoModal() {
   const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unsupported'>('prompt');
   const [isLocating, setIsLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [isSimulated, setIsSimulated] = useState(false);
 
   // Sucesso / Comprovante
   const [submittedPonto, setSubmittedPonto] = useState<any | null>(null);
@@ -157,7 +156,6 @@ export function PontoModal() {
     }
     setIsLocating(true);
     setGeoError(null);
-    setIsSimulated(false);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -184,39 +182,18 @@ export function PontoModal() {
         setIsLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
           setPermissionState('denied');
-          setGeoError('Permissão de GPS foi negada no navegador. Permita nas configurações da URL.');
+          setGeoError('Permissão de GPS foi negada no navegador. Permita o acesso à localização para registrar o ponto.');
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           setGeoError('Sinal de GPS indisponível no dispositivo.');
         } else if (err.code === err.TIMEOUT) {
           setGeoError('Tempo esgotado ao buscar sinal GPS.');
         } else {
-          setGeoError('Não foi possível obter GPS. Você pode simular o local para testes.');
+          setGeoError('Não foi possível obter a posição GPS precisa.');
         }
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, []);
-
-  // Simular GPS no restaurante selecionado (com leve variação para teste realista)
-  const simulateAtRestaurant = useCallback(() => {
-    const coords =
-      (clientId && DEFAULT_CLIENT_COORDINATES[clientId]) ||
-      DEFAULT_CLIENT_COORDINATES['cli-5'] || { lat: -23.5592, lng: -46.6912 };
-
-    const client = clients.find((c) => c.id === clientId);
-
-    // Variação de ~25 metros
-    const latOffset = (Math.random() - 0.5) * 0.0003;
-    const lngOffset = (Math.random() - 0.5) * 0.0003;
-
-    setLatitude(coords.lat + latOffset);
-    setLongitude(coords.lng + lngOffset);
-    setAccuracy(8);
-    setRealAddress(client?.endereco || 'Rua Oscar Freire, 1050 - Jardins, São Paulo - SP');
-    setIsSimulated(true);
-    setGeoError(null);
-    setPermissionState('granted');
-  }, [clientId, clients]);
 
   // Inicializar dados ao abrir modal
   useEffect(() => {
@@ -295,14 +272,19 @@ export function PontoModal() {
     e.preventDefault();
 
     if (!photoDataUrl) {
-      alert('Por favor, tire uma selfie ou envie uma foto para comprovar o ponto.');
+      alert('A FOTO REAL É OBRIGATÓRIA para registrar o ponto. Por favor, tire uma selfie com a câmera ou carregue a foto real tirada no local.');
+      return;
+    }
+
+    if (latitude === null || longitude === null) {
+      alert('A LOCALIZAÇÃO GPS REAL É OBRIGATÓRIA. Por favor, permita o acesso ao GPS do dispositivo e clique em "Atualizar GPS".');
       return;
     }
 
     const now = new Date();
-    const finalLat = latitude ?? -23.5592;
-    const finalLng = longitude ?? -46.6912;
-    const finalDist = distanceMeters ?? 25;
+    const finalLat = latitude;
+    const finalLng = longitude;
+    const finalDist = distanceMeters ?? 0;
 
     const novoPonto = addPonto({
       employee_id: employeeId,
@@ -753,11 +735,9 @@ export function PontoModal() {
                     <span>
                       {latitude.toFixed(5)}, {longitude.toFixed(5)}
                     </span>
-                    {isSimulated && (
-                      <span className="text-[10px] bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded">
-                        Simulado para Testes
-                      </span>
-                    )}
+                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold">
+                      GPS Real Ativo
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -767,44 +747,23 @@ export function PontoModal() {
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white">
-                      Permissão de Localização do Dispositivo
+                      Permissão de Localização do Dispositivo Obrigatória
                     </h5>
                     <p className="text-[11px] text-zinc-400 max-w-xs mt-0.5">
-                      Para validar sua presença no restaurante, autorize o acesso ao GPS do aparelho.
+                      Para validar sua presença física no restaurante com precisão, autorize o acesso ao GPS do aparelho.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  <div className="flex items-center justify-center gap-2 pt-1">
                     <button
                       type="button"
                       onClick={requestGeolocation}
                       disabled={isLocating}
-                      className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-5 py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/30 transition-all cursor-pointer flex items-center gap-2"
                     >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{isLocating ? 'Solicitando...' : '📍 Permitir GPS no Dispositivo'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={simulateAtRestaurant}
-                      className="px-3 py-2 rounded-xl bg-[#1c1d22] hover:bg-[#32353e] text-zinc-300 text-xs font-semibold border border-[#2b2d35] cursor-pointer"
-                    >
-                      🎯 Simular na Porta
+                      <MapPin className="w-4 h-4" />
+                      <span>{isLocating ? 'Conectando Satélite...' : '📍 Ativar GPS do Dispositivo'}</span>
                     </button>
                   </div>
-                </div>
-              )}
-
-              {/* Botão de Simulação Conveniente para testes locais */}
-              {latitude !== null && (
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={simulateAtRestaurant}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-                    title="Simula as coordenadas exatas da porta do restaurante para testes"
-                  >
-                    🎯 Teste rápido: Definir GPS exatamente na porta de {selectedClient?.nome}
-                  </button>
                 </div>
               )}
             </div>
