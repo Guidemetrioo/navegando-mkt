@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0e0f12;
+  --foreground: #f4f4f5;
+  --card-bg: #16171b;
+  --card-border: #26282f;
+  --brand-tomato: #FF5A3C;
+  --font-title: var(--font-title), sans-serif;
+  --font-body: var(--font-body), sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root.auto-theme {
+    --background: #f8fafc;
+    --foreground: #09090b;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --brand-tomato: #D93A22;
+  }
+}
+
+.theme-light {
+  --background: #f8fafc;
+  --foreground: #09090b;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --brand-tomato: #D93A22;
+}
+
+.theme-dark {
+  --background: #0e0f12;
+  --foreground: #f4f4f5;
+  --card-bg: #16171b;
+  --card-border: #26282f;
+  --brand-tomato: #FF5A3C;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-title);
+}
+
+/* Diagonal stripe pattern for free slots in roster */
+.bg-striped-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.015),
+    rgba(255, 255, 255, 0.015) 10px,
+    rgba(255, 255, 255, 0.035) 10px,
+    rgba(255, 255, 255, 0.035) 20px
+  );
+}
+
+.theme-light .bg-striped-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.02) 10px,
+    rgba(0, 0, 0, 0.045) 10px,
+    rgba(0, 0, 0, 0.045) 20px
+  );
+}
+
+/* Custom scrollbar for horizontal roster table */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #33363f;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #474a56;
+}

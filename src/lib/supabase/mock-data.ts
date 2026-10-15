@@ -1,0 +1,241 @@
+import { Employee, Client, EventItem } from '@/types/database';
+
+export const INITIAL_EMPLOYEES: Employee[] = [
+  // Filmmakers
+  { id: 'emp-1', nome: 'Vitinho', funcao: 'filmmaker', cor: 205, ativo: true },
+  { id: 'emp-2', nome: 'Gimenez', funcao: 'filmmaker', cor: 150, ativo: true },
+  { id: 'emp-3', nome: 'Henri', funcao: 'filmmaker', cor: 238, ativo: true },
+  { id: 'emp-4', nome: 'Victor', funcao: 'filmmaker', cor: 178, ativo: true },
+  // Meninas dos Vídeos (Criadoras / Apresentadoras)
+  { id: 'emp-5', nome: 'Giovana', funcao: 'criadora', cor: 320, ativo: true },
+  { id: 'emp-6', nome: 'Milena', funcao: 'criadora', cor: 8, ativo: true },
+  { id: 'emp-7', nome: 'Julia', funcao: 'criadora', cor: 38, ativo: true },
+  { id: 'emp-8', nome: 'Isabela', funcao: 'criadora', cor: 275, ativo: true },
+];
+
+export const INITIAL_CLIENTS: Client[] = [
+  {
+    id: 'cli-1',
+    nome: 'Cantina Bella Massa',
+    contato: '(11) 98765-4321',
+    telefone: '(11) 98765-4321',
+    responsavel: 'Gianluca (Sócio e Chef)',
+    instagram_handle: '@cantinabellamassa',
+    endereco: 'Rua da Mooca, 1420 - Mooca, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/BellaMassa_AgenciaNavegando',
+    latitude: -23.5605,
+    longitude: -46.5985,
+    observacoes: 'Produção de 3 Reels de massas frescas e pratos executivos toda semana.',
+  },
+  {
+    id: 'cli-2',
+    nome: 'Sushi Hoshi',
+    contato: '(11) 97654-3210',
+    telefone: '(11) 97654-3210',
+    responsavel: 'Kenji Sato (Gerente Geral)',
+    instagram_handle: '@sushihoshi.sp',
+    endereco: 'Rua Coelho Lisboa, 350 - Tatuapé, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/SushiHoshi_AgenciaNavegando',
+    latitude: -23.5412,
+    longitude: -46.5701,
+    observacoes: 'Fotografia de combinados de salmão, rodízio premium e ASMR de cortes.',
+  },
+  {
+    id: 'cli-3',
+    nome: 'Churrascaria Fogo Nobre',
+    contato: '(11) 96543-2109',
+    telefone: '(11) 96543-2109',
+    responsavel: 'Marcos Vinicius (Diretor Operacional)',
+    instagram_handle: '@churrascariafogonobre',
+    endereco: 'Av. Nazaré, 890 - Ipiranga, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/FogoNobre_AgenciaNavegando',
+    latitude: -23.5891,
+    longitude: -46.6083,
+    observacoes: 'Vídeos institucionais, cortes especiais de parrilla e Tomahawk fumegando.',
+  },
+  {
+    id: 'cli-4',
+    nome: 'Café Grão Real',
+    contato: '(11) 95432-1098',
+    telefone: '(11) 95432-1098',
+    responsavel: 'Camila Ferreira (Barista Chefe)',
+    instagram_handle: '@cafegraoreal',
+    endereco: 'Rua dos Pinheiros, 512 - Pinheiros, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/GraoReal_AgenciaNavegando',
+    latitude: -23.5638,
+    longitude: -46.6854,
+    observacoes: 'Gravação da cafeteria matinal, métodos filtrados e cardápio de brunch.',
+  },
+  {
+    id: 'cli-5',
+    nome: 'Hamburgueria Artesanal Smash',
+    contato: '(11) 94321-0987',
+    telefone: '(11) 94321-0987',
+    responsavel: 'Rodrigo Albuquerque (Sócio Fundador)',
+    instagram_handle: '@smashburger.artesanal',
+    endereco: 'Rua Fradique Coutinho, 780 - Vila Madalena, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/SmashBurger_AgenciaNavegando',
+    latitude: -23.5592,
+    longitude: -46.6912,
+    observacoes: 'Lançamento de smash burger duplo, queijo trufado puxando e milkshakes autorais.',
+  },
+  {
+    id: 'cli-6',
+    nome: 'Bistrô Paris 6',
+    contato: '(11) 93210-9876',
+    telefone: '(11) 93210-9876',
+    responsavel: 'Ana Paula (Marketing do Restaurante)',
+    instagram_handle: '@bistroparis6.jardins',
+    endereco: 'Rua Haddock Lobo, 1240 - Cerqueira César, São Paulo',
+    drive_folder_url: 'https://drive.google.com/drive/folders/Paris6_AgenciaNavegando',
+    latitude: -23.5574,
+    longitude: -46.6478,
+    observacoes: 'Cobertura de sobremesas grand gateau, jantares românticos e coquetelaria.',
+  },
+];
+
+export const INITIAL_EVENTS: EventItem[] = [
+  // Segunda-feira (12/10)
+  {
+    id: 'evt-1',
+    client_id: 'cli-1',
+    tipo: 'gravacao',
+    data: '2026-10-12',
+    hora_inicio: '09:00',
+    hora_fim: '12:00',
+    local: 'Mooca',
+    observacoes: 'Gravação de 3 Reels: massas artesanais, roda de queijo e apresentação com Giovana',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-1', 'emp-5'], // Vitinho (Filmmaker) + Giovana (Criadora)
+  },
+  {
+    id: 'evt-2',
+    client_id: 'cli-2',
+    tipo: 'foto',
+    data: '2026-10-12',
+    hora_inicio: '14:00',
+    hora_fim: '17:00',
+    local: 'Tatuapé',
+    observacoes: 'Fotos do novo rodízio de primavera e gravação de Reels com Milena',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-2', 'emp-6'], // Gimenez (Filmmaker) + Milena (Criadora)
+  },
+
+  // Terça-feira (13/10)
+  {
+    id: 'evt-3',
+    client_id: 'cli-3',
+    tipo: 'gravacao',
+    data: '2026-10-13',
+    hora_inicio: '10:00',
+    hora_fim: '13:00',
+    local: 'Ipiranga',
+    observacoes: 'Gravação de cortes nobres na parrilla e degustação conduzida por Julia',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-3', 'emp-7'], // Henri (Filmmaker) + Julia (Criadora)
+  },
+  {
+    id: 'evt-4',
+    client_id: 'cli-4',
+    tipo: 'gravacao',
+    data: '2026-10-13',
+    hora_inicio: '14:30',
+    hora_fim: '17:30',
+    local: 'Pinheiros',
+    observacoes: 'Tour guiado por Isabela nos métodos filtrados e cafés especiais da casa',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-4', 'emp-8'], // Victor (Filmmaker) + Isabela (Criadora)
+  },
+
+  // Quarta-feira (14/10 - Hoje)
+  {
+    id: 'evt-5',
+    client_id: 'cli-5',
+    tipo: 'gravacao',
+    data: '2026-10-14',
+    hora_inicio: '10:00',
+    hora_fim: '13:00',
+    local: 'Vila Madalena',
+    observacoes: 'Lançamento do Smash do mês com Milena: gravação de mordida em slow motion e queijo derretido',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-1', 'emp-6'], // Vitinho (Filmmaker) + Milena (Criadora)
+  },
+  {
+    id: 'evt-6',
+    client_id: 'cli-1',
+    tipo: 'gravacao',
+    data: '2026-10-14',
+    hora_inicio: '15:00',
+    hora_fim: '18:00',
+    local: 'Mooca',
+    observacoes: 'Gravação da linha de sobremesas italianas (Tiramisù artesanal e Cannoli) com Giovana',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-4', 'emp-5'], // Victor (Filmmaker) + Giovana (Criadora)
+  },
+
+  // Quinta-feira (15/10)
+  {
+    id: 'evt-7',
+    client_id: 'cli-6',
+    tipo: 'gravacao',
+    data: '2026-10-15',
+    hora_inicio: '11:30',
+    hora_fim: '14:30',
+    local: 'Bela Vista',
+    observacoes: 'Almoço executivo e petiscos de boteco gastronômico apresentado por Isabela',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-2', 'emp-8'], // Gimenez (Filmmaker) + Isabela (Criadora)
+  },
+  {
+    id: 'evt-8',
+    client_id: 'cli-2',
+    tipo: 'gravacao',
+    data: '2026-10-15',
+    hora_inicio: '15:30',
+    hora_fim: '18:30',
+    local: 'Tatuapé',
+    observacoes: 'Bastidores do Omakase e sequência de niguiris maçaricados com Julia',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-3', 'emp-7'], // Henri (Filmmaker) + Julia (Criadora)
+  },
+
+  // Sexta-feira (16/10)
+  {
+    id: 'evt-9',
+    client_id: 'cli-5',
+    tipo: 'gravacao',
+    data: '2026-10-16',
+    hora_inicio: '13:00',
+    hora_fim: '16:30',
+    local: 'Vila Madalena',
+    observacoes: 'Vídeo dinâmico de sexta: desafio do burger gigante com Julia na apresentação',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-1', 'emp-7'], // Vitinho (Filmmaker) + Julia (Criadora)
+  },
+  {
+    id: 'evt-10',
+    client_id: 'cli-6',
+    tipo: 'gravacao',
+    data: '2026-10-16',
+    hora_inicio: '17:30',
+    hora_fim: '21:00',
+    local: 'Bela Vista',
+    observacoes: 'Gravação noturna de coquetelaria autoral com Giovana: defumação com alecrim e clima da noite',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-3', 'emp-5'], // Henri (Filmmaker) + Giovana (Criadora)
+  },
+
+  // Sábado (17/10)
+  {
+    id: 'evt-11',
+    client_id: 'cli-3',
+    tipo: 'gravacao',
+    data: '2026-10-17',
+    hora_inicio: '12:00',
+    hora_fim: '15:30',
+    local: 'Ipiranga',
+    observacoes: 'Almoço de sábado: picanha nobre na tábua e buffet completo com Milena',
+    status: 'agendado',
+    assigned_employee_ids: ['emp-4', 'emp-6'], // Victor (Filmmaker) + Milena (Criadora)
+  },
+];
