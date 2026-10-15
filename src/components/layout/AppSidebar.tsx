@@ -239,16 +239,22 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => openNewEventModal()}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all hover:scale-[1.02] cursor-pointer"
+              onClick={() => {
+                openNewEventModal();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Gravação</span>
             </button>
             <button
               type="button"
-              onClick={() => openPontoModal()}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#1c1d22] hover:bg-[#282a32] text-zinc-200 border border-[#2b2d35] font-bold text-xs transition-all hover:text-white cursor-pointer"
+              onClick={() => {
+                openPontoModal();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#1c1d22] hover:bg-[#282a32] active:scale-95 text-zinc-200 border border-[#2b2d35] font-bold text-xs transition-all hover:text-white cursor-pointer"
             >
               <Camera className="w-3.5 h-3.5 text-[#38bdf8]" />
               <span>Ponto</span>

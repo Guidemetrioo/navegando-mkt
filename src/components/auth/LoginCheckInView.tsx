@@ -39,6 +39,7 @@ export function LoginCheckInView() {
   // Estados de Câmera / Foto
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,15 +79,15 @@ export function LoginCheckInView() {
 
   const selectedMember = employees.find((e) => e.id === selectedEmployeeId) || employees[0];
 
-  // Iniciar Câmera
-  const startCamera = useCallback(async () => {
+  // Iniciar Câmera com suporte a Frontal/Traseira
+  const startCamera = useCallback(async (facing: 'user' | 'environment' = cameraFacing) => {
     try {
       setCameraError(null);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+        video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 640 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -97,10 +98,16 @@ export function LoginCheckInView() {
       }
     } catch (err: any) {
       console.warn('Câmera indisponível:', err);
-      setCameraError('Câmera não permitida ou sem suporte. Você pode capturar selfie ou enviar foto.');
+      setCameraError('Câmera não permitida ou sem suporte. Você pode capturar selfie rápida ou enviar foto.');
       setIsCameraActive(false);
     }
-  }, []);
+  }, [cameraFacing]);
+
+  const toggleCameraFacing = () => {
+    const nextFacing = cameraFacing === 'user' ? 'environment' : 'user';
+    setCameraFacing(nextFacing);
+    startCamera(nextFacing);
+  };
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -372,9 +379,21 @@ export function LoginCheckInView() {
                     <video
                       ref={videoRef}
                       playsInline
+                      autoPlay
                       muted
-                      className="w-full h-full object-cover transform scale-x-[-1]"
+                      className={`w-full h-full object-cover ${cameraFacing === 'user' ? 'transform scale-x-[-1]' : ''}`}
                     />
+                    {/* Botão de Alternar Câmera Frontal / Traseira */}
+                    <button
+                      type="button"
+                      onClick={toggleCameraFacing}
+                      className="absolute top-3 right-3 p-2.5 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 active:scale-90 transition-all cursor-pointer shadow-lg z-10 flex items-center gap-1 text-[11px]"
+                      title="Virar Câmera"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{cameraFacing === 'user' ? 'Frontal' : 'Traseira'}</span>
+                    </button>
+
                     {/* Moldura Guia de Rosto */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-44 h-44 rounded-full border-2 border-dashed border-[#FF5A3C]/70 animate-pulse" />
@@ -383,7 +402,7 @@ export function LoginCheckInView() {
                     <button
                       type="button"
                       onClick={capturePhoto}
-                      className="absolute bottom-3 py-2 px-4 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white text-xs font-bold shadow-lg shadow-[#FF5A3C]/40 flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105"
+                      className="absolute bottom-3 py-2.5 px-5 rounded-2xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white text-xs font-bold shadow-lg shadow-[#FF5A3C]/40 flex items-center gap-2 cursor-pointer transition-all z-10"
                     >
                       <Camera className="w-4 h-4" />
                       <span>Capturar Foto do Rosto</span>
@@ -398,7 +417,7 @@ export function LoginCheckInView() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={startCamera}
+                        onClick={() => startCamera()}
                         className="px-3 py-1.5 rounded-xl bg-[#1c1d22] border border-[#2b2d35] text-white text-xs font-semibold hover:bg-[#282a32] cursor-pointer"
                       >
                         Tentar Câmera
@@ -441,11 +460,43 @@ export function LoginCheckInView() {
                   <span>2. Identificação & Credenciais</span>
                 </span>
 
-                {/* Seleção do Funcionário */}
+                {/* Seleção Rápida de Funcionário no Mobile (1 toque) */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Selecione o seu Perfil *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-zinc-300">
+                      Selecione o seu Perfil *
+                    </label>
+                    <span className="text-[10px] text-zinc-400">Toque no seu nome:</span>
+                  </div>
+
+                  {/* Chips rápidos de 1-toque */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar">
+                    {employees.map((emp) => {
+                      const isSelected = selectedEmployeeId === emp.id;
+                      return (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmployeeId(emp.id);
+                            setPassword('123456');
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 ${
+                            isSelected
+                              ? 'bg-[#FF5A3C] text-white border-[#FF5A3C] shadow-md shadow-[#FF5A3C]/30'
+                              : 'bg-[#1c1d22] text-zinc-400 border-[#2b2d35] hover:text-white'
+                          }`}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: `hsl(${emp.cor}, 80%, 60%)` }}
+                          />
+                          <span>{emp.nome}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <select
                     value={selectedEmployeeId}
                     onChange={(e) => setSelectedEmployeeId(e.target.value)}

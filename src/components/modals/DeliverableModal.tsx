@@ -161,13 +161,16 @@ export function DeliverableModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
       onClick={closeDeliverableModal}
     >
       <div
-        className="relative w-full max-w-xl bg-[#16171b] border border-[#2b2d35] rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[95vh] overflow-y-auto"
+        className="relative w-full max-w-xl bg-[#16171b] border-t sm:border border-[#2b2d35] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Grab bar para mobile */}
+        <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
+
         {/* Cabeçalho */}
         <div className="flex items-start justify-between border-b border-[#26282f] pb-4">
           <div className="flex items-center gap-3">

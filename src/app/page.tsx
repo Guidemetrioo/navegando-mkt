@@ -31,11 +31,25 @@ import {
   Table2,
   UserCheck,
   Menu,
+  Camera,
+  Plus,
 } from 'lucide-react';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
 
 function AgendaMainContent() {
-  const { currentView, setCurrentView, isAuthenticated } = useAgenda();
+  const {
+    currentView,
+    setCurrentView,
+    isAuthenticated,
+    employees,
+    loggedEmployeeId,
+    openPontoModal,
+    openNewEventModal,
+  } = useAgenda();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  const currentMember = employees.find((e) => e.id === loggedEmployeeId) || employees[0];
 
   // Se não estiver autenticado, exige o Ponto Eletrônico de Entrada com Foto e GPS
   if (!isAuthenticated) {
@@ -49,7 +63,7 @@ function AgendaMainContent() {
     currentView === 'minha-agenda';
 
   return (
-    <div className="min-h-screen flex w-full bg-[#0d0e11] text-zinc-100">
+    <div className="min-h-screen flex w-full bg-[#0d0e11] text-zinc-100 selection:bg-[#FF5A3C]/30">
       {/* 1. Pro Sidebar Fixa / Navegação Principal */}
       <AppSidebar
         isMobileOpen={isMobileNavOpen}
@@ -59,49 +73,63 @@ function AgendaMainContent() {
       {/* 2. Área de Trabalho Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Barra Superior de Status & Breadcrumb */}
-        <header className="h-14 border-b border-[#26282f] bg-[#111215]/80 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+        <header className="h-14 border-b border-[#26282f] bg-[#111215]/85 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs min-w-0">
             <button
               type="button"
               onClick={() => setIsMobileNavOpen(true)}
-              className="md:hidden p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer shrink-0"
+              className="md:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1f2026] active:bg-[#282a32] transition-colors cursor-pointer shrink-0"
               title="Abrir menu lateral"
             >
               <Menu className="w-5 h-5" />
             </button>
             <span className="font-bold text-zinc-400 hidden sm:inline">NAVEGANDO MKT</span>
             <span className="text-zinc-600 hidden sm:inline">/</span>
-            <span className="font-bold text-white capitalize truncate">
-              {currentView === 'home' && 'Início (Boas-Vindas & Painel de Prioridades)'}
-              {currentView === 'dashboard' && 'Visão Geral (Dashboard Executivo)'}
+            <span className="font-bold text-white capitalize truncate text-xs sm:text-sm">
+              {currentView === 'home' && 'Início (Meu Painel)'}
+              {currentView === 'dashboard' && 'Dashboard Executivo'}
               {currentView === 'mes' && 'Agenda Mensal'}
               {currentView === 'semana' && 'Agenda Semanal'}
-              {currentView === 'escala' && 'Escala da Equipe por Duplas'}
+              {currentView === 'escala' && 'Escala da Equipe'}
               {currentView === 'minha-agenda' && 'Minha Agenda'}
-              {currentView === 'ponto' && 'Ponto Eletrônico & GPS'}
-              {currentView === 'arquivos' && 'Central de Arquivos (DAM)'}
-              {currentView === 'clientes' && 'Restaurantes Parceiros'}
-              {currentView === 'metricas-reels' && 'Métricas de Reels'}
-              {currentView === 'mural-ugc' && 'Mural UGC & Menções'}
-              {currentView === 'backups' && 'Segurança & Backup de Dados'}
+              {currentView === 'ponto' && 'Ponto & GPS'}
+              {currentView === 'arquivos' && 'Central DAM'}
+              {currentView === 'clientes' && 'Restaurantes'}
+              {currentView === 'metricas-reels' && 'Métricas Instagram'}
+              {currentView === 'mural-ugc' && 'Mural UGC'}
+              {currentView === 'backups' && 'Segurança & Backup'}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Botão de Bater Ponto Rápido no Mobile */}
+            <button
+              type="button"
+              onClick={() => openPontoModal(undefined, undefined, 'entrada')}
+              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FF5A3C]/15 border border-[#FF5A3C]/30 text-[#FF5A3C] text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
+              title="Bater Ponto Agora"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Ponto</span>
+            </button>
+
+            {/* Avatar do Usuário */}
+            {currentMember && (
+              <div className="flex items-center gap-1.5">
+                <EmployeeBadge employee={currentMember} size="sm" showName={false} />
+              </div>
+            )}
+
             {/* Indicador de Persistência Segura */}
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Base 100% Salva</span>
+              <span>Base Salva</span>
             </div>
-
-            <span className="text-[11px] text-zinc-500 hidden md:inline font-mono">
-              Outubro / 2026
-            </span>
           </div>
         </header>
 
         {/* Conteúdo Central */}
-        <main className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto flex flex-col gap-5 flex-1">
+        <main className="p-3 sm:p-6 md:p-8 pb-28 md:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
           {/* Sub-header de Navegação de Datas se estiver nas abas de agenda */}
           {isCalendarView && (
             <div className="flex flex-col gap-3">
@@ -186,6 +214,9 @@ function AgendaMainContent() {
           </div>
         </main>
       </div>
+
+      {/* 3. Barra de Navegação Inferior Fixa para Mobile (polegar fácil) */}
+      <MobileBottomNav onOpenMenu={() => setIsMobileNavOpen(true)} />
 
       {/* Modais Globais do Sistema */}
       <DayDetailModal />

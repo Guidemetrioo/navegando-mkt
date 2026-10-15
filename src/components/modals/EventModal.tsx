@@ -161,13 +161,15 @@ export function EventModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto"
       onClick={closeEventModal}
     >
       <div
-        className="relative w-full max-w-lg bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 shadow-2xl p-6 flex flex-col gap-4 my-8"
+        className="relative w-full max-w-lg bg-[#16171b] dark:bg-[#16171b] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Grab bar para mobile */}
+        <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
         {/* Cabeçalho */}
         <div className="flex items-center justify-between pb-3 border-b border-[#26282f] dark:border-[#26282f] border-slate-200">
           <div>

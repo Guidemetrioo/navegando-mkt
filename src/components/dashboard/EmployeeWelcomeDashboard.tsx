@@ -123,7 +123,7 @@ export function EmployeeWelcomeDashboard() {
           </div>
 
           {/* Card do Ponto Registrado no Login */}
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#141519]/90 border border-[#2b2d35] backdrop-blur-md self-start lg:self-auto">
+          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#141519]/90 border border-[#2b2d35] backdrop-blur-md w-full sm:w-auto">
             {myTodayPonto?.foto_url ? (
               <img
                 src={myTodayPonto.foto_url}
@@ -136,7 +136,7 @@ export function EmployeeWelcomeDashboard() {
               </div>
             )}
 
-            <div className="min-w-0 flex flex-col gap-0.5">
+            <div className="min-w-0 flex-1 flex flex-col gap-0.5">
               <span className="text-[10px] font-bold uppercase text-emerald-400 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
                 Ponto de Entrada Ativo
@@ -157,7 +157,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => openPontoModal(undefined, undefined, 'saida')}
-                  className="px-2.5 py-1 rounded-lg bg-[#FF5A3C]/15 hover:bg-[#FF5A3C] text-[#FF5A3C] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-[#FF5A3C]/15 hover:bg-[#FF5A3C] active:scale-95 text-[#FF5A3C] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
                 >
                   Registrar Saída / Ponto
                 </button>
@@ -187,7 +187,7 @@ export function EmployeeWelcomeDashboard() {
           <button
             type="button"
             onClick={() => openEditDeliverableModal(myPendingAdjustments[0])}
-            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto text-center"
           >
             Ver Notas de Ajuste →
           </button>
@@ -208,7 +208,7 @@ export function EmployeeWelcomeDashboard() {
               onClick={() => setCurrentView('minha-agenda')}
               className="text-xs font-semibold text-[#FF5A3C] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>Ver Minha Escala Completa</span>
+              <span>Ver Escala</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -245,10 +245,10 @@ export function EmployeeWelcomeDashboard() {
                 return (
                   <div
                     key={ev.id}
-                    className="p-5 rounded-3xl bg-[#16171b] border border-[#26282f] hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
+                    className="p-4 sm:p-5 rounded-3xl bg-[#16171b] border border-[#26282f] hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
                         <div className="w-12 h-12 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/20 flex flex-col items-center justify-center shrink-0">
                           <Clock className="w-5 h-5" />
                           <span className="text-[10px] font-mono font-bold mt-0.5">
@@ -256,10 +256,10 @@ export function EmployeeWelcomeDashboard() {
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF5A3C] block">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF5A3C] block truncate">
                             Gravação Gastronômica
                           </span>
-                          <h3 className="text-base font-bold text-white truncate font-heading">
+                          <h3 className="text-sm sm:text-base font-bold text-white truncate font-heading">
                             {client?.nome}
                           </h3>
                           <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
@@ -269,15 +269,15 @@ export function EmployeeWelcomeDashboard() {
                         </div>
                       </div>
 
-                      <span className="text-[11px] font-mono font-bold bg-[#1f2026] text-zinc-300 px-2.5 py-1 rounded-xl border border-[#2b2d35] whitespace-nowrap">
+                      <span className="text-[11px] font-mono font-bold bg-[#1f2026] text-zinc-300 px-2 py-1 rounded-xl border border-[#2b2d35] whitespace-nowrap shrink-0">
                         {ev.hora_inicio} - {ev.hora_fim}
                       </span>
                     </div>
 
                     {/* Sua Dupla */}
-                    <div className="p-3 rounded-2xl bg-[#1c1d22] border border-[#26282f] flex items-center justify-between">
+                    <div className="p-3 rounded-2xl bg-[#1c1d22] border border-[#26282f] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-zinc-400 font-medium">Sua Dupla na Gravação:</span>
+                        <span className="text-xs text-zinc-400 font-medium">Sua Dupla:</span>
                         {partner ? (
                           <div className="flex items-center gap-1.5">
                             <EmployeeBadge employee={partner} size="sm" showRole />
@@ -301,14 +301,14 @@ export function EmployeeWelcomeDashboard() {
                       )}
                     </div>
 
-                    {/* Ações Rápidas de Campo */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#26282f]/60">
+                    {/* Ações Rápidas de Campo (Thumb-friendly no mobile) */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 border-t border-[#26282f]/60">
                       {googleMapsUrl && (
                         <a
                           href={googleMapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 py-2 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-[#38bdf8] text-xs font-semibold border border-[#2b2d35] transition-colors flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] active:scale-98 text-[#38bdf8] text-xs font-semibold border border-[#2b2d35] transition-all flex items-center justify-center gap-1.5"
                         >
                           <Navigation className="w-3.5 h-3.5" />
                           <span>Como Chegar (Maps / Waze)</span>
@@ -318,7 +318,7 @@ export function EmployeeWelcomeDashboard() {
                       <button
                         type="button"
                         onClick={() => openPontoModal(client?.id, ev.id, 'entrada')}
-                        className="py-2 px-4 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="py-2.5 px-4 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-98 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                       >
                         <Camera className="w-3.5 h-3.5" />
                         <span>Bater Ponto no Restaurante</span>
