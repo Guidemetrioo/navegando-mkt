@@ -50,6 +50,7 @@ export function PontoModal() {
   // Estados de Câmera / Foto
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -85,15 +86,15 @@ export function PontoModal() {
   // Membro atual
   const currentMember = employees.find((e) => e.id === employeeId) || employees[0];
 
-  // Iniciar webcam
-  const startCamera = useCallback(async () => {
+  // Iniciar webcam com suporte a Frontal/Traseira
+  const startCamera = useCallback(async (facing: 'user' | 'environment' = cameraFacing) => {
     try {
       setCameraError(null);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+        video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 640 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -107,7 +108,13 @@ export function PontoModal() {
       setCameraError('Câmera não permitida ou indisponível. Você pode enviar uma foto ou selfie.');
       setIsCameraActive(false);
     }
-  }, []);
+  }, [cameraFacing]);
+
+  const toggleCameraFacing = () => {
+    const nextFacing = cameraFacing === 'user' ? 'environment' : 'user';
+    setCameraFacing(nextFacing);
+    startCamera(nextFacing);
+  };
 
   // Parar webcam
   const stopCamera = useCallback(() => {
@@ -570,9 +577,20 @@ export function PontoModal() {
                       ref={videoRef}
                       playsInline
                       muted
-                      className="w-full h-full object-cover mirror"
-                      style={{ transform: 'scaleX(-1)' }}
+                      autoPlay
+                      className={`w-full h-full object-cover ${cameraFacing === 'user' ? 'transform scale-x-[-1]' : ''}`}
                     />
+                    {isCameraActive && (
+                      <button
+                        type="button"
+                        onClick={toggleCameraFacing}
+                        className="absolute top-2 right-2 p-2 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 active:scale-90 transition-all cursor-pointer shadow-lg z-10 flex items-center gap-1 text-[11px]"
+                        title="Virar Câmera"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>{cameraFacing === 'user' ? 'Frontal' : 'Traseira'}</span>
+                      </button>
+                    )}
                     {!isCameraActive && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center gap-2 bg-[#121316]">
                         <Camera className="w-8 h-8 text-zinc-500 animate-pulse" />
@@ -581,7 +599,7 @@ export function PontoModal() {
                         </span>
                         <button
                           type="button"
-                          onClick={startCamera}
+                          onClick={() => startCamera()}
                           className="px-3 py-1.5 rounded-xl bg-[#26282f] text-xs text-white hover:bg-[#32353e] transition-colors cursor-pointer"
                         >
                           Tentar Ativar
