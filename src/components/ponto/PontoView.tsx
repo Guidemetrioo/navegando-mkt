@@ -22,6 +22,7 @@ import {
   List,
   X,
   UserCheck,
+  Scale,
 } from 'lucide-react';
 
 export function PontoView() {
@@ -34,14 +35,23 @@ export function PontoView() {
     userRole,
   } = useAgenda();
 
+  const currentMember = employees.find((e) => e.id === loggedEmployeeId);
+  const isModelo = currentMember?.funcao === 'modelo';
+  const isManagerOrOwner = currentMember?.funcao === 'dono' || currentMember?.funcao === 'gerente';
+
   const [selectedFilterEmpId, setSelectedFilterEmpId] = useState<string>('all');
   const [selectedFilterClientId, setSelectedFilterClientId] = useState<string>('all');
   const [selectedFilterTipo, setSelectedFilterTipo] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'cards' | 'tabela'>('cards');
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; nome: string; dataHora: string } | null>(null);
 
+  // Escopo de visibilidade: modelos só visualizam o seu próprio ponto
+  const basePontos = isModelo
+    ? pontos.filter((p) => p.employee_id === currentMember?.id)
+    : pontos;
+
   // Filtragem dos pontos
-  const filteredPontos = pontos.filter((p) => {
+  const filteredPontos = basePontos.filter((p) => {
     if (selectedFilterEmpId !== 'all' && p.employee_id !== selectedFilterEmpId) return false;
     if (selectedFilterClientId !== 'all' && p.client_id !== selectedFilterClientId) return false;
     if (selectedFilterTipo !== 'all' && p.tipo !== selectedFilterTipo) return false;
@@ -49,17 +59,52 @@ export function PontoView() {
   });
 
   // KPIs
-  const totalPontos = pontos.length;
-  const entradasNoLocal = pontos.filter(
+  const totalPontos = basePontos.length;
+  const entradasNoLocal = basePontos.filter(
     (p) => p.tipo === 'entrada' && p.status_localizacao === 'no_local'
   ).length;
-  const pontosHoje = pontos.filter((p) => p.data_hora.startsWith('2026-10-14')).length;
-  const foraDoRaio = pontos.filter((p) => p.status_localizacao === 'fora_do_raio').length;
+  const pontosHoje = basePontos.filter((p) => p.data_hora.startsWith('2026-10-14')).length;
+  const foraDoRaio = basePontos.filter((p) => p.status_localizacao === 'fora_do_raio').length;
 
   return (
     <div className="w-full flex flex-col gap-6">
       {/* 0. Radar de Localização Real com Permissão do Dispositivo & Mapa */}
       <LiveLocationRadar />
+
+      {/* 0.1 Banner de Normas CLT 2026/2027 & Cargas Horárias */}
+      <div className="p-5 rounded-2xl bg-[#16171b] border border-[#26282f] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+            <Scale className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
+                Norma CLT 2026/2027
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">
+                Regime Interno vs Externo
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-white">
+              Carga Horária & Normas de Ponto da Agência Navegando MKT
+            </h3>
+            <p className="text-xs text-zinc-300 max-w-3xl leading-relaxed">
+              <strong>Equipe Interna (Segunda a Sexta):</strong> Carga horária máxima CLT de <strong>8h48min/dia (44h semanais)</strong> com registro de apenas <strong>3 batidas</strong> (Entrada, Almoço de 1h a 2h, Saída).<br />
+              <strong>Equipe Externa (Filmmakers & Modelos):</strong> Sem jornada fixa diária. Bate ponto no restaurante na Entrada e Saída com foto e GPS, contabilizando horas totais na semana.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => openPontoModal()}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5A3C] to-[#e04a2f] hover:from-[#e04a2f] hover:to-[#b32b15] active:scale-95 text-white font-bold text-xs shadow-lg shadow-[#FF5A3C]/20 transition-all shrink-0 cursor-pointer self-start md:self-auto"
+        >
+          <Camera className="w-4 h-4" />
+          <span>Bater Ponto Agora</span>
+        </button>
+      </div>
 
       {/* 1. Header com KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -249,15 +294,21 @@ export function PontoView() {
                     {p.employee && <EmployeeBadge employee={p.employee} size="md" showRole />}
                   </div>
 
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      isEntry
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30'
-                    }`}
-                  >
-                    {isEntry ? '🟢 Entrada' : '🔴 Saída'}
-                  </span>
+                  {p.tipo === 'entrada' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      🟢 Entrada
+                    </span>
+                  )}
+                  {p.tipo === 'almoco' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      🍽️ Almoço
+                    </span>
+                  )}
+                  {p.tipo === 'saida' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                      🔴 Saída
+                    </span>
+                  )}
                 </div>
 
                 {/* Corpo: Foto e Detalhes */}
@@ -405,15 +456,21 @@ export function PontoView() {
                         {p.employee && <EmployeeBadge employee={p.employee} size="sm" showRole />}
                       </td>
                       <td className="py-2.5 px-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            isEntry
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30'
-                          }`}
-                        >
-                          {isEntry ? '🟢 Entrada' : '🔴 Saída'}
-                        </span>
+                        {p.tipo === 'entrada' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            🟢 Entrada
+                          </span>
+                        )}
+                        {p.tipo === 'almoco' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            🍽️ Almoço
+                          </span>
+                        )}
+                        {p.tipo === 'saida' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            🔴 Saída
+                          </span>
+                        )}
                       </td>
                       <td className="py-2.5 px-4 text-zinc-300">
                         <div>{dateStr}</div>

@@ -1,9 +1,12 @@
 import { PontoRegistro } from '@/types/database';
 
 export const INITIAL_PONTOS: PontoRegistro[] = [
+  // ==========================================
+  // PONTO EXTERNO: RESTAURANTES & CAMPO (Filmmakers & Modelos)
+  // ==========================================
   {
     id: 'ponto-1',
-    employee_id: 'emp-1', // Vitinho (Filmmaker)
+    employee_id: 'usr-vitinho', // Vitinho (Filmmaker / Gerente)
     client_id: 'cli-5', // Hamburgueria Artesanal Smash
     event_id: 'evt-5',
     tipo: 'entrada',
@@ -19,7 +22,7 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
   },
   {
     id: 'ponto-2',
-    employee_id: 'emp-6', // Milena (Criadora / Vídeo)
+    employee_id: 'usr-mi', // Milena (Modelo / Apresentadora)
     client_id: 'cli-5', // Hamburgueria Artesanal Smash
     event_id: 'evt-5',
     tipo: 'entrada',
@@ -34,8 +37,40 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
     created_at: '2026-10-14T09:52:40Z',
   },
   {
+    id: 'ponto-ext-saida-1',
+    employee_id: 'usr-vitinho',
+    client_id: 'cli-5',
+    event_id: 'evt-5',
+    tipo: 'saida',
+    data_hora: '2026-10-14T13:12:00',
+    foto_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5594,
+    longitude: -46.6914,
+    precisao_metros: 9,
+    distancia_metros: 25,
+    status_localizacao: 'no_local',
+    observacao: 'Saída do Smash Burger. 45 takes gravados e relatório enviado.',
+    created_at: '2026-10-14T13:12:00Z',
+  },
+  {
+    id: 'ponto-ext-saida-2',
+    employee_id: 'usr-mi',
+    client_id: 'cli-5',
+    event_id: 'evt-5',
+    tipo: 'saida',
+    data_hora: '2026-10-14T13:14:30',
+    foto_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5593,
+    longitude: -46.6911,
+    precisao_metros: 11,
+    distancia_metros: 18,
+    status_localizacao: 'no_local',
+    observacao: 'Sessão concluída com sucesso. 3 Reels apresentados com ótima aceitação do cliente.',
+    created_at: '2026-10-14T13:14:30Z',
+  },
+  {
     id: 'ponto-3',
-    employee_id: 'emp-4', // Victor (Filmmaker)
+    employee_id: 'usr-victor', // Victor (Filmmaker)
     client_id: 'cli-1', // Cantina Bella Massa
     event_id: 'evt-6',
     tipo: 'entrada',
@@ -51,7 +86,7 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
   },
   {
     id: 'ponto-4',
-    employee_id: 'emp-5', // Giovana (Criadora / Vídeo)
+    employee_id: 'usr-gi', // Giovana (Modelo / Apresentadora)
     client_id: 'cli-1', // Cantina Bella Massa
     event_id: 'evt-6',
     tipo: 'entrada',
@@ -67,7 +102,7 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
   },
   {
     id: 'ponto-5',
-    employee_id: 'emp-2', // Gimenez (Filmmaker)
+    employee_id: 'usr-gimenez', // Matheus Gimenez (Filmmaker)
     client_id: 'cli-2', // Sushi Hoshi
     event_id: 'evt-2',
     tipo: 'entrada',
@@ -83,8 +118,8 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
   },
   {
     id: 'ponto-6',
-    employee_id: 'emp-2', // Gimenez (Filmmaker)
-    client_id: 'cli-2', // Sushi Hoshi
+    employee_id: 'usr-gimenez',
+    client_id: 'cli-2',
     event_id: 'evt-2',
     tipo: 'saida',
     data_hora: '2026-10-12T17:15:30',
@@ -96,5 +131,80 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
     status_localizacao: 'no_local',
     observacao: 'Gravação finalizada com sucesso! Todos os combinados gravados.',
     created_at: '2026-10-12T17:15:30Z',
+  },
+
+  // ==========================================
+  // PONTO INTERNO CLT 2026/2027: 3 BATIDAS (Entrada, Almoço, Saída)
+  // Equipe: Guilherme, Matheus, Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto
+  // ==========================================
+  {
+    id: 'ponto-int-1',
+    employee_id: 'usr-guilherme',
+    tipo: 'entrada',
+    data_hora: '2026-10-14T08:58:12',
+    foto_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    precisao_metros: 5,
+    status_localizacao: 'no_local',
+    endereco: 'Sede Agência Navegando MKT - Escritório Interno',
+    observacao: '1ª Batida CLT: Entrada da manhã (Jornada diária 8h48min)',
+    created_at: '2026-10-14T08:58:12Z',
+  },
+  {
+    id: 'ponto-int-2',
+    employee_id: 'usr-guilherme',
+    tipo: 'almoco',
+    data_hora: '2026-10-14T12:05:00',
+    foto_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    precisao_metros: 6,
+    status_localizacao: 'no_local',
+    endereco: 'Sede Agência Navegando MKT - Escritório Interno',
+    observacao: '2ª Batida CLT: Início do intervalo de almoço intrajornada (1h)',
+    created_at: '2026-10-14T12:05:00Z',
+  },
+  {
+    id: 'ponto-int-3',
+    employee_id: 'usr-carol',
+    tipo: 'entrada',
+    data_hora: '2026-10-14T09:02:10',
+    foto_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    precisao_metros: 6,
+    status_localizacao: 'no_local',
+    endereco: 'Sede Agência Navegando MKT - Ilha de Edição',
+    observacao: '1ª Batida CLT: Entrada da manhã para pós-produção dos Reels da semana',
+    created_at: '2026-10-14T09:02:10Z',
+  },
+  {
+    id: 'ponto-int-4',
+    employee_id: 'usr-bruna',
+    tipo: 'entrada',
+    data_hora: '2026-10-14T09:00:44',
+    foto_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    precisao_metros: 5,
+    status_localizacao: 'no_local',
+    endereco: 'Sede Agência Navegando MKT - Social Media Desk',
+    observacao: '1ª Batida CLT: Entrada da manhã',
+    created_at: '2026-10-14T09:00:44Z',
+  },
+  {
+    id: 'ponto-int-5',
+    employee_id: 'usr-lucas',
+    tipo: 'entrada',
+    data_hora: '2026-10-14T09:05:30',
+    foto_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    precisao_metros: 5,
+    status_localizacao: 'no_local',
+    endereco: 'Sede Agência Navegando MKT - Ilha de Edição',
+    observacao: '1ª Batida CLT: Entrada da manhã',
+    created_at: '2026-10-14T09:05:30Z',
   },
 ];

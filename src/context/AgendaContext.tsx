@@ -16,6 +16,7 @@ import {
   MediaDeliverable,
   DeliverableStatus,
   DeliverableFormat,
+  RelatorioFilmmaker,
 } from '@/types/database';
 import { INITIAL_EMPLOYEES, INITIAL_CLIENTS, INITIAL_EVENTS } from '@/lib/supabase/mock-data';
 import { INITIAL_REELS, INITIAL_MENTIONS, INITIAL_SOCIAL_ACCOUNTS } from '@/lib/supabase/mock-social-data';
@@ -42,6 +43,7 @@ export type AgendaView =
   | 'escala'
   | 'minha-agenda'
   | 'ponto'
+  | 'relatorios'
   | 'arquivos'
   | 'clientes'
   | 'metricas-reels'
@@ -124,9 +126,10 @@ interface AgendaContextType {
   openDayDetailModal: (dateIso: string) => void;
   closeDayDetailModal: () => void;
 
-  // Ações CRUD Evento
+  // Ações CRUD Evento & Relatório do Filmmaker
   saveEvent: (eventData: Omit<EventItem, 'id'> & { id?: string }, allowConflictOverride?: boolean) => { success: boolean; conflicts?: ConflictRecord[] };
   deleteEvent: (id: string) => void;
+  saveEventReport: (eventId: string, report: RelatorioFilmmaker) => void;
 
   // Permissões e Autenticação
   userRole: UserRole;
@@ -147,14 +150,16 @@ interface AgendaContextType {
     employeeId: string,
     password: string,
     pontoData: {
-      photoUrl: string;
-      lat: number;
-      lng: number;
-      address: string;
+      photoUrl?: string;
+      lat?: number;
+      lng?: number;
+      address?: string;
       accuracy?: number;
       distancia_metros?: number;
       clientId?: string;
       status_localizacao?: PontoStatus;
+      tipo?: PontoTipo;
+      observacao?: string;
     }
   ) => { success: boolean; error?: string };
   loginDirect: (employeeId: string, password: string) => { success: boolean; error?: string };
@@ -338,57 +343,72 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       employeeId: string,
       password: string,
       pontoData: {
-        photoUrl: string;
-        lat: number;
-        lng: number;
-        address: string;
+        photoUrl?: string;
+        lat?: number;
+        lng?: number;
+        address?: string;
         accuracy?: number;
         distancia_metros?: number;
         clientId?: string;
         status_localizacao?: PontoStatus;
+        tipo?: PontoTipo;
+        observacao?: string;
       }
     ) => {
       const check = verifyCredentials(employeeId, password);
-      if (!check.valid) {
-        return { success: false, error: check.error };
-      }
+    if (!check.valid) {
+      return { success: false, error: check.error };
+    }
 
-      const nowIso = new Date().toISOString();
-      const novoPonto: PontoRegistro = {
-        id: `ponto-login-${Date.now()}`,
-        employee_id: employeeId,
-        tipo: 'entrada',
-        data_hora: nowIso,
-        foto_url: pontoData.photoUrl,
-        latitude: pontoData.lat,
-        longitude: pontoData.lng,
-        precisao_metros: pontoData.accuracy ?? 10,
-        distancia_metros: pontoData.distancia_metros,
-        endereco: pontoData.address,
-        client_id: pontoData.clientId || null,
-        status_localizacao: pontoData.status_localizacao || 'no_local',
-        observacao: 'Check-in e Ponto de Entrada presencial com Foto e GPS Real',
-        created_at: nowIso,
-      };
+    const emp = employees.find((e) => e.id === employeeId);
+    const nowIso = new Date().toISOString();
+    const tipo = pontoData.tipo || 'entrada';
+    const isInterno = emp?.regime === 'interno' || emp?.funcao === 'interno';
 
-      setPontos((prev) => [novoPonto, ...prev]);
-      setLastLoginPonto(novoPonto);
-      setLoggedEmployeeId(employeeId);
-      setIsAuthenticated(true);
-      setCurrentView('home');
+    const defaultAddress = isInterno
+      ? 'Sede Agência Navegando MKT - Escritório Interno'
+      : (pontoData.address || 'Localização confirmada via GPS');
 
-      saveToStorage('navegando_mkt_auth_session', {
-        isAuth: true,
-        employeeId,
-        lastPonto: novoPonto ? { ...novoPonto, foto_url: '' } : null,
-      });
+    const defaultObs = pontoData.observacao || (
+      isInterno
+        ? `Ponto CLT (${tipo.toUpperCase()}) registrado no escritório interno.`
+        : `Check-in de ${tipo.toUpperCase()} no restaurante parceiro com GPS e foto.`
+    );
 
-      const emp = employees.find((e) => e.id === employeeId);
-      toast(`Bem-vindo, ${emp?.nome || 'Equipe'}! Ponto de entrada registrado com sucesso.`, 'success');
-      return { success: true };
-    },
-    [employees, toast]
-  );
+    const novoPonto: PontoRegistro = {
+      id: `ponto-login-${Date.now()}`,
+      employee_id: employeeId,
+      tipo,
+      data_hora: nowIso,
+      foto_url: pontoData.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+      latitude: pontoData.lat ?? -23.5505,
+      longitude: pontoData.lng ?? -46.6333,
+      precisao_metros: pontoData.accuracy ?? 8,
+      distancia_metros: pontoData.distancia_metros,
+      endereco: defaultAddress,
+      client_id: pontoData.clientId || null,
+      status_localizacao: pontoData.status_localizacao || 'no_local',
+      observacao: defaultObs,
+      created_at: nowIso,
+    };
+
+    setPontos((prev) => [novoPonto, ...prev]);
+    setLastLoginPonto(novoPonto);
+    setLoggedEmployeeId(employeeId);
+    setIsAuthenticated(true);
+    setCurrentView('home');
+
+    saveToStorage('navegando_mkt_auth_session', {
+      isAuth: true,
+      employeeId,
+      lastPonto: novoPonto ? { ...novoPonto, foto_url: '' } : null,
+    });
+
+    toast(`Bem-vindo, ${emp?.nome || 'Equipe'}! Ponto (${tipo.toUpperCase()}) registrado com sucesso.`, 'success');
+    return { success: true };
+  },
+  [employees, toast]
+);
 
   const loginDirect = useCallback(
     (employeeId: string, password: string) => {
@@ -848,6 +868,28 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [closeEventModal, toast]
   );
 
+  const saveEventReport = useCallback(
+    (eventId: string, report: RelatorioFilmmaker) => {
+      setEvents((prev) =>
+        prev.map((e) => {
+          if (e.id === eventId) {
+            return {
+              ...e,
+              relatorio_filmmaker: {
+                ...report,
+                preenchido: true,
+                preenchido_em: report.preenchido_em || new Date().toISOString(),
+              },
+            };
+          }
+          return e;
+        })
+      );
+      toast('Relatório do Filmmaker salvo com sucesso!', 'success');
+    },
+    [toast]
+  );
+
   const addClient = useCallback(
     (clientData: Omit<Client, 'id'>): Client => {
       const newClient: Client = {
@@ -938,6 +980,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         closeDayDetailModal,
         saveEvent,
         deleteEvent,
+        saveEventReport,
         userRole,
         setUserRole,
         loggedEmployeeId,

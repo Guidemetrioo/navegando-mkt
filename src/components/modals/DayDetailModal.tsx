@@ -5,7 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { parseDateIso, formatTimeClean, WEEKDAYS_SHORT, MONTH_NAMES } from '@/lib/date-utils';
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { X, Plus, Calendar, Clock, MapPin, UserCheck } from 'lucide-react';
+import { X, Plus, Calendar, Clock, MapPin, UserCheck, FileText } from 'lucide-react';
 
 export function DayDetailModal() {
   const {
@@ -157,6 +157,21 @@ export function DayDetailModal() {
                           <MapPin className="w-3 h-3 text-zinc-500" />
                           <span>{ev.local}</span>
                         </div>
+                      )}
+                    </div>
+
+                    {/* Badge do Relatório do Filmmaker */}
+                    <div className="pt-0.5">
+                      {ev.relatorio_filmmaker?.preenchido ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                          <FileText className="w-3 h-3" />
+                          Relatório OK: {ev.relatorio_filmmaker.takes_gravados_qtd || 0} takes
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#38bdf8]/10 text-[#38bdf8] border border-[#38bdf8]/20 text-[10px] font-semibold">
+                          <FileText className="w-3 h-3" />
+                          Relatório Pendente (Clique p/ abrir)
+                        </span>
                       )}
                     </div>
 

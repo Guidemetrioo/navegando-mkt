@@ -49,4 +49,5 @@ export const DEFAULT_CLIENT_COORDINATES: Record<string, { lat: number; lng: numb
   'cli-4': { lat: -23.5638, lng: -46.6854 }, // Café Grão Real (Pinheiros)
   'cli-5': { lat: -23.5592, lng: -46.6912 }, // Hamburgueria Artesanal Smash (Vila Madalena)
   'cli-6': { lat: -23.5574, lng: -46.6478 }, // Bar do Porto (Bela Vista)
+  'cli-sede': { lat: -23.5615, lng: -46.6560 }, // Sede Navegando MKT (Paulista / Bela Vista)
 };

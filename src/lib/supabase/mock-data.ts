@@ -1,19 +1,16 @@
 import { Employee, Client, EventItem } from '@/types/database';
+import { USERS_DATABASE } from '@/lib/auth-users';
 
-export const INITIAL_EMPLOYEES: Employee[] = [
-  // Diretoria & Gestão
-  { id: 'admin', nome: 'Diretoria / Gestão', funcao: 'filmmaker', cor: 12, ativo: true },
-  // Filmmakers
-  { id: 'emp-1', nome: 'Vitinho', funcao: 'filmmaker', cor: 205, ativo: true },
-  { id: 'emp-2', nome: 'Gimenez', funcao: 'filmmaker', cor: 150, ativo: true },
-  { id: 'emp-3', nome: 'Henri', funcao: 'filmmaker', cor: 238, ativo: true },
-  { id: 'emp-4', nome: 'Victor', funcao: 'filmmaker', cor: 178, ativo: true },
-  // Meninas dos Vídeos (Criadoras / Apresentadoras)
-  { id: 'emp-5', nome: 'Giovana', funcao: 'criadora', cor: 320, ativo: true },
-  { id: 'emp-6', nome: 'Milena', funcao: 'criadora', cor: 8, ativo: true },
-  { id: 'emp-7', nome: 'Julia', funcao: 'criadora', cor: 38, ativo: true },
-  { id: 'emp-8', nome: 'Isabela', funcao: 'criadora', cor: 275, ativo: true },
-];
+export const INITIAL_EMPLOYEES: Employee[] = USERS_DATABASE.map((u) => ({
+  id: u.employeeId,
+  nome: u.nome,
+  cor: u.cor,
+  funcao: u.funcao,
+  regime: u.regime,
+  cargo_detalhado: u.cargo,
+  username: u.username,
+  ativo: true,
+}));
 
 export const INITIAL_CLIENTS: Client[] = [
   {
@@ -130,6 +127,24 @@ export const INITIAL_CLIENTS: Client[] = [
     briefing: 'Ambiente romântico à luz de velas, coquetelaria sofisticada e sobremesas icônicas servidas com calda de chocolate quente.',
     observacoes: 'Cobertura de sobremesas grand gateau, jantares românticos e coquetelaria.',
   },
+  {
+    id: 'cli-sede',
+    nome: 'Sede Navegando MKT (Escritório)',
+    contato: '(11) 3254-8900',
+    telefone: '(11) 3254-8900',
+    responsavel: 'Felipe Assis / Gabriela Lorente',
+    instagram_handle: '@navegando.mkt',
+    endereco: 'Av. Paulista, 1842 - Bela Vista, São Paulo - SP',
+    drive_folder_url: 'https://drive.google.com/drive/folders/Navegando_Interno_Geral',
+    latitude: -23.5615,
+    longitude: -46.6560,
+    status: 'ativo',
+    plano: 'Sede Operacional Interna',
+    meta_reels_mensal: 0,
+    valor_mensalidade: 0,
+    briefing: 'Operação interna, edição de vídeo, tráfego, design, copy e atendimento aos clientes.',
+    observacoes: 'Ponto da equipe interna (Guilherme, Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto, Matheus).',
+  },
 ];
 
 export const INITIAL_EVENTS: EventItem[] = [
@@ -143,8 +158,21 @@ export const INITIAL_EVENTS: EventItem[] = [
     hora_fim: '12:00',
     local: 'Mooca',
     observacoes: 'Gravação de 3 Reels: massas artesanais, roda de queijo e apresentação com Giovana',
-    status: 'agendado',
-    assigned_employee_ids: ['emp-1', 'emp-5'], // Vitinho (Filmmaker) + Giovana (Criadora)
+    status: 'realizado',
+    assigned_employee_ids: ['usr-vitinho', 'usr-gi'], // Vitinho + Gi
+    relatorio_filmmaker: {
+      preenchido: true,
+      preenchido_por_id: 'usr-vitinho',
+      preenchido_por_nome: 'Victor Cordoba (Vitinho)',
+      preenchido_em: '2026-10-12T12:15:00',
+      pratos_gravados: 'Fettuccine no Grana Padano, Ravióli de Ossobuco e Tiramisù Tradicional',
+      takes_gravados_qtd: 34,
+      equipamento_usado: 'Sony FX3 + 24-70mm GM II + Gimbal RS3 + Luz Amaran 60x com difusor',
+      ocorrencias_cozinha: 'A roda de queijo estava perfeita e o chef Gianluca preparou a massa ao vivo sem atrasos.',
+      pasta_brutos_link: 'https://drive.google.com/drive/folders/BellaMassa_20261012_Brutos',
+      avaliacao_sessao: 'otima',
+      observacoes: 'Material rendeu 3 Reels e 1 Carrossel. Brutos sincronizados e subidos no Drive.',
+    },
   },
   {
     id: 'evt-2',
@@ -155,8 +183,21 @@ export const INITIAL_EVENTS: EventItem[] = [
     hora_fim: '17:00',
     local: 'Tatuapé',
     observacoes: 'Fotos do novo rodízio de primavera e gravação de Reels com Milena',
-    status: 'agendado',
-    assigned_employee_ids: ['emp-2', 'emp-6'], // Gimenez (Filmmaker) + Milena (Criadora)
+    status: 'realizado',
+    assigned_employee_ids: ['usr-gimenez', 'usr-mi'], // Gimenez + Mi
+    relatorio_filmmaker: {
+      preenchido: true,
+      preenchido_por_id: 'usr-gimenez',
+      preenchido_por_nome: 'Matheus Gimenez',
+      preenchido_em: '2026-10-12T17:25:00',
+      pratos_gravados: 'Combinado Omakase 40 peças, Niguiri Trufado e Uramaki Especial com Foie Gras',
+      takes_gravados_qtd: 28,
+      equipamento_usado: 'Sony A7S III + 50mm f/1.2 + 90mm Macro + Bastão LED Nanlite Pavotube',
+      ocorrencias_cozinha: 'Salmão fresco e iluminação dark aesthetic alinhada com o Kenji Sato.',
+      pasta_brutos_link: 'https://drive.google.com/drive/folders/SushiHoshi_20261012_Brutos',
+      avaliacao_sessao: 'otima',
+      observacoes: 'Fotos em alta resolução para o cardápio e 2 Reels gravados com a Milena.',
+    },
   },
 
   // Terça-feira (13/10)
@@ -169,8 +210,21 @@ export const INITIAL_EVENTS: EventItem[] = [
     hora_fim: '13:00',
     local: 'Ipiranga',
     observacoes: 'Gravação de cortes nobres na parrilla e degustação conduzida por Julia',
-    status: 'agendado',
-    assigned_employee_ids: ['emp-3', 'emp-7'], // Henri (Filmmaker) + Julia (Criadora)
+    status: 'realizado',
+    assigned_employee_ids: ['usr-henry', 'usr-ju'], // Henry + Ju
+    relatorio_filmmaker: {
+      preenchido: true,
+      preenchido_por_id: 'usr-henry',
+      preenchido_por_nome: 'Henry',
+      preenchido_em: '2026-10-13T13:30:00',
+      pratos_gravados: 'Tomahawk Premium 900g na brasa, Bife de Ancho e Provoleta Grelhada',
+      takes_gravados_qtd: 41,
+      equipamento_usado: 'Blackmagic Pocket 6K Pro + Sigma 18-35mm + Filtro Polarizador + Lapela Hollyland Lark M2',
+      ocorrencias_cozinha: 'A grelha estava muito quente no início, esperamos 10 min para fumaça assentar. Áudio impecável.',
+      pasta_brutos_link: 'https://drive.google.com/drive/folders/FogoNobre_20261013_Brutos',
+      avaliacao_sessao: 'boa',
+      observacoes: 'Takes em 120fps de corte da carne com muita suculência e ASMR de brasa.',
+    },
   },
   {
     id: 'evt-4',
@@ -181,8 +235,21 @@ export const INITIAL_EVENTS: EventItem[] = [
     hora_fim: '17:30',
     local: 'Pinheiros',
     observacoes: 'Tour guiado por Isabela nos métodos filtrados e cafés especiais da casa',
-    status: 'agendado',
-    assigned_employee_ids: ['emp-4', 'emp-8'], // Victor (Filmmaker) + Isabela (Criadora)
+    status: 'realizado',
+    assigned_employee_ids: ['usr-victor', 'usr-isa'], // Victor + Isa
+    relatorio_filmmaker: {
+      preenchido: true,
+      preenchido_por_id: 'usr-victor',
+      preenchido_por_nome: 'Victor',
+      preenchido_em: '2026-10-13T17:45:00',
+      pratos_gravados: 'V60 Gueisha Etiópia, Toast de Abacate com Ovo Poche e Bolo de Cenoura com Ganache',
+      takes_gravados_qtd: 30,
+      equipamento_usado: 'Sony A7 IV + 35mm f/1.4 GM + Luz Natural + Refletor 5 em 1',
+      ocorrencias_cozinha: 'Nenhuma ocorrência. A barista Camila preparou 3 xícaras perfeitas de latte art.',
+      pasta_brutos_link: 'https://drive.google.com/drive/folders/GraoReal_20261013_Brutos',
+      avaliacao_sessao: 'otima',
+      observacoes: 'Visual clean e estético. Apresentação da Isa ficou super natural.',
+    },
   },
 
   // Quarta-feira (14/10 - Hoje)
@@ -195,8 +262,21 @@ export const INITIAL_EVENTS: EventItem[] = [
     hora_fim: '13:00',
     local: 'Vila Madalena',
     observacoes: 'Lançamento do Smash do mês com Milena: gravação de mordida em slow motion e queijo derretido',
-    status: 'agendado',
-    assigned_employee_ids: ['emp-1', 'emp-6'], // Vitinho (Filmmaker) + Milena (Criadora)
+    status: 'realizado',
+    assigned_employee_ids: ['usr-vitinho', 'usr-mi'], // Vitinho + Mi
+    relatorio_filmmaker: {
+      preenchido: true,
+      preenchido_por_id: 'usr-vitinho',
+      preenchido_por_nome: 'Victor Cordoba (Vitinho)',
+      preenchido_em: '2026-10-14T13:10:00',
+      pratos_gravados: 'Triplo Smash Trufado com Queijo Brie Empanado e Batata Rustica com Páprica',
+      takes_gravados_qtd: 45,
+      equipamento_usado: 'Sony FX3 + 24-70mm GM II + Rig de Mão + Microfone Sennheiser MKE 600',
+      ocorrencias_cozinha: 'Tudo pronto no horário. O queijo brie puxou perfeitamente no take 3.',
+      pasta_brutos_link: 'https://drive.google.com/drive/folders/SmashBurger_20261014_Brutos',
+      avaliacao_sessao: 'otima',
+      observacoes: 'Take da primeira mordida da Milena ficou sensacional para viralizar no Reels.',
+    },
   },
   {
     id: 'evt-6',
@@ -208,7 +288,17 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Mooca',
     observacoes: 'Gravação da linha de sobremesas italianas (Tiramisù artesanal e Cannoli) com Giovana',
     status: 'agendado',
-    assigned_employee_ids: ['emp-4', 'emp-5'], // Victor (Filmmaker) + Giovana (Criadora)
+    assigned_employee_ids: ['usr-victor', 'usr-gi'], // Victor + Gi
+    relatorio_filmmaker: {
+      preenchido: false,
+      pratos_gravados: '',
+      takes_gravados_qtd: 0,
+      equipamento_usado: 'Sony A7 IV + Lente Macro 90mm + Luz Amaran 60x',
+      ocorrencias_cozinha: '',
+      pasta_brutos_link: '',
+      avaliacao_sessao: 'otima',
+      observacoes: '',
+    },
   },
 
   // Quinta-feira (15/10)
@@ -222,7 +312,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Bela Vista',
     observacoes: 'Almoço executivo e petiscos de boteco gastronômico apresentado por Isabela',
     status: 'agendado',
-    assigned_employee_ids: ['emp-2', 'emp-8'], // Gimenez (Filmmaker) + Isabela (Criadora)
+    assigned_employee_ids: ['usr-gimenez', 'usr-isa'], // Gimenez + Isa
   },
   {
     id: 'evt-8',
@@ -234,7 +324,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Tatuapé',
     observacoes: 'Bastidores do Omakase e sequência de niguiris maçaricados com Julia',
     status: 'agendado',
-    assigned_employee_ids: ['emp-3', 'emp-7'], // Henri (Filmmaker) + Julia (Criadora)
+    assigned_employee_ids: ['usr-henry', 'usr-ju'], // Henry + Ju
   },
 
   // Sexta-feira (16/10)
@@ -248,7 +338,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Vila Madalena',
     observacoes: 'Vídeo dinâmico de sexta: desafio do burger gigante com Julia na apresentação',
     status: 'agendado',
-    assigned_employee_ids: ['emp-1', 'emp-7'], // Vitinho (Filmmaker) + Julia (Criadora)
+    assigned_employee_ids: ['usr-vitinho', 'usr-ju'], // Vitinho + Ju
   },
   {
     id: 'evt-10',
@@ -260,7 +350,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Bela Vista',
     observacoes: 'Gravação noturna de coquetelaria autoral com Giovana: defumação com alecrim e clima da noite',
     status: 'agendado',
-    assigned_employee_ids: ['emp-3', 'emp-5'], // Henri (Filmmaker) + Giovana (Criadora)
+    assigned_employee_ids: ['usr-henry', 'usr-gi'], // Henry + Gi
   },
 
   // Sábado (17/10)
@@ -274,6 +364,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     local: 'Ipiranga',
     observacoes: 'Almoço de sábado: picanha nobre na tábua e buffet completo com Milena',
     status: 'agendado',
-    assigned_employee_ids: ['emp-4', 'emp-6'], // Victor (Filmmaker) + Milena (Criadora)
+    assigned_employee_ids: ['usr-victor', 'usr-mi'], // Victor + Mi
   },
 ];
+

@@ -1,13 +1,17 @@
 export type EventTipo = 'gravacao' | 'foto' | 'edicao' | 'reuniao';
 export type EventStatus = 'agendado' | 'realizado' | 'cancelado';
 export type UserRole = 'admin' | 'funcionario';
-export type TeamRole = 'filmmaker' | 'criadora';
+export type TeamRole = 'dono' | 'gerente' | 'filmmaker' | 'modelo' | 'criadora' | 'interno';
+export type WorkRegime = 'interno' | 'externo';
 
 export interface Employee {
   id: string;
   nome: string;
   cor: number; // HSL Hue
-  funcao?: TeamRole; // 'filmmaker' (Filmmaker / Câmera) ou 'criadora' (Meninas que gravam / Apresentação)
+  funcao?: TeamRole; // 'dono' | 'gerente' | 'filmmaker' | 'modelo' | 'interno'
+  regime?: WorkRegime; // 'interno' (segunda a sexta, 3 batidas CLT) ou 'externo' (campo nos restaurantes)
+  cargo_detalhado?: string;
+  username?: string;
   ativo: boolean;
   created_at?: string;
 }
@@ -37,7 +41,7 @@ export interface Client {
 // TIPOS: PONTO ELETRÔNICO & GEOLOCALIZAÇÃO
 // ==========================================
 
-export type PontoTipo = 'entrada' | 'saida';
+export type PontoTipo = 'entrada' | 'almoco' | 'saida';
 export type PontoStatus = 'no_local' | 'fora_do_raio' | 'manual';
 
 export interface PontoRegistro {
@@ -45,7 +49,7 @@ export interface PontoRegistro {
   employee_id: string;
   event_id?: string | null;
   client_id?: string | null;
-  tipo: PontoTipo; // 'entrada' ou 'saida'
+  tipo: PontoTipo; // 'entrada' | 'almoco' | 'saida'
   data_hora: string; // ISO 8601 string com data e hora exatas
   foto_url: string; // Data URL Base64 ou URL da foto capturada
   latitude: number;
@@ -62,6 +66,20 @@ export interface PontoRegistro {
   event?: EventItem;
 }
 
+export interface RelatorioFilmmaker {
+  preenchido: boolean;
+  preenchido_por_id?: string;
+  preenchido_por_nome?: string;
+  preenchido_em?: string;
+  pratos_gravados?: string;
+  takes_gravados_qtd?: number;
+  equipamento_usado?: string;
+  ocorrencias_cozinha?: string;
+  pasta_brutos_link?: string;
+  avaliacao_sessao?: 'otima' | 'boa' | 'regular' | 'com_imprevistos';
+  observacoes?: string;
+}
+
 export interface EventItem {
   id: string;
   client_id: string;
@@ -72,6 +90,7 @@ export interface EventItem {
   local?: string | null;
   observacoes?: string | null;
   status: EventStatus;
+  relatorio_filmmaker?: RelatorioFilmmaker;
   created_at?: string;
   // Relacionamentos carregados
   client?: Client;

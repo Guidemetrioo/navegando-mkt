@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { PontoTipo, PontoStatus, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
+import { USERS_DATABASE } from '@/lib/auth-users';
 import {
   calculateDistanceMeters,
   formatDistance,
@@ -363,10 +364,10 @@ export function PontoModal() {
 
             <div>
               <h4 className="text-xl font-bold text-white dark:text-white text-zinc-900 font-heading">
-                Ponto de {submittedPonto.tipo === 'entrada' ? 'Entrada' : 'Saída'} Confirmado!
+                Ponto de {submittedPonto.tipo === 'entrada' ? 'Entrada' : submittedPonto.tipo === 'almoco' ? 'Almoço (Intervalo)' : 'Saída'} Confirmado!
               </h4>
               <p className="text-xs text-zinc-400 mt-1">
-                Comprovante digital registrado com sucesso nos servidores Navegando MKT.
+                Comprovante digital registrado com sucesso nos servidores Navegando MKT (Conforme Portaria MTP/CLT 2026).
               </p>
             </div>
 
@@ -443,16 +444,16 @@ export function PontoModal() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* 1. Seleção de Tipo e Membro */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Tipo: Entrada ou Saída */}
+              {/* Tipo: Entrada, Almoço ou Saída */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                  Tipo de Registro
+                  Tipo de Registro {currentMember?.regime === 'interno' ? '(CLT 3 Batidas)' : '(Campo)'}
                 </label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-100 rounded-xl border border-[#2b2d35]">
+                <div className="grid grid-cols-3 gap-1 p-1 bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-100 rounded-xl border border-[#2b2d35]">
                   <button
                     type="button"
                     onClick={() => setTipo('entrada')}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`py-1.5 px-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center ${
                       tipo === 'entrada'
                         ? 'bg-emerald-500 text-white shadow-sm'
                         : 'text-zinc-400 hover:text-white'
@@ -462,8 +463,19 @@ export function PontoModal() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setTipo('almoco')}
+                    className={`py-1.5 px-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center ${
+                      tipo === 'almoco'
+                        ? 'bg-amber-500 text-white shadow-sm'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    🟡 Almoço
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setTipo('saida')}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`py-1.5 px-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center ${
                       tipo === 'saida'
                         ? 'bg-[#FF5A3C] text-white shadow-sm'
                         : 'text-zinc-400 hover:text-white'
@@ -477,7 +489,7 @@ export function PontoModal() {
               {/* Membro da Equipe */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                  Membro Escalado
+                  Colaborador
                 </label>
                 <select
                   value={employeeId}
@@ -487,7 +499,19 @@ export function PontoModal() {
                   }}
                   className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-100 text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
                 >
-                  <optgroup label="🎥 Filmmakers" className="bg-[#1b1d22] text-[#38bdf8] font-bold">
+                  <optgroup label="🏢 Equipe Interna (CLT 3 Batidas)" className="bg-[#1b1d22] text-[#10b981] font-bold">
+                    {employees
+                      .filter((e) => e.regime === 'interno' || e.funcao === 'interno')
+                      .map((emp) => {
+                        const acc = USERS_DATABASE.find((u) => u.employeeId === emp.id);
+                        return (
+                          <option key={emp.id} value={emp.id} className="bg-[#1b1d22] text-white font-normal">
+                            {emp.nome} ({acc?.cargo || 'Interno CLT'})
+                          </option>
+                        );
+                      })}
+                  </optgroup>
+                  <optgroup label="🎥 Filmmakers (Externo - Restaurante)" className="bg-[#1b1d22] text-[#38bdf8] font-bold">
                     {employees
                       .filter((e) => e.funcao === 'filmmaker')
                       .map((emp) => (
@@ -496,17 +520,43 @@ export function PontoModal() {
                         </option>
                       ))}
                   </optgroup>
-                  <optgroup label="✨ Meninas dos Vídeos" className="bg-[#1b1d22] text-[#f472b6] font-bold">
+                  <optgroup label="✨ Modelos Gastronômicas (Externo)" className="bg-[#1b1d22] text-[#f472b6] font-bold">
                     {employees
-                      .filter((e) => e.funcao === 'criadora')
+                      .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
                       .map((emp) => (
                         <option key={emp.id} value={emp.id} className="bg-[#1b1d22] text-white font-normal">
-                          {emp.nome} (Criadora)
+                          {emp.nome} (Modelo)
                         </option>
                       ))}
                   </optgroup>
+                  <optgroup label="👑 Gestão & Donos (Acesso Total)" className="bg-[#1b1d22] text-[#fbbf24] font-bold">
+                    {employees
+                      .filter((e) => e.funcao === 'dono' || e.funcao === 'gerente')
+                      .map((emp) => {
+                        const acc = USERS_DATABASE.find((u) => u.employeeId === emp.id);
+                        return (
+                          <option key={emp.id} value={emp.id} className="bg-[#1b1d22] text-white font-normal">
+                            {emp.nome} ({acc?.cargo || (emp.funcao === 'dono' ? 'Dono' : 'Gerente')})
+                          </option>
+                        );
+                      })}
+                  </optgroup>
                 </select>
               </div>
+            </div>
+
+            {/* Aviso de Norma CLT / Regime */}
+            <div className={`p-2.5 rounded-xl border text-[11px] flex items-center gap-2 ${
+              currentMember?.regime === 'interno'
+                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
+                : 'bg-sky-500/10 border-sky-500/25 text-sky-300'
+            }`}>
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span>
+                {currentMember?.regime === 'interno'
+                  ? 'Norma CLT 2026/2027: Jornada interna de seg. a sex. (máx 8h48/dia para 44h sem sábados). 3 batidas diárias: Entrada, Almoço e Saída.'
+                  : 'Regime Externo (Restaurante): Ponto de Entrada e Saída no local com selfie e geolocalização por satélite (raio máx. 300m). Totalização semanal.'}
+              </span>
             </div>
 
             {/* 2. Restaurante Cliente */}
@@ -814,7 +864,7 @@ export function PontoModal() {
                 className="flex-[2] py-3 px-4 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white text-xs font-bold shadow-lg shadow-[#FF5A3C]/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Confirmar Ponto de {tipo === 'entrada' ? 'Entrada' : 'Saída'}</span>
+                <span>Confirmar Ponto de {tipo === 'entrada' ? 'Entrada' : tipo === 'almoco' ? 'Almoço (Intervalo)' : 'Saída'}</span>
               </button>
             </div>
           </form>
