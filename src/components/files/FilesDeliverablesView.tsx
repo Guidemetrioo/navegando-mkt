@@ -27,7 +27,9 @@ import {
   ShieldAlert,
   ArrowRight,
   MessageSquare,
+  Smartphone,
 } from 'lucide-react';
+import { ClientApprovalModal } from '../modals/ClientApprovalModal';
 
 const KANBAN_COLUMNS: { id: DeliverableStatus; title: string; color: string; border: string; bg: string }[] = [
   { id: 'captado_raw', title: 'Bruto RAW', color: 'text-zinc-300', border: 'border-zinc-700', bg: 'bg-zinc-800/40' },
@@ -56,6 +58,7 @@ export function FilesDeliverablesView() {
   const [selectedFormat, setSelectedFormat] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [onlyMissingDrive, setOnlyMissingDrive] = useState(false);
+  const [approvalDeliverable, setApprovalDeliverable] = useState<MediaDeliverable | null>(null);
 
   const filteredDeliverables = deliverables.filter((d) => {
     if (onlyMissingDrive && d.drive_url && d.pasta_drive_url) return false;
@@ -370,6 +373,14 @@ export function FilesDeliverablesView() {
                               <div className="flex items-center gap-1">
                                 <button
                                   type="button"
+                                  onClick={() => setApprovalDeliverable(item)}
+                                  className="p-1 rounded-lg text-purple-400 hover:text-white hover:bg-purple-500/20 transition-colors cursor-pointer"
+                                  title="Visualizar Prévia do Cliente / Aprovação"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => openEditDeliverableModal(item)}
                                   className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#26282f] transition-colors cursor-pointer"
                                   title="Editar Arquivo / Versão"
@@ -579,22 +590,17 @@ export function FilesDeliverablesView() {
                       </div>
 
                       {/* Ações de Status e Exclusão */}
-                      <div className="pt-2 border-t border-[#26282f] flex items-center justify-between gap-2">
-                        {/* Botão de Solicitar Ajuste rápido */}
-                        {deliv.status === 'aguardando_aprovacao' && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const note = prompt('Informe a nota de ajuste solicitada pelo cliente:');
-                              if (note !== null) {
-                                updateDeliverableStatus(deliv.id, 'ajustes_solicitados', note);
-                              }
-                            }}
-                            className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-bold transition-all border border-rose-500/30 cursor-pointer"
-                          >
-                            Pedir Ajuste
-                          </button>
-                        )}
+                      <div className="pt-2 border-t border-[#26282f] flex flex-wrap items-center justify-between gap-2">
+                        {/* Botão de Prévia do Cliente */}
+                        <button
+                          type="button"
+                          onClick={() => setApprovalDeliverable(deliv)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 text-xs font-bold transition-all border border-purple-500/30 cursor-pointer"
+                          title="Ver Prévia 9:16 e Aprovação do Cliente"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Prévia & Aprovar</span>
+                        </button>
 
                         <div className="flex items-center gap-1.5 ml-auto">
                           {deliv.status === 'aguardando_aprovacao' && (
@@ -639,6 +645,13 @@ export function FilesDeliverablesView() {
           )}
         </>
       )}
+
+      {/* Modal de Prévia e Aprovação do Cliente */}
+      <ClientApprovalModal
+        deliverable={approvalDeliverable}
+        isOpen={Boolean(approvalDeliverable)}
+        onClose={() => setApprovalDeliverable(null)}
+      />
     </div>
   );
 }

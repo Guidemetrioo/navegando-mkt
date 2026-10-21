@@ -24,6 +24,7 @@ import { EventModal } from '@/components/modals/EventModal';
 import { PontoModal } from '@/components/modals/PontoModal';
 import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
+import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
 import {
   CheckCircle2,
   Calendar,
@@ -33,6 +34,10 @@ import {
   Menu,
   Camera,
   Plus,
+  Search,
+  Building,
+  FolderOpen,
+  ChevronDown,
 } from 'lucide-react';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
@@ -46,8 +51,24 @@ function AgendaMainContent() {
     loggedEmployeeId,
     openPontoModal,
     openNewEventModal,
+    openDeliverableModal,
+    openClientModal,
   } = useAgenda();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
+
+  // Atalho global Ctrl+K / Cmd+K
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const currentMember = employees.find((e) => e.id === loggedEmployeeId) || employees[0];
 
@@ -102,16 +123,102 @@ function AgendaMainContent() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Botão de Bater Ponto Rápido no Mobile */}
+            {/* Botão de Busca Global (Ctrl+K) */}
             <button
               type="button"
-              onClick={() => openPontoModal(undefined, undefined, 'entrada')}
-              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FF5A3C]/15 border border-[#FF5A3C]/30 text-[#FF5A3C] text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
-              title="Bater Ponto Agora"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#17181d] hover:bg-[#1f2026] border border-[#2b2d35] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer"
+              title="Buscar clientes, vídeos, equipe (Ctrl+K)"
             >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Ponto</span>
+              <Search className="w-3.5 h-3.5 text-[#FF5A3C]" />
+              <span className="hidden lg:inline text-zinc-400">Buscar no CRM...</span>
+              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[#111215] text-zinc-400 rounded border border-[#26282f]">
+                Ctrl K
+              </kbd>
             </button>
+
+            {/* Menu de Ação Rápida: + Criar */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsQuickActionOpen(!isQuickActionOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span className="hidden sm:inline">Criar</span>
+                <ChevronDown className="w-3 h-3 text-white/80" />
+              </button>
+
+              {isQuickActionOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={() => setIsQuickActionOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#16171b] border border-[#2b2d35] p-1.5 shadow-2xl z-40 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsQuickActionOpen(false);
+                        openNewEventModal();
+                      }}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                    >
+                      <Calendar className="w-4 h-4 text-[#FF5A3C]" />
+                      <div>
+                        <span className="font-bold block">Nova Gravação</span>
+                        <span className="text-[10px] text-zinc-400">Escalar dupla e horário</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsQuickActionOpen(false);
+                        openDeliverableModal();
+                      }}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                    >
+                      <FolderOpen className="w-4 h-4 text-[#38bdf8]" />
+                      <div>
+                        <span className="font-bold block">Novo Entregável / Reel</span>
+                        <span className="text-[10px] text-zinc-400">Link do Drive ou vídeo</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsQuickActionOpen(false);
+                        openClientModal();
+                      }}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                    >
+                      <Building className="w-4 h-4 text-amber-400" />
+                      <div>
+                        <span className="font-bold block">Novo Restaurante</span>
+                        <span className="text-[10px] text-zinc-400">Cadastrar no CRM</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsQuickActionOpen(false);
+                        openPontoModal();
+                      }}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left border-t border-[#26282f] pt-1.5"
+                    >
+                      <Camera className="w-4 h-4 text-emerald-400" />
+                      <div>
+                        <span className="font-bold block">Bater Ponto & GPS</span>
+                        <span className="text-[10px] text-zinc-400">Registro presencial</span>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Avatar do Usuário */}
             {currentMember && (
@@ -224,6 +331,10 @@ function AgendaMainContent() {
       <PontoModal />
       <DeliverableModal />
       <ClientModal />
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
     </div>
   );
 }

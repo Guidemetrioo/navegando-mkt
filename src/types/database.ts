@@ -24,6 +24,12 @@ export interface Client {
   drive_folder_url?: string; // Pasta do Google Drive com brutos e editados
   responsavel?: string; // Nome do gerente / contato no restaurante
   telefone?: string; // Telefone / WhatsApp do restaurante
+  status?: 'ativo' | 'onboarding' | 'pausado';
+  plano?: string; // Ex: 'Gastro Pro (8 Reels + 4 Carrosséis)'
+  meta_reels_mensal?: number; // Meta de reels por mês contratada
+  valor_mensalidade?: number; // Valor mensal do contrato
+  cardapio_link?: string; // Link direto do cardápio digital
+  briefing?: string; // Diretrizes estéticas, cores, estilo dos vídeos
   created_at?: string;
 }
 

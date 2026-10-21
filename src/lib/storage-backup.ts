@@ -47,7 +47,7 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 }
 
 /**
- * Salva no LocalStorage com tratamento de cota
+ * Salva no LocalStorage com tratamento resiliente de cota
  */
 export function saveToStorage<T>(key: string, value: T): boolean {
   if (typeof window === 'undefined') return false;
@@ -55,7 +55,33 @@ export function saveToStorage<T>(key: string, value: T): boolean {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (err) {
-    console.error(`[Storage] Erro ao salvar ${key}:`, err);
+    console.warn(`[Storage] Cota de armazenamento atingida ao salvar ${key}. Aplicando compressão segura...`);
+    try {
+      // Se for array de pontos ou dados com fotos pesadas em Base64, limpa fotos antigas
+      if (Array.isArray(value)) {
+        const sanitized = value.slice(0, 30).map((item) => {
+          if (item && typeof item === 'object' && 'foto_url' in item) {
+            const foto = (item as any).foto_url;
+            return {
+              ...item,
+              foto_url: typeof foto === 'string' && foto.length > 500 ? foto.slice(0, 100) + '...' : foto,
+            };
+          }
+          return item;
+        });
+        localStorage.setItem(key, JSON.stringify(sanitized));
+        return true;
+      } else if (value && typeof value === 'object' && 'lastPonto' in value) {
+        const copy: any = { ...value };
+        if (copy.lastPonto && copy.lastPonto.foto_url) {
+          copy.lastPonto = { ...copy.lastPonto, foto_url: '' };
+        }
+        localStorage.setItem(key, JSON.stringify(copy));
+        return true;
+      }
+    } catch (innerErr) {
+      console.warn(`[Storage] Não foi possível persistir ${key} localmente:`, innerErr);
+    }
     return false;
   }
 }

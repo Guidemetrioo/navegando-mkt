@@ -29,6 +29,12 @@ export function ClientModal() {
   const [telefone, setTelefone] = useState('');
   const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [status, setStatus] = useState<'ativo' | 'onboarding' | 'pausado'>('ativo');
+  const [plano, setPlano] = useState('Gastro Pro (8 Reels + 4 Carrosséis)');
+  const [metaReelsMensal, setMetaReelsMensal] = useState<number>(8);
+  const [valorMensalidade, setValorMensalidade] = useState<number>(3800);
+  const [cardapioLink, setCardapioLink] = useState('');
+  const [briefing, setBriefing] = useState('');
   const [latitude, setLatitude] = useState<number | null>(-23.5505);
   const [longitude, setLongitude] = useState<number | null>(-46.6333);
 
@@ -42,6 +48,12 @@ export function ClientModal() {
         setTelefone(editingClient.telefone || editingClient.contato || '');
         setDriveFolderUrl(editingClient.drive_folder_url || '');
         setObservacoes(editingClient.observacoes || '');
+        setStatus(editingClient.status || 'ativo');
+        setPlano(editingClient.plano || 'Gastro Pro (8 Reels + 4 Carrosséis)');
+        setMetaReelsMensal(editingClient.meta_reels_mensal ?? 8);
+        setValorMensalidade(editingClient.valor_mensalidade ?? 3800);
+        setCardapioLink(editingClient.cardapio_link || '');
+        setBriefing(editingClient.briefing || '');
         setLatitude(editingClient.latitude || -23.5505);
         setLongitude(editingClient.longitude || -46.6333);
       } else {
@@ -52,6 +64,12 @@ export function ClientModal() {
         setTelefone('');
         setDriveFolderUrl('');
         setObservacoes('');
+        setStatus('ativo');
+        setPlano('Gastro Pro (8 Reels + 4 Carrosséis)');
+        setMetaReelsMensal(8);
+        setValorMensalidade(3800);
+        setCardapioLink('');
+        setBriefing('');
         setLatitude(-23.5505);
         setLongitude(-46.6333);
       }
@@ -76,6 +94,12 @@ export function ClientModal() {
       contato: telefone.trim() || undefined,
       drive_folder_url: driveFolderUrl.trim() || undefined,
       observacoes: observacoes.trim() || undefined,
+      status,
+      plano: plano.trim() || undefined,
+      meta_reels_mensal: metaReelsMensal || 8,
+      valor_mensalidade: valorMensalidade || 0,
+      cardapio_link: cardapioLink.trim() || undefined,
+      briefing: briefing.trim() || undefined,
       latitude,
       longitude,
     };
@@ -201,6 +225,105 @@ export function ClientModal() {
             </div>
           </div>
 
+          {/* Dados do Contrato & CRM de Marketing */}
+          <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-white flex items-center gap-1.5 text-xs">
+                <span>📋 Contrato & Plano de Marketing</span>
+              </span>
+              <div className="flex items-center gap-1 bg-[#141519] p-0.5 rounded-lg border border-[#2b2d35]">
+                {(['ativo', 'onboarding', 'pausado'] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setStatus(st)}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold capitalize transition-all cursor-pointer ${
+                      status === st
+                        ? st === 'ativo'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          : st === 'onboarding'
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Nome do Pacote / Plano
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Gastro Pro (8 Reels + 4 Carrosséis)"
+                  value={plano}
+                  onChange={(e) => setPlano(e.target.value)}
+                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Meta Reels/Mês
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={metaReelsMensal}
+                  onChange={(e) => setMetaReelsMensal(Number(e.target.value))}
+                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Mensalidade (R$)
+                </label>
+                <input
+                  type="number"
+                  placeholder="3800"
+                  value={valorMensalidade}
+                  onChange={(e) => setValorMensalidade(Number(e.target.value))}
+                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Link do Cardápio Digital
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://restaurante.cardapio.digital"
+                  value={cardapioLink}
+                  onChange={(e) => setCardapioLink(e.target.value)}
+                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                Briefing & Identidade Gastronômica da Marca
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Ex: Tons quentes, corte em slow motion, ASMR de crocância. Não usar trilhas lentas."
+                value={briefing}
+                onChange={(e) => setBriefing(e.target.value)}
+                className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] resize-none"
+              />
+            </div>
+          </div>
+
           {/* Pasta do Google Drive (Anti-Perda) */}
           <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-2">
             <span className="font-bold text-white flex items-center gap-1.5 text-xs">
@@ -222,7 +345,7 @@ export function ClientModal() {
           {/* Observações / Preferências Gastronômicas */}
           <div>
             <label className="block font-semibold text-zinc-300 mb-1">
-              Observações e Roteiro de Gravação
+              Observações Gerais e Preferências
             </label>
             <textarea
               rows={2}

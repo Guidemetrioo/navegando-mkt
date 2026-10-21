@@ -35,12 +35,26 @@ import {
 export function LoginCheckInView() {
   const { employees, clients, loginWithCheckIn, loginDirect } = useAgenda();
 
+  // Modos de Acesso: Direto (Gestão/Agência) vs Campo (Foto + GPS)
+  const [loginMode, setLoginMode] = useState<'direto' | 'campo'>('direto');
+
   // Estados de Usuário e Senha
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('emp-1');
-  const [password, setPassword] = useState<string>('123456');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('admin');
+  const [password, setPassword] = useState<string>('admin123');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleDirectLogin = (empId: string, pass?: string) => {
+    setIsSubmitting(true);
+    setLoginError(null);
+    const targetPass = pass || (empId === 'admin' ? 'admin123' : '123456');
+    const res = loginDirect(empId, targetPass);
+    if (!res.success) {
+      setLoginError(res.error || 'Erro ao realizar login.');
+    }
+    setIsSubmitting(false);
+  };
 
   // Estados de Câmera / Foto Real
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
@@ -327,25 +341,32 @@ export function LoginCheckInView() {
       {/* 2. CARD CENTRAL DE LOGIN COM PONTO ELETRÔNICO */}
       <main className="max-w-4xl w-full mx-auto my-auto py-6">
         <div className="bg-[#141519] border border-[#2b2d35] rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col gap-6">
-          {/* Alerta de Diretriz */}
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#1c1d22] border border-[#26282f]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-white block">
-                  Check-in Diário Obrigatório
-                </span>
-                <span className="text-[11px] text-zinc-400">
-                  Para acessar o painel de tarefas e gravações, registre sua foto e localização GPS.
-                </span>
-              </div>
-            </div>
-
-            <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 hidden md:inline">
-              GPS ATIVO
-            </span>
+          {/* Seletor de Modo: Direto vs Campo */}
+          <div className="flex p-1 bg-[#1c1d22] rounded-2xl border border-[#2b2d35] gap-1">
+            <button
+              type="button"
+              onClick={() => setLoginMode('direto')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                loginMode === 'direto'
+                  ? 'bg-[#FF5A3C] text-white shadow-md shadow-[#FF5A3C]/25'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Acesso Agência & Gestão (1 Clique)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMode('campo')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                loginMode === 'campo'
+                  ? 'bg-[#FF5A3C] text-white shadow-md shadow-[#FF5A3C]/25'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Check-in de Campo (Foto & GPS)</span>
+            </button>
           </div>
 
           {loginError && (
@@ -355,7 +376,141 @@ export function LoginCheckInView() {
             </div>
           )}
 
-          <form onSubmit={handleLoginSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* MODO 1: ACESSO DIRETO (GESTÃO, CRM & DEMO) */}
+          {loginMode === 'direto' && (
+            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+              {/* Perfis Rápidos com 1 Clique */}
+              <div className="flex flex-col gap-2.5">
+                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                  <span>Escolha seu Perfil para Acesso Rápido:</span>
+                </span>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                  {/* Diretoria */}
+                  <div
+                    onClick={() => {
+                      setSelectedEmployeeId('admin');
+                      setPassword('admin123');
+                    }}
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${
+                      selectedEmployeeId === 'admin'
+                        ? 'bg-[#FF5A3C]/15 border-[#FF5A3C] text-white shadow-lg shadow-[#FF5A3C]/20'
+                        : 'bg-[#1a1b21] border-[#26282f] text-zinc-400 hover:border-zinc-500 hover:text-white'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF5A3C] to-[#b32b15] text-white font-black text-sm flex items-center justify-center shadow-md">
+                      DIR
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold block text-white">Diretoria</span>
+                      <span className="text-[10px] text-zinc-400">Gestão Geral</span>
+                    </div>
+                  </div>
+
+                  {/* Membros Principais */}
+                  {employees.filter(e => e.id !== 'admin').slice(0, 4).map((emp) => {
+                    const isSel = selectedEmployeeId === emp.id;
+                    return (
+                      <div
+                        key={emp.id}
+                        onClick={() => {
+                          setSelectedEmployeeId(emp.id);
+                          setPassword('123456');
+                        }}
+                        className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${
+                          isSel
+                            ? 'bg-[#FF5A3C]/15 border-[#FF5A3C] text-white shadow-lg shadow-[#FF5A3C]/20'
+                            : 'bg-[#1a1b21] border-[#26282f] text-zinc-400 hover:border-zinc-500 hover:text-white'
+                        }`}
+                      >
+                        <EmployeeBadge employee={emp} size="md" showName={false} />
+                        <div>
+                          <span className="text-xs font-bold block text-white">{emp.nome}</span>
+                          <span className="text-[10px] text-zinc-400">
+                            {emp.funcao === 'filmmaker' ? 'Filmmaker' : 'Criadora'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Formulário de Credencial */}
+              <div className="p-4 rounded-2xl bg-[#1a1b21] border border-[#26282f] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-3">
+                  <div className="w-full sm:w-1/2">
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                      Usuário Selecionado:
+                    </label>
+                    <select
+                      value={selectedEmployeeId}
+                      onChange={(e) => {
+                        setSelectedEmployeeId(e.target.value);
+                        setPassword(e.target.value === 'admin' ? 'admin123' : '123456');
+                      }}
+                      className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] cursor-pointer"
+                    >
+                      <option value="admin">👑 Diretoria / Gestão Geral</option>
+                      {employees.filter(e => e.id !== 'admin').map((e) => (
+                        <option key={e.id} value={e.id}>
+                          {e.funcao === 'filmmaker' ? '🎬' : '🎤'} {e.nome} ({e.funcao || 'Equipe'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="w-full sm:w-1/2">
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                      Senha de Acesso:
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleDirectLogin(selectedEmployeeId, password)}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-xl shadow-[#FF5A3C]/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-stretch sm:self-end"
+                >
+                  <span>{isSubmitting ? 'Entrando...' : 'Entrar no Sistema'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODO 2: CHECK-IN DE CAMPO (FOTO & GPS OBRIGATÓRIOS) */}
+          {loginMode === 'campo' && (
+            <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-[#1c1d22] border border-[#26282f]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      Check-in de Campo Obrigatório
+                    </span>
+                    <span className="text-[11px] text-zinc-400">
+                      Tire uma selfie frontal e autorize o satélite GPS para comprovar presença no restaurante.
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 hidden sm:inline">
+                  GPS ATIVO
+                </span>
+              </div>
+
+              <form onSubmit={handleLoginSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* COLUNA ESQUERDA (6 cols): Câmera & Foto do Rosto */}
             <div className="md:col-span-6 flex flex-col gap-3">
               <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
@@ -681,7 +836,9 @@ export function LoginCheckInView() {
             </div>
           </form>
         </div>
-      </main>
+      )}
+    </div>
+  </main>
 
       {/* 3. RODAPÉ DE SEGURANÇA */}
       <footer className="max-w-4xl w-full mx-auto text-center py-3 border-t border-[#26282f]/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-zinc-400">

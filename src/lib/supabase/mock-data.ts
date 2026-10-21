@@ -1,6 +1,8 @@
 import { Employee, Client, EventItem } from '@/types/database';
 
 export const INITIAL_EMPLOYEES: Employee[] = [
+  // Diretoria & Gestão
+  { id: 'admin', nome: 'Diretoria / Gestão', funcao: 'filmmaker', cor: 12, ativo: true },
   // Filmmakers
   { id: 'emp-1', nome: 'Vitinho', funcao: 'filmmaker', cor: 205, ativo: true },
   { id: 'emp-2', nome: 'Gimenez', funcao: 'filmmaker', cor: 150, ativo: true },
@@ -25,7 +27,13 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/BellaMassa_AgenciaNavegando',
     latitude: -23.5605,
     longitude: -46.5985,
-    observacoes: 'Produção de 3 Reels de massas frescas e pratos executivos toda semana.',
+    status: 'ativo',
+    plano: 'Gastro Pro (8 Reels + 4 Carrosséis)',
+    meta_reels_mensal: 8,
+    valor_mensalidade: 3800,
+    cardapio_link: 'https://cantinabellamassa.cardapio.digital',
+    briefing: 'Estilo acolhedor italiano, foco no preparo artesanal de massas e queijo derretido fumegando. Trilha sonora italiana moderna.',
+    observacoes: 'Produção de 2 gravações mensais (4 Reels por visita). Gravar sempre às terças de manhã antes da abertura.',
   },
   {
     id: 'cli-2',
@@ -38,6 +46,12 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/SushiHoshi_AgenciaNavegando',
     latitude: -23.5412,
     longitude: -46.5701,
+    status: 'ativo',
+    plano: 'Gastro Prime (12 Reels + Cobertura)',
+    meta_reels_mensal: 12,
+    valor_mensalidade: 5200,
+    cardapio_link: 'https://sushihoshi.com.br/menu',
+    briefing: 'Iluminação escura elegante (dark sushi aesthetic), cortes em slow motion com lâmina afiada, ASMR de maçarico nos niguiris trufados.',
     observacoes: 'Fotografia de combinados de salmão, rodízio premium e ASMR de cortes.',
   },
   {
@@ -51,6 +65,12 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/FogoNobre_AgenciaNavegando',
     latitude: -23.5891,
     longitude: -46.6083,
+    status: 'ativo',
+    plano: 'Gastro Essencial (6 Reels + 2 Fotos)',
+    meta_reels_mensal: 6,
+    valor_mensalidade: 3200,
+    cardapio_link: 'https://fogonobre.com.br/cortes',
+    briefing: 'Brasas estalando, suculência dos cortes nobres (Tomahawk, Picanha e Ancho), clima rústico e corte preciso da carne.',
     observacoes: 'Vídeos institucionais, cortes especiais de parrilla e Tomahawk fumegando.',
   },
   {
@@ -64,6 +84,12 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/GraoReal_AgenciaNavegando',
     latitude: -23.5638,
     longitude: -46.6854,
+    status: 'onboarding',
+    plano: 'Gastro Starter (4 Reels + 4 Fotos)',
+    meta_reels_mensal: 4,
+    valor_mensalidade: 2500,
+    cardapio_link: 'https://graoreal.meumenu.io',
+    briefing: 'Luz natural suave da manhã, latte art em primeiro plano, atmosfera acolhedora e estética clean/minimalista.',
     observacoes: 'Gravação da cafeteria matinal, métodos filtrados e cardápio de brunch.',
   },
   {
@@ -77,6 +103,12 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/SmashBurger_AgenciaNavegando',
     latitude: -23.5592,
     longitude: -46.6912,
+    status: 'ativo',
+    plano: 'Gastro Pro (8 Reels + 4 Carrosséis)',
+    meta_reels_mensal: 8,
+    valor_mensalidade: 3800,
+    cardapio_link: 'https://smashburger.goomer.app',
+    briefing: 'Apresentação dinâmica, smash crocante na chapa fumegando, queijo puxando e milkshakes artesanais com calda descendo.',
     observacoes: 'Lançamento de smash burger duplo, queijo trufado puxando e milkshakes autorais.',
   },
   {
@@ -90,6 +122,12 @@ export const INITIAL_CLIENTS: Client[] = [
     drive_folder_url: 'https://drive.google.com/drive/folders/Paris6_AgenciaNavegando',
     latitude: -23.5574,
     longitude: -46.6478,
+    status: 'ativo',
+    plano: 'Gastro VIP (10 Reels + Cobertura Noturna)',
+    meta_reels_mensal: 10,
+    valor_mensalidade: 4800,
+    cardapio_link: 'https://paris6bistro.com/cardapio',
+    briefing: 'Ambiente romântico à luz de velas, coquetelaria sofisticada e sobremesas icônicas servidas com calda de chocolate quente.',
     observacoes: 'Cobertura de sobremesas grand gateau, jantares românticos e coquetelaria.',
   },
 ];

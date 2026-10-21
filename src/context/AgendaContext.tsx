@@ -380,7 +380,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       saveToStorage('navegando_mkt_auth_session', {
         isAuth: true,
         employeeId,
-        lastPonto: novoPonto,
+        lastPonto: novoPonto ? { ...novoPonto, foto_url: '' } : null,
       });
 
       const emp = employees.find((e) => e.id === employeeId);
