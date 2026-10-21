@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { USERS_DATABASE, CLT_NORMS_2026, canUserAccessView } from '@/lib/auth-users';
+import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import {
   Calendar,
   Clock,
@@ -195,12 +196,21 @@ export function EmployeeWelcomeDashboard() {
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">
       {/* 1. HERO DE BOAS-VINDAS PERSONALIZADO */}
-      <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#1b1d24] via-[#16171b] to-[#221614] border border-[#2b2d35] shadow-xl">
+      <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#13141c] via-[#0d0e14] to-[#160d08] border border-white/10 shadow-2xl">
+        {/* Glow de fundo inspirado no site oficial */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#FF6600]/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/2 -left-20 w-60 h-60 bg-[#FF6600]/10 rounded-full blur-[90px] pointer-events-none" />
+
+        {/* Marca d'água oficial Navegando */}
+        <div className="absolute right-6 bottom-4 opacity-10 pointer-events-none hidden md:block">
+          <NavegandoLogo size={130} variant="symbol" />
+        </div>
+
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex flex-col gap-2 max-w-xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[#FF6600]" />
                 Painel Pessoal de Prioridades
               </span>
 
@@ -210,9 +220,9 @@ export function EmployeeWelcomeDashboard() {
                   Regime Interno CLT (Seg a Sex • 44h)
                 </span>
               ) : isModelo ? (
-                <span className="text-[11px] font-semibold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20 flex items-center gap-1">
+                <span className="text-[11px] font-bold text-[#FF6600] bg-[#FF6600]/15 px-2.5 py-0.5 rounded-full border border-[#FF6600]/30 flex items-center gap-1">
                   <ChefHat className="w-3 h-3" />
-                  Modelo Gastronômica (Externo • Campo)
+                  ✨ Modelo #influencer Gastronômica
                 </span>
               ) : isFilmmaker ? (
                 <span className="text-[11px] font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20 flex items-center gap-1">
@@ -230,7 +240,7 @@ export function EmployeeWelcomeDashboard() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white font-heading tracking-tight">
               {getGreeting()}, {currentMember.nome}!
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
               {isModelo
                 ? 'Aqui está a sua agenda de gravações nos restaurantes hoje, orientações de cardápio e ponto de presença.'
                 : isFilmmaker
@@ -242,7 +252,7 @@ export function EmployeeWelcomeDashboard() {
           </div>
 
           {/* Card do Ponto Registrado no Login */}
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#141519]/90 border border-[#2b2d35] backdrop-blur-md w-full sm:w-auto">
+          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#0e0f15]/90 border border-white/10 backdrop-blur-md w-full sm:w-auto shadow-xl">
             {pontoEntrada?.foto_url ? (
               <img
                 src={pontoEntrada.foto_url}
@@ -293,7 +303,7 @@ export function EmployeeWelcomeDashboard() {
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                         pontoSaida
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-[#FF5A3C]/15 hover:bg-[#FF5A3C] text-[#FF5A3C] hover:text-white'
+                          : 'bg-[#FF6600]/15 hover:bg-[#FF6600] text-[#FF6600] hover:text-white'
                       }`}
                     >
                       {pontoSaida ? 'Saída ✅' : '🔴 Bater Saída'}
@@ -303,7 +313,7 @@ export function EmployeeWelcomeDashboard() {
                   <button
                     type="button"
                     onClick={() => openPontoModal(undefined, undefined, 'saida')}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#FF5A3C]/15 hover:bg-[#FF5A3C] active:scale-95 text-[#FF5A3C] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                    className="gradient-cta px-3 py-1.5 rounded-lg active:scale-95 text-white font-bold text-[10px] transition-all shadow-md cursor-pointer"
                   >
                     Registrar Saída de Campo
                   </button>
@@ -313,6 +323,72 @@ export function EmployeeWelcomeDashboard() {
           </div>
         </div>
       </div>
+
+      {/* 1.1 BANNER EXCLUSIVO DE INSPIRAÇÃO #INFLUENCER NAVEGANDO (Para Modelos) */}
+      {isModelo && (
+        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#170e0a] via-[#141217] to-[#1a0f07] border border-[#FF6600]/30 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-[#FF6600]/20 text-[#FF6600] flex items-center justify-center border border-[#FF6600]/30 shadow-md">
+                <Sparkles className="w-6 h-6 text-[#FF6600] animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6600] px-2 py-0.5 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/25">
+                    #influencer gastronômica
+                  </span>
+                  <span className="text-[11px] font-bold text-white">Navegando Creators</span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-white font-heading mt-0.5">
+                  O Poder do Rosto & da Experiência Gastronômica
+                </h2>
+              </div>
+            </div>
+            <a
+              href="https://www.navegandomkt.com.br/#influencer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-[#FF6600] hover:text-[#ff8533] flex items-center gap-1.5 self-start sm:self-auto bg-[#FF6600]/10 hover:bg-[#FF6600]/20 px-3 py-1.5 rounded-xl border border-[#FF6600]/30 transition-all cursor-pointer"
+            >
+              <span>Ver Guia no Site</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+            Você é a conexão emocional que faz o cliente desejar o restaurante! Seu objetivo em cada gravação é prender a atenção nos <strong className="text-white">primeiros 3 segundos</strong> com naturalidade, mordidas de dar água na boca e reações espontâneas.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-[#FF6600] flex items-center gap-1">
+                🎯 Gancho dos 3 Segundos
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Primeira cena forte: queijo puxando, corte suculento e degustação imediata sem enrolação.
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-pink-400 flex items-center gap-1">
+                ✨ Reação Espontânea & ASMR
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Expressões sinceras de sabor, micro-sons crocantes e aprovação com o olhar.
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                📸 Stories & Bastidores
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Poste Stories em tempo real marcando o @restaurante e @navegando.mkt durante a diária.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. CARD EXCLUSIVO DE CONFORMIDADE CLT 2026/2027 (Para equipe interna) */}
       {isInterno && (
@@ -417,7 +493,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => openPontoModal(undefined, undefined, 'saida')}
-                  className="px-2.5 py-1 rounded-xl bg-[#FF5A3C]/20 hover:bg-[#FF5A3C] text-[#FF5A3C] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-xl bg-[#FF6600]/20 hover:bg-[#FF6600] text-[#FF6600] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
                 >
                   Bater Saída
                 </button>
@@ -473,7 +549,7 @@ export function EmployeeWelcomeDashboard() {
 
           <div className="p-4 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
-              <Video className="w-3.5 h-3.5 text-[#FF5A3C]" />
+              <Video className="w-3.5 h-3.5 text-[#FF6600]" />
               Gravações do Dia
             </span>
             <div className="flex items-baseline gap-2 mt-1">
@@ -522,7 +598,7 @@ export function EmployeeWelcomeDashboard() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-                  <ListTodo className="w-4 h-4 text-[#FF5A3C]" />
+                  <ListTodo className="w-4 h-4 text-[#FF6600]" />
                   <span>Suas Obrigações & Entregas de Hoje ({internalTasks.length})</span>
                 </h2>
                 <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -565,7 +641,7 @@ export function EmployeeWelcomeDashboard() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-                  <Video className="w-4 h-4 text-[#FF5A3C]" />
+                  <Video className="w-4 h-4 text-[#FF6600]" />
                   <span>
                     {isDono || isGerente
                       ? `Gravações de Hoje na Agência (${allTodayEvents.length})`
@@ -575,7 +651,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => setCurrentView(isModelo ? 'minha-agenda' : 'mes')}
-                  className="text-xs font-semibold text-[#FF5A3C] hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-[#FF6600] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>Ver Agenda Completa</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -609,18 +685,18 @@ export function EmployeeWelcomeDashboard() {
                     return (
                       <div
                         key={ev.id}
-                        className="p-4 sm:p-5 rounded-3xl bg-[#16171b] border border-[#26282f] hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
+                        className="p-4 sm:p-5 rounded-3xl bg-[#16171b] border border-[#26282f] hover:border-[#FF6600]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-12 h-12 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/20 flex flex-col items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/20 flex flex-col items-center justify-center shrink-0">
                               <Clock className="w-5 h-5" />
                               <span className="text-[10px] font-mono font-bold mt-0.5">
                                 {ev.hora_inicio}
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF5A3C] block truncate">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF6600] block truncate">
                                 Gravação Gastronômica
                               </span>
                               <h3 className="text-sm sm:text-base font-bold text-white truncate font-heading">
@@ -693,7 +769,7 @@ export function EmployeeWelcomeDashboard() {
                           <button
                             type="button"
                             onClick={() => openPontoModal(client?.id, ev.id, 'entrada')}
-                            className="py-2.5 px-4 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-98 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                            className="gradient-cta py-2.5 px-4 rounded-xl active:scale-98 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                           >
                             <Camera className="w-3.5 h-3.5" />
                             <span>Bater Ponto no Restaurante</span>
@@ -761,7 +837,7 @@ export function EmployeeWelcomeDashboard() {
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <span className="text-[10px] font-bold text-[#FF5A3C] uppercase truncate block">
+                            <span className="text-[10px] font-bold text-[#FF6600] uppercase truncate block">
                               {client?.nome}
                             </span>
                             <h4 className="text-xs font-bold text-white truncate mt-0.5">
@@ -819,7 +895,7 @@ export function EmployeeWelcomeDashboard() {
                   onClick={() => openDeliverableModal()}
                   className="py-2.5 px-4 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] text-zinc-300 hover:text-white text-xs font-bold border border-[#2b2d35] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                  <Plus className="w-3.5 h-3.5 text-[#FF6600]" />
                   <span>Cadastrar Novo Arquivo de Vídeo</span>
                 </button>
               </div>
@@ -875,7 +951,7 @@ export function EmployeeWelcomeDashboard() {
             <div className="p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <ListTodo className="w-4 h-4 text-[#FF5A3C]" />
+                  <ListTodo className="w-4 h-4 text-[#FF6600]" />
                   <h3 className="text-base font-bold text-white font-heading">
                     Checklist Diário {isInterno ? 'CLT & Operação' : 'de Campo'}
                   </h3>
@@ -949,8 +1025,8 @@ export function EmployeeWelcomeDashboard() {
             onClick={() => setCurrentView(isModelo ? 'minha-agenda' : 'mes')}
             className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
           >
-            <Calendar className="w-5 h-5 text-[#FF5A3C] mb-2" />
-            <div className="font-bold text-xs text-white group-hover:text-[#FF5A3C] transition-colors">
+            <Calendar className="w-5 h-5 text-[#FF6600] mb-2" />
+            <div className="font-bold text-xs text-white group-hover:text-[#FF6600] transition-colors">
               {isModelo ? 'Minha Agenda' : 'Agenda de Gravações'}
             </div>
             <div className="text-[10px] text-zinc-400">

@@ -186,10 +186,10 @@ export const EVENT_TYPE_LABELS: Record<EventTipo, string> = {
 
 export const EVENT_TYPE_COLORS: Record<EventTipo, { dot: string; bg: string; text: string; border: string }> = {
   gravacao: {
-    dot: 'bg-[#FF5A3C] dark:bg-[#FF5A3C] text-[#FF5A3C]',
-    bg: 'bg-[#FF5A3C]/10',
-    text: 'text-[#D93A22] dark:text-[#FF5A3C]',
-    border: 'border-[#FF5A3C]',
+    dot: 'bg-[#FF6600] dark:bg-[#FF6600] text-[#FF6600]',
+    bg: 'bg-[#FF6600]/10',
+    text: 'text-[#FF6600]',
+    border: 'border-[#FF6600]',
   },
   foto: {
     dot: 'bg-sky-500 text-sky-500',

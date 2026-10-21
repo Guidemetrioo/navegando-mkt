@@ -85,7 +85,11 @@ function AgendaMainContent() {
     currentView === 'minha-agenda';
 
   return (
-    <div className="min-h-screen flex w-full bg-[#0d0e11] text-zinc-100 selection:bg-[#FF5A3C]/30">
+    <div className="min-h-screen flex w-full bg-[#08080a] text-zinc-100 selection:bg-[#FF6600]/30 relative overflow-x-hidden">
+      {/* Luz ambiente dourada/laranja da marca Navegando */}
+      <div className="fixed top-0 right-1/4 w-[480px] h-[480px] bg-[#FF6600]/10 rounded-full blur-[160px] pointer-events-none -z-0" />
+      <div className="fixed bottom-0 left-1/3 w-[360px] h-[360px] bg-[#FF6600]/5 rounded-full blur-[140px] pointer-events-none -z-0" />
+
       {/* 1. Pro Sidebar Fixa / Navegação Principal */}
       <AppSidebar
         isMobileOpen={isMobileNavOpen}
@@ -93,20 +97,20 @@ function AgendaMainContent() {
       />
 
       {/* 2. Área de Trabalho Principal */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Barra Superior de Status & Breadcrumb */}
-        <header className="h-14 border-b border-[#26282f] bg-[#111215]/85 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10">
+        {/* Barra Superior de Status & Breadcrumb com Glassmorphism */}
+        <header className="h-14 border-b border-white/5 bg-[#08080a]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs min-w-0">
             <button
               type="button"
               onClick={() => setIsMobileNavOpen(true)}
-              className="md:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1f2026] active:bg-[#282a32] transition-colors cursor-pointer shrink-0"
+              className="md:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Abrir menu lateral"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-bold text-zinc-400 hidden sm:inline">NAVEGANDO MKT</span>
-            <span className="text-zinc-600 hidden sm:inline">/</span>
+            <span className="font-extrabold text-[#FF6600] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
+            <span className="text-zinc-700 hidden sm:inline">/</span>
             <span className="font-bold text-white capitalize truncate text-xs sm:text-sm">
               {currentView === 'home' && 'Início (Meu Painel)'}
               {currentView === 'dashboard' && 'Dashboard Executivo'}
@@ -129,22 +133,22 @@ function AgendaMainContent() {
             <button
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#17181d] hover:bg-[#1f2026] border border-[#2b2d35] text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#101117] hover:bg-[#161822] border border-white/10 text-zinc-400 hover:text-zinc-100 text-xs transition-colors cursor-pointer"
               title="Buscar clientes, vídeos, equipe (Ctrl+K)"
             >
-              <Search className="w-3.5 h-3.5 text-[#FF5A3C]" />
+              <Search className="w-3.5 h-3.5 text-[#FF6600]" />
               <span className="hidden lg:inline text-zinc-400">Buscar no CRM...</span>
-              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[#111215] text-zinc-400 rounded border border-[#26282f]">
+              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[#08080a] text-zinc-400 rounded border border-white/10">
                 Ctrl K
               </kbd>
             </button>
 
-            {/* Menu de Ação Rápida: + Criar */}
+            {/* Menu de Ação Rápida: + Criar com gradiente Navegando */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsQuickActionOpen(!isQuickActionOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                className="gradient-cta flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-white font-bold text-xs shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span className="hidden sm:inline">Criar</span>
@@ -157,16 +161,16 @@ function AgendaMainContent() {
                     className="fixed inset-0 z-30"
                     onClick={() => setIsQuickActionOpen(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#16171b] border border-[#2b2d35] p-1.5 shadow-2xl z-40 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#0f1015]/95 backdrop-blur-xl border border-white/10 p-1.5 shadow-2xl z-40 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
                     <button
                       type="button"
                       onClick={() => {
                         setIsQuickActionOpen(false);
                         openNewEventModal();
                       }}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-left"
                     >
-                      <Calendar className="w-4 h-4 text-[#FF5A3C]" />
+                      <Calendar className="w-4 h-4 text-[#FF6600]" />
                       <div>
                         <span className="font-bold block">Nova Gravação</span>
                         <span className="text-[10px] text-zinc-400">Escalar dupla e horário</span>

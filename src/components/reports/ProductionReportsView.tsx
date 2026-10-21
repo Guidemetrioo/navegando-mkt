@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventItem } from '@/types/database';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
+import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import {
   FileText,
   Search,
@@ -140,29 +141,34 @@ export function ProductionReportsView() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in pb-12">
       {/* 1. CABEÇALHO */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-[#16171b] via-[#121316] to-[#0e0f11] border border-[#26282f] shadow-xl">
-        <div className="space-y-1">
+      <div className="relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[#121319] via-[#0d0e14] to-[#160d08] border border-white/10 shadow-2xl">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#FF6600]/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute right-6 bottom-4 opacity-10 pointer-events-none hidden md:block">
+          <NavegandoLogo size={120} variant="symbol" />
+        </div>
+
+        <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#38bdf8]/15 text-[#38bdf8] border border-[#38bdf8]/30">
-              <Video className="w-5 h-5" />
+            <span className="p-2 rounded-xl bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30">
+              <Video className="w-5 h-5 text-[#FF6600]" />
             </span>
-            <span className="text-xs font-bold text-[#38bdf8] tracking-wider uppercase">
-              Relatórios de Produção de Vídeo
+            <span className="text-xs font-black text-[#FF6600] tracking-wider uppercase">
+              Relatórios de Produção de Vídeo • Navegando MKT
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
-            Relatórios por Dia e Cliente
+            Relatórios por Dia e Restaurante
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl">
+          <p className="text-xs sm:text-sm text-zinc-300 max-w-2xl leading-relaxed">
             Acompanhe em tempo real os pratos filmados pelos filmmakers, contagem de takes, ocorrências de cozinha, links de brutos no Google Drive e avaliação das diárias.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap relative z-10">
           <button
             type="button"
             onClick={handleExportSummary}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-zinc-300 hover:text-white border border-[#2b2d35] font-semibold text-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#14151b] hover:bg-[#1f2026] text-zinc-300 hover:text-white border border-white/10 font-semibold text-xs transition-colors cursor-pointer"
             title="Copiar relatório formatado"
           >
             <Download className="w-4 h-4 text-emerald-400" />
@@ -171,7 +177,7 @@ export function ProductionReportsView() {
           <button
             type="button"
             onClick={() => openNewEventModal()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white font-bold text-xs shadow-lg shadow-[#FF5A3C]/20 transition-all cursor-pointer"
+            className="gradient-cta flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nova Gravação</span>
@@ -238,7 +244,7 @@ export function ProductionReportsView() {
         <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
           <div className="flex items-center justify-between text-zinc-400 text-xs">
             <span>Restaurantes Atendidos</span>
-            <Building className="w-4 h-4 text-[#FF5A3C]" />
+            <Building className="w-4 h-4 text-[#FF6600]" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl sm:text-3xl font-black text-white font-heading">
@@ -256,7 +262,7 @@ export function ProductionReportsView() {
       <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <span className="flex items-center gap-2 text-xs font-bold text-zinc-300 uppercase tracking-wider">
-            <Filter className="w-3.5 h-3.5 text-[#FF5A3C]" />
+            <Filter className="w-3.5 h-3.5 text-[#FF6600]" />
             <span>Filtrar Relatórios por Dia e Cliente</span>
           </span>
 
@@ -281,7 +287,7 @@ export function ProductionReportsView() {
               placeholder="Buscar prato, equipamento..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full pl-9 pr-3 py-2 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
             />
           </div>
 
@@ -290,7 +296,7 @@ export function ProductionReportsView() {
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] cursor-pointer"
+              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
             >
               <option value="all">🍽️ Todos os Restaurantes ({clients.length})</option>
               {clients.map((c) => (
@@ -307,7 +313,7 @@ export function ProductionReportsView() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] cursor-pointer"
+              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
               title="Filtrar por dia específico"
             />
           </div>
@@ -317,7 +323,7 @@ export function ProductionReportsView() {
             <select
               value={selectedFilmmakerId}
               onChange={(e) => setSelectedFilmmakerId(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] cursor-pointer"
+              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
             >
               <option value="all">🎥 Todos os Filmmakers</option>
               {employees
@@ -335,7 +341,7 @@ export function ProductionReportsView() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] cursor-pointer"
+              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
             >
               <option value="all">📋 Todos os Status</option>
               <option value="preenchido">✓ Relatórios Preenchidos</option>
@@ -383,7 +389,7 @@ export function ProductionReportsView() {
                   {/* Topo do Card: Cliente, Data e Status */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-[#26282f]">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#FF5A3C]/10 border border-[#FF5A3C]/20 flex items-center justify-center text-[#FF5A3C] font-black text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FF6600]/10 border border-[#FF6600]/20 flex items-center justify-center text-[#FF6600] font-black text-sm shrink-0">
                         {client?.nome ? client.nome.slice(0, 2).toUpperCase() : 'CL'}
                       </div>
                       <div>
@@ -397,7 +403,7 @@ export function ProductionReportsView() {
                         </h3>
                         <p className="text-xs text-zinc-400 flex items-center gap-2">
                           <span className="flex items-center gap-1 text-zinc-300">
-                            <Calendar className="w-3 h-3 text-[#FF5A3C]" />
+                            <Calendar className="w-3 h-3 text-[#FF6600]" />
                             {ev.data}
                           </span>
                           <span>•</span>

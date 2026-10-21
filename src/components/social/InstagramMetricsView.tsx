@@ -44,7 +44,7 @@ export function InstagramMetricsView() {
       {/* Barra de Filtro de Restaurante */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#FF5A3C]/10 border border-[#FF5A3C]/20 flex items-center justify-center text-[#FF5A3C]">
+          <div className="w-9 h-9 rounded-xl bg-[#FF6600]/10 border border-[#FF6600]/20 flex items-center justify-center text-[#FF6600]">
             <Film className="w-4 h-4" />
           </div>
           <div>
@@ -62,7 +62,7 @@ export function InstagramMetricsView() {
           <select
             value={selectedRestaurantId || ''}
             onChange={(e) => setSelectedRestaurantId(e.target.value || null)}
-            className="text-xs bg-[#1b1d22] dark:bg-[#1b1d22] bg-slate-100 text-zinc-200 dark:text-zinc-200 text-zinc-800 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+            className="text-xs bg-[#1b1d22] dark:bg-[#1b1d22] bg-slate-100 text-zinc-200 dark:text-zinc-200 text-zinc-800 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
           >
             <option value="">Todos os Restaurantes</option>
             {clients.map((c) => (
@@ -79,7 +79,7 @@ export function InstagramMetricsView() {
         <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1 shadow-sm">
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span>Visualizações Totais</span>
-            <Play className="w-4 h-4 text-[#FF5A3C]" />
+            <Play className="w-4 h-4 text-[#FF6600]" />
           </div>
           <div className="text-2xl font-bold font-heading text-white dark:text-white text-zinc-900 mt-1">
             {formatNumber(totalPlays)}
@@ -124,8 +124,8 @@ export function InstagramMetricsView() {
       </div>
 
       {/* Destaque: Vínculo Operacional (Gravação -> Resultado) */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-[#1c1d24] to-[#16171b] border border-[#FF5A3C]/30 shadow-md">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#FF5A3C] uppercase tracking-wider mb-1">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-[#1c1d24] to-[#16171b] border border-[#FF6600]/30 shadow-md">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#FF6600] uppercase tracking-wider mb-1">
           <CalendarCheck className="w-4 h-4" />
           <span>Inteligência Operacional • Vínculo com a Agenda</span>
         </div>
@@ -148,7 +148,7 @@ export function InstagramMetricsView() {
           {displayedReels.map((reel) => (
             <div
               key={reel.id}
-              className="bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden flex flex-col shadow-sm hover:border-[#FF5A3C]/50 transition-all group"
+              className="bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden flex flex-col shadow-sm hover:border-[#FF6600]/50 transition-all group"
             >
               {/* Thumbnail do Vídeo com Badge de Views */}
               <div className="relative aspect-[9/12] w-full bg-zinc-900 overflow-hidden">
@@ -175,7 +175,7 @@ export function InstagramMetricsView() {
                   href={reel.permalink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white hover:text-[#FF5A3C] transition-colors"
+                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white hover:text-[#FF6600] transition-colors"
                   title="Abrir no Instagram"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -183,7 +183,7 @@ export function InstagramMetricsView() {
 
                 {/* Views e Alcance na base da imagem */}
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-xs">
-                  <span className="flex items-center gap-1 font-bold bg-[#FF5A3C] px-2 py-0.5 rounded-md text-[11px] shadow-sm">
+                  <span className="flex items-center gap-1 font-bold bg-[#FF6600] px-2 py-0.5 rounded-md text-[11px] shadow-sm">
                     <Play className="w-3 h-3 fill-white" />
                     {formatNumber(reel.plays)}
                   </span>

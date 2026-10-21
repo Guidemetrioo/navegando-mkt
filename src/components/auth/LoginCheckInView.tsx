@@ -37,6 +37,7 @@ import {
   ChevronRight,
   RefreshCw,
 } from 'lucide-react';
+import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 export function LoginCheckInView() {
   const { clients, loginWithCheckIn } = useAgenda();
@@ -263,38 +264,24 @@ export function LoginCheckInView() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0d0e11] text-zinc-100 flex flex-col justify-between p-4 sm:p-6 lg:p-8 selection:bg-[#FF5A3C]/30 relative overflow-hidden">
-      {/* Background Decorativo Estético */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#FF5A3C]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#38bdf8]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full bg-[#08080a] text-zinc-100 flex flex-col justify-between p-4 sm:p-6 lg:p-8 selection:bg-[#FF6600]/30 relative overflow-hidden fluid-glow">
+      {/* Background Decorativo com Auras de Luz Laranja Gastronômica */}
+      <div className="absolute -top-32 right-1/4 w-[500px] h-[500px] bg-[#FF6600]/12 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute -bottom-32 left-1/4 w-[400px] h-[400px] bg-[#FF4500]/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* 1. TOPO: Identidade Visual da Agência */}
-      <header className="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-[#26282f] relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF5A3C] via-[#e04a2f] to-[#b32b15] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#FF5A3C]/25">
-            N
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-heading font-black tracking-wider text-base text-white">
-                NAVEGANDO
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30">
-                MKT
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-400">
-              Sistema de Gestão Gastronômica & Ponto Eletrônico
-            </p>
-          </div>
-        </div>
+      {/* 1. TOPO: Identidade Visual Oficial Navegando MKT */}
+      <header className="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
+        <NavegandoLogo variant="horizontal" size="md" showTagline withGlow />
 
-        <div className="flex items-center gap-2 text-right">
+        <div className="flex items-center gap-3 text-right">
           <div className="hidden sm:flex flex-col">
             <span className="text-xs font-bold text-white font-mono">{currentTime}</span>
             <span className="text-[10px] text-zinc-400 capitalize">{currentDateStr}</span>
           </div>
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Sistema online" />
+          <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Sistema Online</span>
+          </div>
         </div>
       </header>
 
@@ -305,23 +292,29 @@ export function LoginCheckInView() {
             ======================================================== */}
         {step === 'credenciais' && (
           <div className="w-full max-w-xl flex flex-col gap-6 animate-in fade-in duration-200">
-            {/* Card Principal de Login */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-[#16171b] border border-[#26282f] shadow-2xl flex flex-col gap-5">
-              <div className="text-center space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30 inline-block">
-                  Controle de Acesso & Ponto Obrigatório
-                </span>
-                <h2 className="text-2xl font-black font-heading text-white">
-                  Identifique-se na Agência
+            {/* Card Principal de Login com Glassmorphism */}
+            <div className="p-6 sm:p-8 rounded-3xl glass-card flex flex-col gap-6 relative overflow-hidden">
+              <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#FF6600]/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="text-center space-y-2 flex flex-col items-center">
+                <NavegandoLogo variant="symbol" size="lg" withGlow className="mb-1" />
+                <div className="flex items-center gap-1.5 justify-center">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 inline-flex items-center gap-1 shadow-sm">
+                    <Sparkles className="w-3 h-3" />
+                    +1 Bilhão de Views • Marketing Gastronômico
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
+                  Acesso ao Sistema Navegando MKT
                 </h2>
-                <p className="text-xs text-zinc-400">
-                  Digite seu usuário e senha. Assim que logar, você baterá o ponto obrigatório para liberar seu painel.
+                <p className="text-xs text-zinc-400 max-w-md">
+                  Digite seu usuário e senha cadastrados. O ponto eletrônico será solicitado imediatamente para liberar seu painel diário de prioridades.
                 </p>
               </div>
 
               {loginError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400 flex items-center gap-2 animate-in shake">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2 animate-in shake">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>{loginError}</span>
                 </div>
               )}
@@ -338,12 +331,12 @@ export function LoginCheckInView() {
                       placeholder="Ex: felipe, alexandre, vitinho, isa, guilherme..."
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF5A3C]"
+                      className="w-full pl-10 pr-3 py-2.5 bg-[#14151a] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6600] transition-all"
                       required
                     />
                   </div>
                   <span className="text-[10px] text-zinc-400 mt-1 block">
-                    Padrão: nome do funcionário em minúsculas (Ex: <em>felipe</em>, <em>vitinho</em>, <em>isa</em>)
+                    Padrão: nome do colaborador em minúsculas (Ex: <em>felipe</em>, <em>vitinho</em>, <em>isa</em>)
                   </span>
                 </div>
 
@@ -358,7 +351,7 @@ export function LoginCheckInView() {
                       placeholder="Ex: felipe123, vitinho123..."
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF5A3C]"
+                      className="w-full pl-10 pr-10 py-2.5 bg-[#14151a] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6600] transition-all"
                       required
                     />
                     <button
@@ -376,10 +369,10 @@ export function LoginCheckInView() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF5A3C] to-[#e04a2f] hover:from-[#e04a2f] hover:to-[#b32b15] active:scale-95 text-white font-bold text-sm shadow-xl shadow-[#FF5A3C]/25 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3.5 rounded-xl gradient-cta active:scale-98 text-white font-black text-sm shadow-xl shadow-[#FF6600]/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   <span>Continuar para Registro de Ponto</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
               </form>
             </div>
@@ -426,11 +419,11 @@ export function LoginCheckInView() {
                 <button
                   type="button"
                   onClick={() => setQuickTab('modelos')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    quickTab === 'modelos' ? 'bg-[#f472b6] text-black font-black' : 'text-zinc-400 hover:text-white'
+                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    quickTab === 'modelos' ? 'bg-[#FF6600] text-white shadow-md shadow-[#FF6600]/30' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  ✨ Modelos (4)
+                  <span>✨ Modelos #influencer (4)</span>
                 </button>
                 <button
                   type="button"
@@ -444,7 +437,7 @@ export function LoginCheckInView() {
               </div>
 
               {/* Lista dos Funcionários da Categoria */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {USERS_DATABASE.filter((u) => {
                   if (quickTab === 'donos') return u.funcao === 'dono';
                   if (quickTab === 'gerentes') return u.funcao === 'gerente';
@@ -459,21 +452,28 @@ export function LoginCheckInView() {
                       key={user.employeeId}
                       type="button"
                       onClick={() => handleSelectQuickUser(user)}
-                      className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                      className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-[#FF5A3C]/10 border-[#FF5A3C] text-white shadow-sm'
-                          : 'bg-[#181920] border-[#26282f] text-zinc-300 hover:border-zinc-500'
+                          ? 'bg-[#FF6600]/15 border-[#FF6600] text-white shadow-md shadow-[#FF6600]/20'
+                          : 'bg-[#14151a] border-white/5 text-zinc-300 hover:border-white/20'
                       }`}
                     >
                       <div className="min-w-0">
-                        <span className="font-bold text-xs block text-white truncate">
-                          {user.nome}
-                        </span>
-                        <span className="text-[10px] text-zinc-400 block truncate">
-                          Login: <strong>{user.username}</strong>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs text-white truncate">
+                            {user.nome}
+                          </span>
+                          {user.funcao === 'modelo' && (
+                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30">
+                              #influencer
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-zinc-400 block truncate mt-0.5">
+                          {user.cargo}
                         </span>
                       </div>
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#22242b] text-[#FF5A3C] shrink-0 border border-[#2b2d35]">
+                      <span className="text-[9px] font-mono px-2 py-1 rounded-lg bg-black/60 text-[#FF6600] shrink-0 border border-white/10 font-bold">
                         {user.username}123
                       </span>
                     </button>

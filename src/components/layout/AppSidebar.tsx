@@ -28,7 +28,8 @@ import {
   Home,
   FileText,
 } from 'lucide-react';
-import { canUserAccessView } from '@/lib/auth-users';
+import { canUserAccessView, USERS_DATABASE } from '@/lib/auth-users';
+import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 interface AppSidebarProps {
   isMobileOpen?: boolean;
@@ -193,30 +194,23 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           isCollapsed ? 'md:w-20' : 'md:w-64 lg:md:w-72'
         } w-72 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}`}
       >
-        {/* 1. TOPO: Branding da Agência */}
+        {/* 1. TOPO: Branding da Agência Navegando MKT */}
         <div className="p-4 border-b border-[#26282f] dark:border-[#26282f] border-slate-200 flex items-center justify-between">
           {!isCollapsed ? (
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF5A3C] via-[#e04a2f] to-[#b32b15] flex items-center justify-center text-white font-black text-lg shadow-lg shadow-[#FF5A3C]/25 shrink-0">
-                N
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-heading font-black tracking-wider text-sm text-white dark:text-white text-zinc-900 truncate">
-                    NAVEGANDO
-                  </span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30">
-                    MKT
+            <div className="flex flex-col gap-1 min-w-0">
+              <NavegandoLogo variant="horizontal" size="md" showTagline withGlow />
+              {currentMember?.funcao === 'modelo' && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    #influencer gastronômica
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-400 truncate">
-                  Central de Gestão Social Media
-                </p>
-              </div>
+              )}
             </div>
           ) : (
-            <div className="w-10 h-10 mx-auto rounded-2xl bg-[#FF5A3C] flex items-center justify-center text-white font-black text-lg">
-              N
+            <div className="mx-auto">
+              <NavegandoLogo variant="symbol" size="sm" withGlow />
             </div>
           )}
 
@@ -252,9 +246,9 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                 openPontoModal();
                 if (onCloseMobile) onCloseMobile();
               }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#0284c7] hover:from-[#0284c7] hover:to-[#0369a1] active:scale-95 text-black font-bold text-xs shadow-md shadow-[#38bdf8]/20 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-3 rounded-xl gradient-cta active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-[#FF6600]/25 transition-all cursor-pointer"
             >
-              <Camera className="w-4 h-4 text-black" />
+              <Camera className="w-4 h-4 text-white" />
               <span>Bater Ponto no Restaurante</span>
             </button>
           ) : (
@@ -265,7 +259,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                   openNewEventModal();
                   if (onCloseMobile) onCloseMobile();
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] active:scale-95 text-white font-bold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl gradient-cta active:scale-95 text-white font-bold text-xs shadow-md shadow-[#FF6600]/25 transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Gravação</span>
@@ -326,13 +320,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#FF5A3C]/10 text-[#FF5A3C] font-bold border border-[#FF5A3C]/20 shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1b20]'
+                        ? 'bg-[#FF6600]/15 text-[#FF6600] font-bold border border-[#FF6600]/30 shadow-[0_0_15px_rgba(255,102,0,0.15)]'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
                     } ${isCollapsed ? 'justify-center' : 'justify-between'}`}
                     title={item.label}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#FF5A3C]' : 'text-zinc-400'}`} />
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#FF6600] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-zinc-400'}`} />
                       {!isCollapsed && <span className="truncate">{item.label}</span>}
                     </div>
 
@@ -358,7 +352,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         {!isCollapsed ? (
           <>
             {/* Seletor de Membro Atual */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#16171b] border border-[#26282f]">
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#141418] border border-white/10 shadow-inner">
               <div className="flex items-center gap-2 min-w-0">
                 <EmployeeBadge employee={currentMember} size="sm" />
                 <div className="min-w-0">
@@ -366,7 +360,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                     {currentMember.nome}
                   </div>
                   <div className="text-[10px] text-zinc-400 truncate">
-                    {currentMember.funcao === 'filmmaker' ? '🎥 Filmmaker' : '✨ Criadora'}
+                    {USERS_DATABASE.find((u) => u.employeeId === currentMember.id)?.cargo || currentMember.funcao}
                   </div>
                 </div>
               </div>
@@ -377,21 +371,48 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                 className="text-[10px] bg-[#1f2026] text-zinc-300 border border-[#2b2d35] rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer"
                 title="Trocar membro logado"
               >
-                <optgroup label="Filmmakers">
+                <optgroup label="👑 Donos & Diretores" className="bg-[#1b1d22] text-[#fbbf24] font-bold">
                   {employees
-                    .filter((e) => e.funcao === 'filmmaker')
+                    .filter((e) => e.funcao === 'dono')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.nome}
+                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                        {emp.nome} (Dono)
                       </option>
                     ))}
                 </optgroup>
-                <optgroup label="Criadoras">
+                <optgroup label="⭐ Gerentes" className="bg-[#1b1d22] text-[#38bdf8] font-bold">
                   {employees
-                    .filter((e) => e.funcao === 'criadora')
+                    .filter((e) => e.funcao === 'gerente')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.nome}
+                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                        {emp.nome} (Gerente)
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="🎥 Filmmakers" className="bg-[#1b1d22] text-[#34d399] font-bold">
+                  {employees
+                    .filter((e) => e.funcao === 'filmmaker')
+                    .map((emp) => (
+                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                        {emp.nome} (Filmmaker)
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="✨ Modelos (#influencer)" className="bg-[#1b1d22] text-[#f472b6] font-bold">
+                  {employees
+                    .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
+                    .map((emp) => (
+                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                        {emp.nome} (Modelo)
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="🏢 Equipe Interna (CLT 3 Batidas)" className="bg-[#1b1d22] text-[#a78bfa] font-bold">
+                  {employees
+                    .filter((e) => e.funcao === 'interno')
+                    .map((emp) => (
+                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                        {emp.nome} (Interno)
                       </option>
                     ))}
                 </optgroup>

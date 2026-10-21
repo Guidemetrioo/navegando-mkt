@@ -99,7 +99,7 @@ export function PontoView() {
         <button
           type="button"
           onClick={() => openPontoModal()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5A3C] to-[#e04a2f] hover:from-[#e04a2f] hover:to-[#b32b15] active:scale-95 text-white font-bold text-xs shadow-lg shadow-[#FF5A3C]/20 transition-all shrink-0 cursor-pointer self-start md:self-auto"
+          className="gradient-cta flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all shrink-0 cursor-pointer self-start md:self-auto"
         >
           <Camera className="w-4 h-4" />
           <span>Bater Ponto Agora</span>
@@ -112,7 +112,7 @@ export function PontoView() {
         <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1">
           <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
             <span>Pontos Registrados</span>
-            <Clock className="w-4 h-4 text-[#FF5A3C]" />
+            <Clock className="w-4 h-4 text-[#FF6600]" />
           </div>
           <div className="text-2xl font-bold text-white dark:text-white text-zinc-900 font-heading mt-1">
             {totalPontos}
@@ -164,7 +164,7 @@ export function PontoView() {
           <select
             value={selectedFilterEmpId}
             onChange={(e) => setSelectedFilterEmpId(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
           >
             <option value="all">Toda a equipe ({employees.length})</option>
             <optgroup label="🎥 Filmmakers">
@@ -191,7 +191,7 @@ export function PontoView() {
           <select
             value={selectedFilterClientId}
             onChange={(e) => setSelectedFilterClientId(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
           >
             <option value="all">Todos os Restaurantes ({clients.length})</option>
             {clients.map((c) => (
@@ -205,7 +205,7 @@ export function PontoView() {
           <select
             value={selectedFilterTipo}
             onChange={(e) => setSelectedFilterTipo(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
           >
             <option value="all">Entradas & Saídas</option>
             <option value="entrada">🟢 Apenas Entradas</option>
@@ -221,7 +221,7 @@ export function PontoView() {
               type="button"
               onClick={() => setActiveTab('cards')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'cards' ? 'bg-[#FF5A3C] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTab === 'cards' ? 'bg-[#FF6600] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
               }`}
               title="Visualização em Cards"
             >
@@ -231,7 +231,7 @@ export function PontoView() {
               type="button"
               onClick={() => setActiveTab('tabela')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'tabela' ? 'bg-[#FF5A3C] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTab === 'tabela' ? 'bg-[#FF6600] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
               }`}
               title="Tabela de Auditoria"
             >
@@ -243,7 +243,7 @@ export function PontoView() {
           <button
             type="button"
             onClick={() => openPontoModal()}
-            className="flex items-center gap-1.5 bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-lg shadow-[#FF5A3C]/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="gradient-cta flex items-center gap-1.5 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Bater Ponto Agora</span>
@@ -262,7 +262,7 @@ export function PontoView() {
           <button
             type="button"
             onClick={() => openPontoModal()}
-            className="mt-2 text-xs font-bold text-[#FF5A3C] hover:underline"
+            className="mt-2 text-xs font-bold text-[#FF6600] hover:underline"
           >
             Registrar ponto agora
           </button>
@@ -286,7 +286,7 @@ export function PontoView() {
             return (
               <div
                 key={p.id}
-                className="bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between"
+                className="bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm hover:border-[#FF6600]/40 transition-all flex flex-col justify-between"
               >
                 {/* Header do Cartão */}
                 <div className="p-4 pb-3 flex items-start justify-between border-b border-[#26282f] dark:border-[#26282f] border-slate-100">
@@ -339,7 +339,7 @@ export function PontoView() {
                   <div className="flex flex-col justify-between flex-1 min-w-0">
                     <div>
                       <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-medium">
-                        <Clock className="w-3 h-3 text-[#FF5A3C]" />
+                        <Clock className="w-3 h-3 text-[#FF6600]" />
                         <span>
                           {dateFormatted} às <strong>{timeFormatted}</strong>
                         </span>
@@ -351,7 +351,7 @@ export function PontoView() {
 
                       {p.endereco ? (
                         <div className="text-[11px] text-zinc-300 truncate flex items-center gap-1 mt-0.5" title={p.endereco}>
-                          <MapPin className="w-3 h-3 text-[#FF5A3C] shrink-0" />
+                          <MapPin className="w-3 h-3 text-[#FF6600] shrink-0" />
                           <span className="truncate">{p.endereco}</span>
                         </div>
                       ) : p.client?.endereco ? (
