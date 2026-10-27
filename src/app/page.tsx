@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { IS_DEMO } from '@/lib/app-mode';
+import { ProductionLogin } from '@/components/auth/ProductionLogin';
+import { WorkspaceStatus } from '@/components/layout/WorkspaceStatus';
+import { DesignSelector } from '@/components/design/DesignSelector';
 import { AgendaProvider, useAgenda } from '@/context/AgendaContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { ExecutiveDashboardView } from '@/components/dashboard/ExecutiveDashboardView';
@@ -17,6 +21,8 @@ import { MyAgendaView } from '@/components/agenda/MyAgendaView';
 import { InstagramMetricsView } from '@/components/social/InstagramMetricsView';
 import { MentionsUgcView } from '@/components/social/MentionsUgcView';
 import { PontoView } from '@/components/ponto/PontoView';
+import { FinancialControlView } from '@/components/financial/FinancialControlView';
+import { WhatsAppAutomationView } from '@/components/whatsapp/WhatsAppAutomationView';
 import { DateNavigator } from '@/components/agenda/DateNavigator';
 import { EmployeeFilter } from '@/components/agenda/EmployeeFilter';
 import { TypeLegend } from '@/components/agenda/TypeLegend';
@@ -48,6 +54,10 @@ function AgendaMainContent() {
     currentView,
     setCurrentView,
     isAuthenticated,
+    isDataSaved,
+    syncStatus,
+    syncMessage,
+    userRole,
     employees,
     loggedEmployeeId,
     openPontoModal,
@@ -75,7 +85,7 @@ function AgendaMainContent() {
 
   // Se não estiver autenticado, exige o Ponto Eletrônico de Entrada com Foto e GPS
   if (!isAuthenticated) {
-    return <LoginCheckInView />;
+    return IS_DEMO ? <LoginCheckInView /> : <ProductionLogin loading={syncStatus==='loading'} feedback={syncMessage} />;
   }
 
   const isCalendarView =
@@ -85,10 +95,10 @@ function AgendaMainContent() {
     currentView === 'minha-agenda';
 
   return (
-    <div className="min-h-screen flex w-full bg-[#08080a] text-zinc-100 selection:bg-[#FF6600]/30 relative overflow-x-hidden">
+    <div className="crm-shell min-h-screen flex w-full bg-[var(--ui-page)] text-zinc-100 selection:bg-[var(--ui-accent)]/30 relative overflow-x-hidden">
       {/* Luz ambiente dourada/laranja da marca Navegando */}
-      <div className="fixed top-0 right-1/4 w-[480px] h-[480px] bg-[#FF6600]/10 rounded-full blur-[160px] pointer-events-none -z-0" />
-      <div className="fixed bottom-0 left-1/3 w-[360px] h-[360px] bg-[#FF6600]/5 rounded-full blur-[140px] pointer-events-none -z-0" />
+      <div className="fixed top-0 right-1/4 w-[480px] h-[480px] bg-[var(--ui-accent)]/10 rounded-full blur-[160px] pointer-events-none -z-0" />
+      <div className="fixed bottom-0 left-1/3 w-[360px] h-[360px] bg-[var(--ui-accent)]/5 rounded-full blur-[140px] pointer-events-none -z-0" />
 
       {/* 1. Pro Sidebar Fixa / Navegação Principal */}
       <AppSidebar
@@ -99,21 +109,21 @@ function AgendaMainContent() {
       {/* 2. Área de Trabalho Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10">
         {/* Barra Superior de Status & Breadcrumb com Glassmorphism */}
-        <header className="h-14 border-b border-white/5 bg-[#08080a]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+        <header className="crm-header h-14 border-b border-[var(--ui-border)] bg-[var(--ui-page)]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs min-w-0">
             <button
               type="button"
               onClick={() => setIsMobileNavOpen(true)}
-              className="md:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="lg:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Abrir menu lateral"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-extrabold text-[#FF6600] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
+            <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
-            <span className="font-bold text-white capitalize truncate text-xs sm:text-sm">
-              {currentView === 'home' && 'Início (Meu Painel)'}
-              {currentView === 'dashboard' && 'Dashboard Executivo'}
+            <span className="font-bold text-foreground capitalize truncate text-xs sm:text-sm">
+              {currentView === 'home' && 'Visão geral'}
+              {currentView === 'dashboard' && 'Indicadores'}
               {currentView === 'mes' && 'Agenda Mensal'}
               {currentView === 'semana' && 'Agenda Semanal'}
               {currentView === 'escala' && 'Escala da Equipe'}
@@ -128,17 +138,18 @@ function AgendaMainContent() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="crm-header-actions flex items-center gap-2 sm:gap-3">
+            <DesignSelector />
             {/* Botão de Busca Global (Ctrl+K) */}
             <button
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#101117] hover:bg-[#161822] border border-white/10 text-zinc-400 hover:text-zinc-100 text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[var(--ui-surface)] hover:bg-[var(--ui-hover)] border border-[var(--ui-border)] text-zinc-400 hover:text-zinc-100 text-xs transition-colors cursor-pointer"
               title="Buscar clientes, vídeos, equipe (Ctrl+K)"
             >
-              <Search className="w-3.5 h-3.5 text-[#FF6600]" />
+              <Search className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
               <span className="hidden lg:inline text-zinc-400">Buscar no CRM...</span>
-              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[#08080a] text-zinc-400 rounded border border-white/10">
+              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[var(--ui-page)] text-zinc-400 rounded border border-[var(--ui-border)]">
                 Ctrl K
               </kbd>
             </button>
@@ -147,12 +158,12 @@ function AgendaMainContent() {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setIsQuickActionOpen(!isQuickActionOpen)}
-                className="gradient-cta flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-white font-bold text-xs shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                onClick={() => userRole==='admin' ? setIsQuickActionOpen(!isQuickActionOpen) : openPontoModal()}
+                className="gradient-cta flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-foreground font-bold text-xs shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="hidden sm:inline">Criar</span>
-                <ChevronDown className="w-3 h-3 text-white/80" />
+                <span className="hidden sm:inline">{userRole==='admin' ? 'Criar' : 'Ponto'}</span>
+                <ChevronDown className="w-3 h-3 text-foreground/80" />
               </button>
 
               {isQuickActionOpen && (
@@ -161,16 +172,16 @@ function AgendaMainContent() {
                     className="fixed inset-0 z-30"
                     onClick={() => setIsQuickActionOpen(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#0f1015]/95 backdrop-blur-xl border border-white/10 p-1.5 shadow-2xl z-40 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[var(--ui-surface)]/95 backdrop-blur-xl border border-[var(--ui-border)] p-1.5 shadow-2xl z-40 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
                     <button
                       type="button"
                       onClick={() => {
                         setIsQuickActionOpen(false);
                         openNewEventModal();
                       }}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer text-left"
                     >
-                      <Calendar className="w-4 h-4 text-[#FF6600]" />
+                      <Calendar className="w-4 h-4 text-[var(--ui-accent)]" />
                       <div>
                         <span className="font-bold block">Nova Gravação</span>
                         <span className="text-[10px] text-zinc-400">Escalar dupla e horário</span>
@@ -183,7 +194,7 @@ function AgendaMainContent() {
                         setIsQuickActionOpen(false);
                         openDeliverableModal();
                       }}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-foreground hover:bg-[var(--ui-hover)] transition-colors cursor-pointer text-left"
                     >
                       <FolderOpen className="w-4 h-4 text-[#38bdf8]" />
                       <div>
@@ -198,7 +209,7 @@ function AgendaMainContent() {
                         setIsQuickActionOpen(false);
                         openClientModal();
                       }}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-foreground hover:bg-[var(--ui-hover)] transition-colors cursor-pointer text-left"
                     >
                       <Building className="w-4 h-4 text-amber-400" />
                       <div>
@@ -213,7 +224,7 @@ function AgendaMainContent() {
                         setIsQuickActionOpen(false);
                         openPontoModal();
                       }}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-[#21232b] transition-colors cursor-pointer text-left border-t border-[#26282f] pt-1.5"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-foreground hover:bg-[var(--ui-hover)] transition-colors cursor-pointer text-left border-t border-[var(--ui-border)] pt-1.5"
                     >
                       <Camera className="w-4 h-4 text-emerald-400" />
                       <div>
@@ -236,26 +247,27 @@ function AgendaMainContent() {
             {/* Indicador de Persistência Segura */}
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Base Salva</span>
+              <span>{isDataSaved ? 'Sistema Operacional Ativo' : 'Salvando alterações...'}</span>
             </div>
           </div>
         </header>
 
+        <WorkspaceStatus />
         {/* Conteúdo Central */}
-        <main className="p-3 sm:p-6 md:p-8 pb-28 md:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
+        <main className="crm-workspace p-3 sm:p-6 md:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
           {/* Sub-header de Navegação de Datas se estiver nas abas de agenda */}
           {isCalendarView && (
             <div className="flex flex-col gap-3">
               {/* Seletor de Visão de Agenda */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="inline-flex p-1 bg-[#16171b] rounded-xl border border-[#26282f] gap-1 overflow-x-auto max-w-full">
+                <div className="inline-flex p-1 bg-[var(--ui-surface)] rounded-xl border border-[var(--ui-border)] gap-1 overflow-x-auto max-w-full">
                   <button
                     type="button"
                     onClick={() => setCurrentView('mes')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       currentView === 'mes'
-                        ? 'bg-[#26282f] text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <Calendar className="w-3.5 h-3.5" />
@@ -266,8 +278,8 @@ function AgendaMainContent() {
                     onClick={() => setCurrentView('semana')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       currentView === 'semana'
-                        ? 'bg-[#26282f] text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <Columns className="w-3.5 h-3.5" />
@@ -278,8 +290,8 @@ function AgendaMainContent() {
                     onClick={() => setCurrentView('escala')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       currentView === 'escala'
-                        ? 'bg-[#26282f] text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <Table2 className="w-3.5 h-3.5" />
@@ -290,8 +302,8 @@ function AgendaMainContent() {
                     onClick={() => setCurrentView('minha-agenda')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       currentView === 'minha-agenda'
-                        ? 'bg-[#26282f] text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <UserCheck className="w-3.5 h-3.5" />
@@ -303,7 +315,7 @@ function AgendaMainContent() {
               </div>
 
               {/* Filtro por Funcionário e Legenda */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#26282f]/60">
+              <div className="flex flex-col gap-2 pt-2 border-t border-[var(--ui-border)]/60">
                 <EmployeeFilter />
                 <TypeLegend />
               </div>
@@ -325,6 +337,8 @@ function AgendaMainContent() {
             {currentView === 'metricas-reels' && <InstagramMetricsView />}
             {currentView === 'mural-ugc' && <MentionsUgcView />}
             {currentView === 'backups' && <BackupSafetyView />}
+            {currentView === 'financeiro' && <FinancialControlView />}
+            {currentView === 'whatsapp' && <WhatsAppAutomationView />}
           </div>
         </main>
       </div>

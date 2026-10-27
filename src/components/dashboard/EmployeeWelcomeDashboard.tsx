@@ -1,5 +1,7 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
+import { IS_DEMO } from '@/lib/app-mode';
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -39,6 +41,7 @@ import {
 export function EmployeeWelcomeDashboard() {
   const {
     employees,
+    reels,
     clients,
     events,
     deliverables,
@@ -66,7 +69,7 @@ export function EmployeeWelcomeDashboard() {
   const isInterno = regime === 'interno' && !isDono && !isGerente;
 
   // Data de referência de hoje
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
 
   // 1. Gravações do funcionário logado para hoje
   const myTodayEvents = events.filter((ev) => {
@@ -87,7 +90,7 @@ export function EmployeeWelcomeDashboard() {
 
   // 4. Pontos de hoje registrados pelo funcionário
   const myTodayPontos = pontos.filter(
-    (p) => p.employee_id === currentMember.id && p.data_hora.startsWith(todayIso)
+    (p) => p.employee_id === currentMember.id && todayInSaoPaulo(new Date(p.data_hora))===todayIso
   );
 
   const pontoEntrada = myTodayPontos.find((p) => p.tipo === 'entrada') || lastLoginPonto;
@@ -191,15 +194,15 @@ export function EmployeeWelcomeDashboard() {
     }
   };
 
-  const internalTasks = getInternalTasks(currentMember.id);
+  const internalTasks = IS_DEMO ? getInternalTasks(currentMember.id) : myDeliverables.filter(d=>!['aprovado','publicado'].includes(d.status)).map(d=>({title:d.titulo,desc:d.descricao || 'Consulte a central de arquivos.',priority:'Normal'}));
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">
       {/* 1. HERO DE BOAS-VINDAS PERSONALIZADO */}
-      <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#13141c] via-[#0d0e14] to-[#160d08] border border-white/10 shadow-2xl">
+      <div className="workspace-intro relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[var(--ui-surface)] via-[var(--ui-page)] to-[var(--ui-surface)] border border-[var(--ui-border)] shadow-2xl">
         {/* Glow de fundo inspirado no site oficial */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#FF6600]/15 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute top-1/2 -left-20 w-60 h-60 bg-[#FF6600]/10 rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-[var(--ui-accent)]/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/2 -left-20 w-60 h-60 bg-[var(--ui-accent)]/10 rounded-full blur-[90px] pointer-events-none" />
 
         {/* Marca d'água oficial Navegando */}
         <div className="absolute right-6 bottom-4 opacity-10 pointer-events-none hidden md:block">
@@ -209,9 +212,9 @@ export function EmployeeWelcomeDashboard() {
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex flex-col gap-2 max-w-xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#FF6600]" />
-                Painel Pessoal de Prioridades
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[var(--ui-accent)]" />
+                Seu dia na Navegando
               </span>
 
               {isInterno ? (
@@ -220,9 +223,9 @@ export function EmployeeWelcomeDashboard() {
                   Regime Interno CLT (Seg a Sex • 44h)
                 </span>
               ) : isModelo ? (
-                <span className="text-[11px] font-bold text-[#FF6600] bg-[#FF6600]/15 px-2.5 py-0.5 rounded-full border border-[#FF6600]/30 flex items-center gap-1">
+                <span className="text-[11px] font-bold text-[var(--ui-accent)] bg-[var(--ui-accent)]/15 px-2.5 py-0.5 rounded-full border border-[var(--ui-accent)]/30 flex items-center gap-1">
                   <ChefHat className="w-3 h-3" />
-                  ✨ Modelo #influencer Gastronômica
+                  Modelo & Criadora Gastronômica
                 </span>
               ) : isFilmmaker ? (
                 <span className="text-[11px] font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20 flex items-center gap-1">
@@ -237,7 +240,7 @@ export function EmployeeWelcomeDashboard() {
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white font-heading tracking-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground font-heading tracking-tight">
               {getGreeting()}, {currentMember.nome}!
             </h1>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
@@ -246,13 +249,13 @@ export function EmployeeWelcomeDashboard() {
                 : isFilmmaker
                 ? 'Confira seus restaurantes escalados, produza seus takes, registre o ponto com GPS e preencha os relatórios das gravações.'
                 : isInterno
-                ? 'Seu expediente de hoje com tarefas prioritárias e controle de jornada em 3 batidas conforme a CLT 2026/2027.'
+                ? 'Seu expediente de hoje com tarefas prioritárias e controle de jornada em 3 batidas conforme a configurada pela agência.'
                 : 'Painel executivo com visão geral da agência: ponto da equipe, entregáveis, gravações e métricas.'}
             </p>
           </div>
 
           {/* Card do Ponto Registrado no Login */}
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#0e0f15]/90 border border-white/10 backdrop-blur-md w-full sm:w-auto shadow-xl">
+          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[var(--ui-page)]/90 border border-[var(--ui-border)] backdrop-blur-md w-full sm:w-auto shadow-xl">
             {pontoEntrada?.foto_url ? (
               <img
                 src={pontoEntrada.foto_url}
@@ -260,8 +263,12 @@ export function EmployeeWelcomeDashboard() {
                 className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500/40 shrink-0 shadow-md"
               />
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <Camera className="w-6 h-6" />
+              <div
+                className="w-14 h-14 rounded-2xl bg-[var(--ui-raised)] border-2 border-dashed border-[var(--ui-border)] flex flex-col items-center justify-center text-zinc-400 shrink-0"
+                title="Espaço para foto do colaborador"
+              >
+                <Camera className="w-5 h-5 text-zinc-400" />
+                <span className="text-[8px] font-semibold text-zinc-400 mt-0.5">Espaço Foto</span>
               </div>
             )}
 
@@ -270,13 +277,14 @@ export function EmployeeWelcomeDashboard() {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
                 {pontoEntrada ? 'Ponto de Entrada Confirmado' : 'Aguardando Entrada'}
               </span>
-              <span className="text-xs font-bold text-white">
+              <span className="text-xs font-bold text-foreground font-mono">
                 {pontoEntrada
                   ? new Date(pontoEntrada.data_hora).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit',
+                      second: '2-digit',
                     })
-                  : '08:30'} • {isInterno ? 'Sede Agência' : 'GPS Validado'}
+                  : '—'} • <span className="font-sans font-normal text-zinc-300">{isInterno ? 'Sede Agência' : 'Localização informada'}</span>
               </span>
               <span className="text-[10px] text-zinc-400 truncate max-w-[200px]">
                 {pontoEntrada?.endereco || (isInterno ? 'Av. Paulista, 1842 - São Paulo' : 'No Restaurante')}
@@ -292,10 +300,10 @@ export function EmployeeWelcomeDashboard() {
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                         pontoAlmoco
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-white'
+                          : 'bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-foreground'
                       }`}
                     >
-                      {pontoAlmoco ? 'Almoço ✅' : '🟡 Bater Almoço'}
+                      {pontoAlmoco ? 'Almoço (Feito)' : 'Bater Almoço'}
                     </button>
                     <button
                       type="button"
@@ -303,17 +311,17 @@ export function EmployeeWelcomeDashboard() {
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                         pontoSaida
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-[#FF6600]/15 hover:bg-[#FF6600] text-[#FF6600] hover:text-white'
+                          : 'bg-[var(--ui-accent)]/15 hover:bg-[var(--ui-accent)] text-[var(--ui-accent)] hover:text-foreground'
                       }`}
                     >
-                      {pontoSaida ? 'Saída ✅' : '🔴 Bater Saída'}
+                      {pontoSaida ? 'Saída (Feita)' : 'Bater Saída'}
                     </button>
                   </>
                 ) : (
                   <button
                     type="button"
                     onClick={() => openPontoModal(undefined, undefined, 'saida')}
-                    className="gradient-cta px-3 py-1.5 rounded-lg active:scale-95 text-white font-bold text-[10px] transition-all shadow-md cursor-pointer"
+                    className="gradient-cta px-3 py-1.5 rounded-lg active:scale-95 text-foreground font-bold text-[10px] transition-all shadow-md cursor-pointer"
                   >
                     Registrar Saída de Campo
                   </button>
@@ -326,20 +334,20 @@ export function EmployeeWelcomeDashboard() {
 
       {/* 1.1 BANNER EXCLUSIVO DE INSPIRAÇÃO #INFLUENCER NAVEGANDO (Para Modelos) */}
       {isModelo && (
-        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#170e0a] via-[#141217] to-[#1a0f07] border border-[#FF6600]/30 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
+        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[var(--ui-surface)] via-[var(--ui-surface)] to-[var(--ui-surface)] border border-[var(--ui-accent)]/30 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#FF6600]/20 text-[#FF6600] flex items-center justify-center border border-[#FF6600]/30 shadow-md">
-                <Sparkles className="w-6 h-6 text-[#FF6600] animate-pulse" />
+              <div className="w-11 h-11 rounded-2xl bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] flex items-center justify-center border border-[var(--ui-accent)]/30 shadow-md">
+                <Sparkles className="w-6 h-6 text-[var(--ui-accent)] animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6600] px-2 py-0.5 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/25">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ui-accent)] px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/10 border border-[var(--ui-accent)]/25">
                     #influencer gastronômica
                   </span>
-                  <span className="text-[11px] font-bold text-white">Navegando Creators</span>
+                  <span className="text-[11px] font-bold text-foreground">Navegando Creators</span>
                 </div>
-                <h2 className="text-base sm:text-lg font-black text-white font-heading mt-0.5">
+                <h2 className="text-base sm:text-lg font-black text-foreground font-heading mt-0.5">
                   O Poder do Rosto & da Experiência Gastronômica
                 </h2>
               </div>
@@ -348,7 +356,7 @@ export function EmployeeWelcomeDashboard() {
               href="https://www.navegandomkt.com.br/#influencer"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-bold text-[#FF6600] hover:text-[#ff8533] flex items-center gap-1.5 self-start sm:self-auto bg-[#FF6600]/10 hover:bg-[#FF6600]/20 px-3 py-1.5 rounded-xl border border-[#FF6600]/30 transition-all cursor-pointer"
+              className="text-xs font-bold text-[var(--ui-accent)] hover:text-[#ff8533] flex items-center gap-1.5 self-start sm:self-auto bg-[var(--ui-accent)]/10 hover:bg-[var(--ui-accent)]/20 px-3 py-1.5 rounded-xl border border-[var(--ui-accent)]/30 transition-all cursor-pointer"
             >
               <span>Ver Guia no Site</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -356,31 +364,31 @@ export function EmployeeWelcomeDashboard() {
           </div>
 
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-            Você é a conexão emocional que faz o cliente desejar o restaurante! Seu objetivo em cada gravação é prender a atenção nos <strong className="text-white">primeiros 3 segundos</strong> com naturalidade, mordidas de dar água na boca e reações espontâneas.
+            Você é a conexão emocional que faz o cliente desejar o restaurante! Seu objetivo em cada gravação é prender a atenção nos <strong className="text-foreground">primeiros 3 segundos</strong> com naturalidade, mordidas de dar água na boca e reações espontâneas.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-[#FF6600] flex items-center gap-1">
-                🎯 Gancho dos 3 Segundos
+            <div className="p-3 rounded-2xl bg-black/40 border border-[var(--ui-border)] flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-[var(--ui-accent)] flex items-center gap-1">
+                Gancho dos 3 Segundos
               </span>
               <span className="text-[11px] text-zinc-400">
                 Primeira cena forte: queijo puxando, corte suculento e degustação imediata sem enrolação.
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
+            <div className="p-3 rounded-2xl bg-black/40 border border-[var(--ui-border)] flex flex-col gap-1">
               <span className="text-[11px] font-bold text-pink-400 flex items-center gap-1">
-                ✨ Reação Espontânea & ASMR
+                Reação Espontânea & ASMR
               </span>
               <span className="text-[11px] text-zinc-400">
                 Expressões sinceras de sabor, micro-sons crocantes e aprovação com o olhar.
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1">
+            <div className="p-3 rounded-2xl bg-black/40 border border-[var(--ui-border)] flex flex-col gap-1">
               <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
-                📸 Stories & Bastidores
+                Stories & Bastidores
               </span>
               <span className="text-[11px] text-zinc-400">
                 Poste Stories em tempo real marcando o @restaurante e @navegando.mkt durante a diária.
@@ -390,17 +398,17 @@ export function EmployeeWelcomeDashboard() {
         </div>
       )}
 
-      {/* 2. CARD EXCLUSIVO DE CONFORMIDADE CLT 2026/2027 (Para equipe interna) */}
+      {/* 2. CARD EXCLUSIVO DE CONFORMIDADE configurada pela agência (Para equipe interna) */}
       {isInterno && (
-        <div className="p-5 rounded-3xl bg-[#16171b] border border-emerald-500/25 shadow-lg flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#26282f] pb-3">
+        <div className="p-5 rounded-3xl bg-[var(--ui-surface)] border border-emerald-500/25 shadow-lg flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white font-heading">
-                  Controle de Ponto CLT 2026/2027 — Equipe Interna
+                <h3 className="text-sm font-bold text-foreground font-heading">
+                  Controle de Ponto configurada pela agência — Equipe Interna
                 </h3>
                 <p className="text-[11px] text-zinc-400">
                   Segunda a Sexta • 8h48/dia (44h semanais sem expediente aos sábados) • 3 batidas diárias obrigatórias
@@ -417,17 +425,17 @@ export function EmployeeWelcomeDashboard() {
           {/* As 3 Batidas Obrigatórias */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* 1ª Batida: Entrada */}
-            <div className="p-3 rounded-2xl bg-[#1c1d22] border border-emerald-500/30 flex items-center justify-between">
+            <div className="p-3 rounded-2xl bg-[var(--ui-raised)] border border-emerald-500/30 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
                   1ª
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Entrada da Manhã</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-xs font-bold text-foreground font-mono">
                     {pontoEntrada
-                      ? new Date(pontoEntrada.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                      : '08:30'}
+                      ? new Date(pontoEntrada.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                      : '—'}
                   </span>
                 </div>
               </div>
@@ -438,7 +446,7 @@ export function EmployeeWelcomeDashboard() {
 
             {/* 2ª Batida: Almoço */}
             <div className={`p-3 rounded-2xl border flex items-center justify-between ${
-              pontoAlmoco ? 'bg-[#1c1d22] border-amber-500/30' : 'bg-[#1a1b20] border-[#2b2d35]'
+              pontoAlmoco ? 'bg-[var(--ui-raised)] border-amber-500/30' : 'bg-[var(--ui-raised)] border-[var(--ui-border)]'
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
@@ -446,9 +454,9 @@ export function EmployeeWelcomeDashboard() {
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Intervalo de Almoço</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-xs font-bold text-foreground font-mono">
                     {pontoAlmoco
-                      ? new Date(pontoAlmoco.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                      ? new Date(pontoAlmoco.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                       : '12:30 (Mín 1h)'}
                   </span>
                 </div>
@@ -461,7 +469,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => openPontoModal(undefined, undefined, 'almoco')}
-                  className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-foreground font-bold text-[10px] transition-colors cursor-pointer"
                 >
                   Bater Almoço
                 </button>
@@ -470,7 +478,7 @@ export function EmployeeWelcomeDashboard() {
 
             {/* 3ª Batida: Saída */}
             <div className={`p-3 rounded-2xl border flex items-center justify-between ${
-              pontoSaida ? 'bg-[#1c1d22] border-rose-500/30' : 'bg-[#1a1b20] border-[#2b2d35]'
+              pontoSaida ? 'bg-[var(--ui-raised)] border-rose-500/30' : 'bg-[var(--ui-raised)] border-[var(--ui-border)]'
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-xs">
@@ -478,9 +486,9 @@ export function EmployeeWelcomeDashboard() {
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Saída do Expediente</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-xs font-bold text-foreground font-mono">
                     {pontoSaida
-                      ? new Date(pontoSaida.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                      ? new Date(pontoSaida.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                       : '18:18 (Previsto)'}
                   </span>
                 </div>
@@ -493,7 +501,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => openPontoModal(undefined, undefined, 'saida')}
-                  className="px-2.5 py-1 rounded-xl bg-[#FF6600]/20 hover:bg-[#FF6600] text-[#FF6600] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-xl bg-[var(--ui-accent)]/20 hover:bg-[var(--ui-accent)] text-[var(--ui-accent)] hover:text-foreground font-bold text-[10px] transition-colors cursor-pointer"
                 >
                   Bater Saída
                 </button>
@@ -523,7 +531,7 @@ export function EmployeeWelcomeDashboard() {
           <button
             type="button"
             onClick={() => openEditDeliverableModal(myPendingAdjustments[0])}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto text-center"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-foreground font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto text-center"
           >
             Ver Notas de Ajuste →
           </button>
@@ -533,27 +541,27 @@ export function EmployeeWelcomeDashboard() {
       {/* 4. VISÃO EXECUTIVA DE GESTÃO (Apenas Donos e Gerentes) */}
       {(isDono || isGerente) && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="p-4 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+          <div className="p-4 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-[#38bdf8]" />
               Equipe no Ponto Hoje
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-white font-heading">
-                {pontos.filter((p) => p.data_hora.startsWith(todayIso)).length}
+              <span className="text-2xl font-extrabold text-foreground font-heading">
+                {pontos.filter((p) => todayInSaoPaulo(new Date(p.data_hora))===todayIso).length}
               </span>
-              <span className="text-xs text-emerald-400 font-semibold">100% no horário</span>
+              <span className="text-xs text-emerald-400 font-semibold">Registros recebidos</span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-1">CLT Interno + Externo Campo</span>
           </div>
 
-          <div className="p-4 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+          <div className="p-4 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
-              <Video className="w-3.5 h-3.5 text-[#FF6600]" />
+              <Video className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
               Gravações do Dia
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-white font-heading">
+              <span className="text-2xl font-extrabold text-foreground font-heading">
                 {allTodayEvents.length}
               </span>
               <span className="text-xs text-zinc-400">Restaurantes agendados</span>
@@ -561,13 +569,13 @@ export function EmployeeWelcomeDashboard() {
             <span className="text-[10px] text-zinc-500 mt-1">Filmmakers e Modelos em campo</span>
           </div>
 
-          <div className="p-4 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+          <div className="p-4 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
               Aprovações no DAM
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-white font-heading">
+              <span className="text-2xl font-extrabold text-foreground font-heading">
                 {deliverables.filter((d) => d.status === 'aguardando_aprovacao').length}
               </span>
               <span className="text-xs text-amber-400 font-semibold">Reels prontos</span>
@@ -575,14 +583,14 @@ export function EmployeeWelcomeDashboard() {
             <span className="text-[10px] text-zinc-500 mt-1">Aguardando validação</span>
           </div>
 
-          <div className="p-4 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+          <div className="p-4 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               Alcance dos Clientes
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-white font-heading">245k</span>
-              <span className="text-xs text-emerald-400 font-semibold">+18.4%</span>
+              <span className="text-2xl font-extrabold text-foreground font-heading">{new Intl.NumberFormat('pt-BR',{notation:'compact'}).format(reels.reduce((total,r)=>total+r.plays,0))}</span>
+              <span className="text-xs text-emerald-400 font-semibold">Visualizações registradas</span>
             </div>
             <span className="text-[10px] text-zinc-500 mt-1">Visualizações no Instagram</span>
           </div>
@@ -597,8 +605,8 @@ export function EmployeeWelcomeDashboard() {
             /* SE FOR EQUIPE INTERNA: QUADRO DE PRIORIDADES OPERACIONAIS */
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-                  <ListTodo className="w-4 h-4 text-[#FF6600]" />
+                <h2 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
+                  <ListTodo className="w-4 h-4 text-[var(--ui-accent)]" />
                   <span>Suas Obrigações & Entregas de Hoje ({internalTasks.length})</span>
                 </h2>
                 <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -610,15 +618,15 @@ export function EmployeeWelcomeDashboard() {
                 {internalTasks.map((task, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] hover:border-[#FF5A3C]/30 transition-all flex items-start justify-between gap-3 shadow-sm"
+                    className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] hover:border-[var(--ui-accent)]/30 transition-all flex items-start justify-between gap-3 shadow-sm"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#1f2026] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#2b2d35]">
+                      <div className="w-8 h-8 rounded-xl bg-[var(--ui-raised)] text-foreground flex items-center justify-center font-bold text-xs shrink-0 border border-[var(--ui-border)]">
                         {idx + 1}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-xs sm:text-sm font-bold text-white">{task.title}</h4>
+                          <h4 className="text-xs sm:text-sm font-bold text-foreground">{task.title}</h4>
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                             task.priority === 'Alta'
                               ? 'bg-rose-500/20 text-rose-300'
@@ -640,8 +648,8 @@ export function EmployeeWelcomeDashboard() {
             /* SE FOR EXTERNO (MODELO OU FILMMAKER OU GESTÃO): GRAVAÇÕES DE HOJE */
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
-                  <Video className="w-4 h-4 text-[#FF6600]" />
+                <h2 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
+                  <Video className="w-4 h-4 text-[var(--ui-accent)]" />
                   <span>
                     {isDono || isGerente
                       ? `Gravações de Hoje na Agência (${allTodayEvents.length})`
@@ -651,7 +659,7 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => setCurrentView(isModelo ? 'minha-agenda' : 'mes')}
-                  className="text-xs font-semibold text-[#FF6600] hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-semibold text-[var(--ui-accent)] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>Ver Agenda Completa</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -660,7 +668,7 @@ export function EmployeeWelcomeDashboard() {
 
               <div className="flex flex-col gap-3">
                 {(isDono || isGerente ? allTodayEvents : myTodayEvents).length === 0 ? (
-                  <div className="p-8 rounded-3xl bg-[#16171b] border border-[#26282f] text-center flex flex-col items-center gap-2">
+                  <div className="p-8 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-center flex flex-col items-center gap-2">
                     <UserCheck className="w-10 h-10 text-emerald-400" />
                     <h4 className="text-sm font-bold text-zinc-200">
                       Sem gravações de campo escaladas para hoje!
@@ -685,21 +693,21 @@ export function EmployeeWelcomeDashboard() {
                     return (
                       <div
                         key={ev.id}
-                        className="p-4 sm:p-5 rounded-3xl bg-[#16171b] border border-[#26282f] hover:border-[#FF6600]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
+                        className="p-4 sm:p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] hover:border-[var(--ui-accent)]/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-12 h-12 rounded-2xl bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/20 flex flex-col items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20 flex flex-col items-center justify-center shrink-0">
                               <Clock className="w-5 h-5" />
                               <span className="text-[10px] font-mono font-bold mt-0.5">
                                 {ev.hora_inicio}
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF6600] block truncate">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ui-accent)] block truncate">
                                 Gravação Gastronômica
                               </span>
-                              <h3 className="text-sm sm:text-base font-bold text-white truncate font-heading">
+                              <h3 className="text-sm sm:text-base font-bold text-foreground truncate font-heading">
                                 {client?.nome}
                               </h3>
                               <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-0.5">
@@ -709,13 +717,13 @@ export function EmployeeWelcomeDashboard() {
                             </div>
                           </div>
 
-                          <span className="text-[11px] font-mono font-bold bg-[#1f2026] text-zinc-300 px-2 py-1 rounded-xl border border-[#2b2d35] whitespace-nowrap shrink-0">
+                          <span className="text-[11px] font-mono font-bold bg-[var(--ui-raised)] text-zinc-300 px-2 py-1 rounded-xl border border-[var(--ui-border)] whitespace-nowrap shrink-0">
                             {ev.hora_inicio} - {ev.hora_fim}
                           </span>
                         </div>
 
                         {/* Dupla / Membros escalados */}
-                        <div className="p-3 rounded-2xl bg-[#1c1d22] border border-[#26282f] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-zinc-400 font-medium">Equipe no Local:</span>
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -753,13 +761,13 @@ export function EmployeeWelcomeDashboard() {
                         )}
 
                         {/* Ações Rápidas de Campo */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 border-t border-[#26282f]/60">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 border-t border-[var(--ui-border)]/60">
                           {googleMapsUrl && (
                             <a
                               href={googleMapsUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 py-2.5 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] active:scale-98 text-[#38bdf8] text-xs font-semibold border border-[#2b2d35] transition-all flex items-center justify-center gap-1.5"
+                              className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] active:scale-98 text-[#38bdf8] text-xs font-semibold border border-[var(--ui-border)] transition-all flex items-center justify-center gap-1.5"
                             >
                               <Navigation className="w-3.5 h-3.5" />
                               <span>Como Chegar (Maps / Waze)</span>
@@ -769,7 +777,7 @@ export function EmployeeWelcomeDashboard() {
                           <button
                             type="button"
                             onClick={() => openPontoModal(client?.id, ev.id, 'entrada')}
-                            className="gradient-cta py-2.5 px-4 rounded-xl active:scale-98 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                            className="gradient-cta py-2.5 px-4 rounded-xl active:scale-98 text-foreground text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                           >
                             <Camera className="w-3.5 h-3.5" />
                             <span>Bater Ponto no Restaurante</span>
@@ -780,10 +788,10 @@ export function EmployeeWelcomeDashboard() {
                             <button
                               type="button"
                               onClick={() => openEditEventModal(ev)}
-                              className="py-2.5 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-amber-300 hover:text-amber-200 text-xs font-bold border border-[#2b2d35] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                              className="py-2.5 px-3 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-amber-300 hover:text-amber-200 text-xs font-bold border border-[var(--ui-border)] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                             >
                               <FileText className="w-3.5 h-3.5" />
-                              <span>Relatório 🎥</span>
+                              <span>Relatório</span>
                             </button>
                           )}
                         </div>
@@ -802,7 +810,7 @@ export function EmployeeWelcomeDashboard() {
             /* CENTRAL DE VÍDEOS EM PRODUÇÃO (Filmmakers, Internos e Gestão) */
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
+                <h2 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
                   <FolderOpen className="w-4 h-4 text-amber-400" />
                   <span>Vídeos em Produção ({myDeliverables.length})</span>
                 </h2>
@@ -818,7 +826,7 @@ export function EmployeeWelcomeDashboard() {
 
               <div className="flex flex-col gap-3">
                 {myDeliverables.length === 0 ? (
-                  <div className="p-6 rounded-3xl bg-[#16171b] border border-[#26282f] text-center text-xs text-zinc-400">
+                  <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-center text-xs text-zinc-400">
                     Você não possui vídeos atribuídos no momento.
                   </div>
                 ) : (
@@ -832,15 +840,15 @@ export function EmployeeWelcomeDashboard() {
                         className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 ${
                           isUrgent
                             ? 'bg-rose-500/10 border-rose-500/30'
-                            : 'bg-[#16171b] border-[#26282f]'
+                            : 'bg-[var(--ui-surface)] border-[var(--ui-border)]'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <span className="text-[10px] font-bold text-[#FF6600] uppercase truncate block">
+                            <span className="text-[10px] font-bold text-[var(--ui-accent)] uppercase truncate block">
                               {client?.nome}
                             </span>
-                            <h4 className="text-xs font-bold text-white truncate mt-0.5">
+                            <h4 className="text-xs font-bold text-foreground truncate mt-0.5">
                               {deliv.titulo}
                             </h4>
                           </div>
@@ -862,7 +870,7 @@ export function EmployeeWelcomeDashboard() {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-1 border-t border-[#26282f]/60 text-xs">
+                        <div className="flex items-center justify-between pt-1 border-t border-[var(--ui-border)]/60 text-xs">
                           {deliv.drive_url ? (
                             <a
                               href={deliv.drive_url}
@@ -880,7 +888,7 @@ export function EmployeeWelcomeDashboard() {
                           <button
                             type="button"
                             onClick={() => openEditDeliverableModal(deliv)}
-                            className="px-2.5 py-1 rounded-lg bg-[#1f2026] hover:bg-[#282a32] text-zinc-300 hover:text-white font-bold text-[10px] border border-[#2b2d35] cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-300 hover:text-foreground font-bold text-[10px] border border-[var(--ui-border)] cursor-pointer"
                           >
                             Atualizar
                           </button>
@@ -893,20 +901,20 @@ export function EmployeeWelcomeDashboard() {
                 <button
                   type="button"
                   onClick={() => openDeliverableModal()}
-                  className="py-2.5 px-4 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] text-zinc-300 hover:text-white text-xs font-bold border border-[#2b2d35] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-4 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] text-zinc-300 hover:text-foreground text-xs font-bold border border-[var(--ui-border)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#FF6600]" />
+                  <Plus className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                   <span>Cadastrar Novo Arquivo de Vídeo</span>
                 </button>
               </div>
             </div>
           ) : (
             /* CHECKLIST EXCLUSIVO DA MODELO */
-            <div className="p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-4">
+            <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <ChefHat className="w-4 h-4 text-pink-400" />
-                  <h3 className="text-base font-bold text-white font-heading">
+                  <h3 className="text-base font-bold text-foreground font-heading">
                     Checklist da Modelo Gastronômica
                   </h3>
                 </div>
@@ -929,7 +937,7 @@ export function EmployeeWelcomeDashboard() {
                     className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${
                       checklist[item.id]
                         ? 'bg-pink-500/10 border-pink-500/30 text-pink-300'
-                        : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-300 hover:text-white'
+                        : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-300 hover:text-foreground'
                     }`}
                   >
                     {checklist[item.id] ? (
@@ -948,11 +956,11 @@ export function EmployeeWelcomeDashboard() {
 
           {/* CHECKLIST GERAL OPERACIONAL (Quando não for modelo) */}
           {!isModelo && (
-            <div className="p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-4">
+            <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <ListTodo className="w-4 h-4 text-[#FF6600]" />
-                  <h3 className="text-base font-bold text-white font-heading">
+                  <ListTodo className="w-4 h-4 text-[var(--ui-accent)]" />
+                  <h3 className="text-base font-bold text-foreground font-heading">
                     Checklist Diário {isInterno ? 'CLT & Operação' : 'de Campo'}
                   </h3>
                 </div>
@@ -986,7 +994,7 @@ export function EmployeeWelcomeDashboard() {
                     className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${
                       checklist[item.id]
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                        : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-300 hover:text-white'
+                        : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-300 hover:text-foreground'
                     }`}
                   >
                     {checklist[item.id] ? (
@@ -1006,9 +1014,9 @@ export function EmployeeWelcomeDashboard() {
       </div>
 
       {/* 6. ATALHOS RÁPIDOS ADAPTADOS À HIERARQUIA */}
-      <div className="p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-4">
+      <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
         <div>
-          <h3 className="text-base font-bold text-white font-heading mb-1">
+          <h3 className="text-base font-bold text-foreground font-heading mb-1">
             Módulos Disponíveis para {currentMember.nome}
           </h3>
           <p className="text-xs text-zinc-400">
@@ -1023,10 +1031,10 @@ export function EmployeeWelcomeDashboard() {
           <button
             type="button"
             onClick={() => setCurrentView(isModelo ? 'minha-agenda' : 'mes')}
-            className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+            className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
           >
-            <Calendar className="w-5 h-5 text-[#FF6600] mb-2" />
-            <div className="font-bold text-xs text-white group-hover:text-[#FF6600] transition-colors">
+            <Calendar className="w-5 h-5 text-[var(--ui-accent)] mb-2" />
+            <div className="font-bold text-xs text-foreground group-hover:text-[var(--ui-accent)] transition-colors">
               {isModelo ? 'Minha Agenda' : 'Agenda de Gravações'}
             </div>
             <div className="text-[10px] text-zinc-400">
@@ -1038,10 +1046,10 @@ export function EmployeeWelcomeDashboard() {
           <button
             type="button"
             onClick={() => setCurrentView('ponto')}
-            className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+            className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
           >
             <Camera className="w-5 h-5 text-emerald-400 mb-2" />
-            <div className="font-bold text-xs text-white group-hover:text-emerald-400 transition-colors">
+            <div className="font-bold text-xs text-foreground group-hover:text-emerald-400 transition-colors">
               {isInterno ? 'Ponto CLT 2026' : 'Ponto & GPS'}
             </div>
             <div className="text-[10px] text-zinc-400">
@@ -1054,10 +1062,10 @@ export function EmployeeWelcomeDashboard() {
             <button
               type="button"
               onClick={() => setCurrentView('relatorios')}
-              className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+              className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
             >
               <FileText className="w-5 h-5 text-amber-400 mb-2" />
-              <div className="font-bold text-xs text-white group-hover:text-amber-400 transition-colors">
+              <div className="font-bold text-xs text-foreground group-hover:text-amber-400 transition-colors">
                 Relatórios de Vídeos
               </div>
               <div className="text-[10px] text-zinc-400">Takes, pratos e Drive</div>
@@ -1068,10 +1076,10 @@ export function EmployeeWelcomeDashboard() {
             <button
               type="button"
               onClick={() => setCurrentView('arquivos')}
-              className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+              className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
             >
               <FolderOpen className="w-5 h-5 text-[#38bdf8] mb-2" />
-              <div className="font-bold text-xs text-white group-hover:text-[#38bdf8] transition-colors">
+              <div className="font-bold text-xs text-foreground group-hover:text-[#38bdf8] transition-colors">
                 Central DAM
               </div>
               <div className="text-[10px] text-zinc-400">Funil Kanban de Vídeos</div>
@@ -1082,10 +1090,10 @@ export function EmployeeWelcomeDashboard() {
             <button
               type="button"
               onClick={() => setCurrentView('metricas-reels')}
-              className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+              className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
             >
               <BarChart3 className="w-5 h-5 text-purple-400 mb-2" />
-              <div className="font-bold text-xs text-white group-hover:text-purple-400 transition-colors">
+              <div className="font-bold text-xs text-foreground group-hover:text-purple-400 transition-colors">
                 Métricas do Instagram
               </div>
               <div className="text-[10px] text-zinc-400">Performance dos Reels</div>
@@ -1096,10 +1104,10 @@ export function EmployeeWelcomeDashboard() {
             <button
               type="button"
               onClick={() => setCurrentView('clientes')}
-              className="p-3.5 rounded-2xl bg-[#1c1d22] hover:bg-[#26282f] border border-[#2b2d35] text-left transition-all cursor-pointer group"
+              className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
             >
               <Building className="w-5 h-5 text-indigo-400 mb-2" />
-              <div className="font-bold text-xs text-white group-hover:text-indigo-400 transition-colors">
+              <div className="font-bold text-xs text-foreground group-hover:text-indigo-400 transition-colors">
                 Restaurantes Parceiros
               </div>
               <div className="text-[10px] text-zinc-400">Contratos & Cardápios</div>

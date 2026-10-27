@@ -1,10 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { getWeekDates, WEEKDAYS_SHORT, MONTH_NAMES_SHORT, formatDateIso, formatTimeClean } from '@/lib/date-utils';
+import { getWeekDates, WEEKDAYS_SHORT, MONTH_NAMES_SHORT, formatDateIso, formatTimeClean, todayInSaoPaulo } from '@/lib/date-utils';
 import { EmployeeBadge } from './EmployeeBadge';
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/types/database';
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, Employee } from '@/types/database';
+import { Video, Sparkles, Layers, ShieldCheck, Users } from 'lucide-react';
+import { USERS_DATABASE } from '@/lib/auth-users';
+
+type DepartmentFilter = 'all' | 'filmmakers' | 'modelos' | 'interno' | 'gestao';
 
 export function RosterView() {
   const {
@@ -15,30 +19,48 @@ export function RosterView() {
     isEmployeeSelected,
   } = useAgenda();
 
+  const [activeDepartment, setActiveDepartment] = useState<DepartmentFilter>('all');
+
   const weekDays = getWeekDates(currentDate);
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
 
-  // Separar visíveis por função
-  const visibleFilmmakers = employees
-    .filter((emp) => emp.funcao === 'filmmaker')
-    .filter((emp) => isEmployeeSelected(emp.id));
+  // Mapear cargos específicos a partir do banco de usuários
+  const getEmployeeCargo = (empId: string): string => {
+    const user = USERS_DATABASE.find((u) => u.employeeId === empId);
+    return user?.cargo || 'Colaborador';
+  };
 
-  const visibleCriadoras = employees
-    .filter((emp) => emp.funcao === 'criadora')
-    .filter((emp) => isEmployeeSelected(emp.id));
+  // Separação rigorosa e completa por departamentos/cargos
+  const filmmakers = employees.filter((emp) => emp.funcao === 'filmmaker');
+  const modelos = employees.filter((emp) => emp.funcao === 'modelo' || emp.funcao === 'criadora');
+  const internos = employees.filter(
+    (emp) => emp.funcao === 'interno' || (!['filmmaker', 'modelo', 'criadora', 'dono', 'gerente'].includes(emp.funcao || ''))
+  );
+  const gestao = employees.filter((emp) => emp.funcao === 'dono' || emp.funcao === 'gerente');
 
-  const visibleOutros = employees
-    .filter((emp) => !emp.funcao)
-    .filter((emp) => isEmployeeSelected(emp.id));
+  // Aplicar filtro de funcionários selecionados da barra superior
+  const visibleFilmmakers = filmmakers.filter((emp) => isEmployeeSelected(emp.id));
+  const visibleModelos = modelos.filter((emp) => isEmployeeSelected(emp.id));
+  const visibleInternos = internos.filter((emp) => isEmployeeSelected(emp.id));
+  const visibleGestao = gestao.filter((emp) => isEmployeeSelected(emp.id));
 
-  const renderEmployeeRow = (emp: typeof employees[0]) => {
+  const totalVisible =
+    visibleFilmmakers.length + visibleModelos.length + visibleInternos.length + visibleGestao.length;
+
+  const renderEmployeeRow = (emp: Employee) => {
     let weekTotal = 0;
+    const cargoTitle = getEmployeeCargo(emp.id);
 
     return (
-      <tr key={emp.id} className="hover:bg-[#1a1b20]/50 dark:hover:bg-[#1a1b20]/50 hover:bg-slate-50/50 transition-colors">
+      <tr key={emp.id} className="hover:bg-[var(--ui-raised)]/50 dark:hover:bg-[var(--ui-raised)]/50 hover:bg-slate-50/50 transition-colors">
         {/* Coluna Fixa: Membro */}
-        <td className="sticky left-0 z-10 bg-[#16171b] dark:bg-[#16171b] bg-white py-3 px-4 border-r border-[#26282f] dark:border-[#26282f] border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
-          <EmployeeBadge employee={emp} size="md" showRole />
+        <td className="sticky left-0 z-10 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white py-3 px-4 border-r border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
+          <div className="flex flex-col gap-1">
+            <EmployeeBadge employee={emp} size="md" showRole={false} />
+            <span className="text-[10px] text-zinc-400 font-normal pl-0.5 truncate max-w-[170px]" title={cargoTitle}>
+              {cargoTitle}
+            </span>
+          </div>
         </td>
 
         {/* 7 Dias */}
@@ -60,8 +82,8 @@ export function RosterView() {
           return (
             <td
               key={iso}
-              className={`p-2 border-r border-[#26282f] dark:border-[#26282f] border-slate-200 align-top ${
-                isToday ? 'bg-[#FF5A3C]/5' : ''
+              className={`p-2 border-r border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 align-top ${
+                isToday ? 'bg-[var(--ui-accent)]/5' : ''
               }`}
             >
               {empEvents.length === 0 ? (
@@ -81,13 +103,13 @@ export function RosterView() {
                       <div
                         key={ev.id}
                         onClick={() => openEditEventModal(ev)}
-                        className={`relative p-2 rounded-xl border bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 hover:border-[#FF5A3C]/60 transition-all cursor-pointer shadow-sm hover:scale-[1.02]`}
+                        className="relative p-2 rounded-xl border bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 hover:border-[var(--ui-accent)]/60 transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
                       >
                         {/* Linha vertical à esquerda com cor do tipo */}
                         <div
                           className={`absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full ${
                             ev.tipo === 'gravacao'
-                              ? 'bg-[#FF5A3C]'
+                              ? 'bg-[var(--ui-accent)]'
                               : ev.tipo === 'foto'
                               ? 'bg-[#0ea5e9]'
                               : ev.tipo === 'edicao'
@@ -99,7 +121,7 @@ export function RosterView() {
                         <div className="text-[10px] font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 pl-1.5">
                           {formatTimeClean(ev.hora_inicio)}–{formatTimeClean(ev.hora_fim)}
                         </div>
-                        <div className="text-xs font-bold text-white dark:text-white text-zinc-900 pl-1.5 truncate mt-0.5">
+                        <div className="text-xs font-bold text-foreground dark:text-foreground text-zinc-900 pl-1.5 truncate mt-0.5">
                           {ev.client?.nome || 'Restaurante'}
                         </div>
                         <div className="text-[10px] text-zinc-400 dark:text-zinc-400 text-zinc-500 pl-1.5 mt-0.5 flex items-center justify-between gap-1">
@@ -124,7 +146,7 @@ export function RosterView() {
           <span
             className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold ${
               weekTotal > 0
-                ? 'bg-[#FF5A3C]/15 text-[#FF5A3C] border border-[#FF5A3C]/30'
+                ? 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30'
                 : 'text-zinc-500'
             }`}
           >
@@ -136,82 +158,217 @@ export function RosterView() {
   };
 
   return (
-    <div className="w-full bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-xs min-w-[900px]">
-          {/* Cabeçalho */}
-          <thead>
-            <tr className="border-b border-[#26282f] dark:border-[#26282f] border-slate-200 bg-[#121316] dark:bg-[#121316] bg-slate-50">
-              {/* Coluna 1 Fixa */}
-              <th className="sticky left-0 z-20 bg-[#121316] dark:bg-[#121316] bg-slate-50 py-3.5 px-4 font-bold text-zinc-300 dark:text-zinc-300 text-zinc-700 min-w-[190px] border-r border-[#26282f] dark:border-[#26282f] border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
-                Equipe (Filmmakers & Meninas)
-              </th>
+    <div className="flex flex-col gap-3">
+      {/* Filtros de Departamentos / Cargos para organizar a visualização */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white p-3 rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-sm">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mr-1 hidden sm:inline">
+            Separar por Cargo:
+          </span>
 
-              {/* 7 Dias da Semana */}
-              {weekDays.map((day, idx) => {
-                const iso = formatDateIso(day);
-                const isToday = iso === todayIso;
+          <button
+            type="button"
+            onClick={() => setActiveDepartment('all')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              activeDepartment === 'all'
+                ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
+                : 'bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-100 text-zinc-400 hover:text-foreground'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Todos os Cargos</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
+              {totalVisible}
+            </span>
+          </button>
 
-                return (
-                  <th
-                    key={iso}
-                    className={`py-3.5 px-3 font-semibold text-center min-w-[130px] border-r border-[#26282f] dark:border-[#26282f] border-slate-200 ${
-                      isToday
-                        ? 'bg-[#FF5A3C]/10 text-[#FF5A3C] font-bold'
-                        : 'text-zinc-300 dark:text-zinc-300 text-zinc-700'
-                    }`}
-                  >
-                    <div>{WEEKDAYS_SHORT[idx]}</div>
-                    <div className="text-[11px] font-normal text-zinc-400 dark:text-zinc-400 text-zinc-500 mt-0.5">
-                      {day.getDate()} {MONTH_NAMES_SHORT[day.getMonth()]}
-                    </div>
-                  </th>
-                );
-              })}
+          <button
+            type="button"
+            onClick={() => setActiveDepartment('filmmakers')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              activeDepartment === 'filmmakers'
+                ? 'bg-sky-500 text-white shadow-sm'
+                : 'bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-100 text-zinc-400 hover:text-foreground'
+            }`}
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span>Filmmakers</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
+              {visibleFilmmakers.length}
+            </span>
+          </button>
 
-              {/* Coluna Total */}
-              <th className="py-3.5 px-3 text-center font-bold text-zinc-300 dark:text-zinc-300 text-zinc-700 min-w-[80px]">
-                Total
-              </th>
-            </tr>
-          </thead>
+          <button
+            type="button"
+            onClick={() => setActiveDepartment('modelos')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              activeDepartment === 'modelos'
+                ? 'bg-pink-500 text-white shadow-sm'
+                : 'bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-100 text-zinc-400 hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Modelos & Criadoras</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
+              {visibleModelos.length}
+            </span>
+          </button>
 
-          {/* Linhas Agrupadas */}
-          <tbody className="divide-y divide-[#26282f] dark:divide-[#26282f] divide-slate-200">
-            {/* Seção 1: FILMMAKERS */}
-            {visibleFilmmakers.length > 0 && (
-              <>
-                <tr className="bg-[#121316]/90 dark:bg-[#121316]/90 bg-slate-100">
-                  <td
-                    colSpan={9}
-                    className="py-2 px-4 text-[11px] font-bold text-[#38bdf8] uppercase tracking-wider sticky left-0 z-10"
-                  >
-                    🎥 Filmmakers ({visibleFilmmakers.length}) — Operação de Câmera & Equipamento
-                  </td>
-                </tr>
-                {visibleFilmmakers.map(renderEmployeeRow)}
-              </>
-            )}
+          <button
+            type="button"
+            onClick={() => setActiveDepartment('interno')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              activeDepartment === 'interno'
+                ? 'bg-purple-500 text-white shadow-sm'
+                : 'bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-100 text-zinc-400 hover:text-foreground'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Pós-Produção & Equipe Interna</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
+              {visibleInternos.length}
+            </span>
+          </button>
 
-            {/* Seção 2: MENINAS DOS VÍDEOS (CRIADORAS) */}
-            {visibleCriadoras.length > 0 && (
-              <>
-                <tr className="bg-[#121316]/90 dark:bg-[#121316]/90 bg-slate-100">
-                  <td
-                    colSpan={9}
-                    className="py-2 px-4 text-[11px] font-bold text-[#f472b6] uppercase tracking-wider sticky left-0 z-10"
-                  >
-                    ✨ Meninas dos Vídeos ({visibleCriadoras.length}) — Apresentação & Gravação de Reels
-                  </td>
-                </tr>
-                {visibleCriadoras.map(renderEmployeeRow)}
-              </>
-            )}
+          <button
+            type="button"
+            onClick={() => setActiveDepartment('gestao')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              activeDepartment === 'gestao'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-100 text-zinc-400 hover:text-foreground'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Gestão & Gerência</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
+              {visibleGestao.length}
+            </span>
+          </button>
+        </div>
 
-            {/* Outros se houver */}
-            {visibleOutros.length > 0 && visibleOutros.map(renderEmployeeRow)}
-          </tbody>
-        </table>
+        <div className="text-[11px] text-zinc-400 font-medium">
+          Total: <strong className="text-foreground">{totalVisible}</strong> colaboradores na escala
+        </div>
+      </div>
+
+      {/* Tabela de Escala */}
+      <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left text-xs min-w-[980px]">
+            {/* Cabeçalho */}
+            <thead>
+              <tr className="border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50">
+                {/* Coluna 1 Fixa */}
+                <th className="sticky left-0 z-20 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 py-3.5 px-4 font-bold text-zinc-300 dark:text-zinc-300 text-zinc-700 min-w-[210px] border-r border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
+                  Equipe & Cargo
+                </th>
+
+                {/* 7 Dias da Semana */}
+                {weekDays.map((day, idx) => {
+                  const iso = formatDateIso(day);
+                  const isToday = iso === todayIso;
+
+                  return (
+                    <th
+                      key={iso}
+                      className={`py-3.5 px-3 font-semibold text-center min-w-[130px] border-r border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 ${
+                        isToday
+                          ? 'bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] font-bold'
+                          : 'text-zinc-300 dark:text-zinc-300 text-zinc-700'
+                      }`}
+                    >
+                      <div>{WEEKDAYS_SHORT[idx]}</div>
+                      <div className="text-[11px] font-normal text-zinc-400 dark:text-zinc-400 text-zinc-500 mt-0.5">
+                        {day.getDate()} {MONTH_NAMES_SHORT[day.getMonth()]}
+                      </div>
+                    </th>
+                  );
+                })}
+
+                {/* Coluna Total */}
+                <th className="py-3.5 px-3 text-center font-bold text-zinc-300 dark:text-zinc-300 text-zinc-700 min-w-[80px]">
+                  Total
+                </th>
+              </tr>
+            </thead>
+
+            {/* Linhas Agrupadas por Cargo */}
+            <tbody className="divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-200">
+              {/* SEÇÃO 1: FILMMAKERS */}
+              {(activeDepartment === 'all' || activeDepartment === 'filmmakers') && visibleFilmmakers.length > 0 && (
+                <>
+                  <tr className="bg-[var(--ui-surface)]/90 dark:bg-[var(--ui-surface)]/90 bg-slate-100">
+                    <td
+                      colSpan={9}
+                      className="py-2 px-4 text-[11px] font-bold text-[#38bdf8] uppercase tracking-wider sticky left-0 z-10"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5 text-[#38bdf8]" />
+                        <span>Filmmakers ({visibleFilmmakers.length}) — Operação de Câmera & Equipamento</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {visibleFilmmakers.map(renderEmployeeRow)}
+                </>
+              )}
+
+              {/* SEÇÃO 2: MODELOS & CRIADORAS */}
+              {(activeDepartment === 'all' || activeDepartment === 'modelos') && visibleModelos.length > 0 && (
+                <>
+                  <tr className="bg-[var(--ui-surface)]/90 dark:bg-[var(--ui-surface)]/90 bg-slate-100">
+                    <td
+                      colSpan={9}
+                      className="py-2 px-4 text-[11px] font-bold text-[#f472b6] uppercase tracking-wider sticky left-0 z-10"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#f472b6]" />
+                        <span>Modelos & Criadoras ({visibleModelos.length}) — Apresentação & Criação de Reels</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {visibleModelos.map(renderEmployeeRow)}
+                </>
+              )}
+
+              {/* SEÇÃO 3: PÓS-PRODUÇÃO & EQUIPE INTERNA */}
+              {(activeDepartment === 'all' || activeDepartment === 'interno') && visibleInternos.length > 0 && (
+                <>
+                  <tr className="bg-[var(--ui-surface)]/90 dark:bg-[var(--ui-surface)]/90 bg-slate-100">
+                    <td
+                      colSpan={9}
+                      className="py-2 px-4 text-[11px] font-bold text-[#a855f7] uppercase tracking-wider sticky left-0 z-10"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-[#a855f7]" />
+                        <span>Pós-Produção & Equipe Interna ({visibleInternos.length}) — Edição, Design & Tráfego</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {visibleInternos.map(renderEmployeeRow)}
+                </>
+              )}
+
+              {/* SEÇÃO 4: GESTÃO & GERÊNCIA */}
+              {(activeDepartment === 'all' || activeDepartment === 'gestao') && visibleGestao.length > 0 && (
+                <>
+                  <tr className="bg-[var(--ui-surface)]/90 dark:bg-[var(--ui-surface)]/90 bg-slate-100">
+                    <td
+                      colSpan={9}
+                      className="py-2 px-4 text-[11px] font-bold text-[#fbbf24] uppercase tracking-wider sticky left-0 z-10"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#fbbf24]" />
+                        <span>Gestão & Gerência ({visibleGestao.length}) — Direção Executiva & Atendimento</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {visibleGestao.map(renderEmployeeRow)}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

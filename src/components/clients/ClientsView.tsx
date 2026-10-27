@@ -82,14 +82,14 @@ export function ClientsView() {
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">
       {/* 1. HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[#16171b] border border-[#26282f] shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/20 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20 flex items-center justify-center shrink-0">
             <Building className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-heading">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
                 CRM de Restaurantes ({clients.length})
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -105,7 +105,7 @@ export function ClientsView() {
         <button
           type="button"
           onClick={() => openClientModal()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-lg shadow-[#FF5A3C]/20 transition-all hover:scale-105 cursor-pointer self-start sm:self-auto whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs shadow-lg shadow-[var(--ui-accent)]/20 transition-all hover:scale-105 cursor-pointer self-start sm:self-auto whitespace-nowrap"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Novo Restaurante</span>
@@ -122,7 +122,7 @@ export function ClientsView() {
               placeholder="Buscar por restaurante, bairro, @ do Instagram, gerente ou plano..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#16171b] border border-[#26282f] rounded-2xl pl-10 pr-4 py-3 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-2xl pl-10 pr-4 py-3 text-xs text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
 
@@ -133,7 +133,7 @@ export function ClientsView() {
               className={`px-3.5 py-3 rounded-2xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                 onlyMissingFolder
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                  : 'bg-[#16171b] text-zinc-400 border-[#26282f] hover:text-white'
+                  : 'bg-[var(--ui-surface)] text-zinc-400 border-[var(--ui-border)] hover:text-foreground'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -149,8 +149,8 @@ export function ClientsView() {
             onClick={() => setSelectedStatusFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
               selectedStatusFilter === 'all'
-                ? 'bg-[#26282f] text-white shadow-sm'
-                : 'text-zinc-400 hover:text-white bg-[#16171b] border border-[#26282f]'
+                ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
+                : 'text-zinc-400 hover:text-foreground bg-[var(--ui-surface)] border border-[var(--ui-border)]'
             }`}
           >
             Todos ({clients.length})
@@ -161,7 +161,7 @@ export function ClientsView() {
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
               selectedStatusFilter === 'ativo'
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                : 'text-zinc-400 hover:text-white bg-[#16171b] border border-[#26282f]'
+                : 'text-zinc-400 hover:text-foreground bg-[var(--ui-surface)] border border-[var(--ui-border)]'
             }`}
           >
             Ativos ({activeCount})
@@ -173,7 +173,7 @@ export function ClientsView() {
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                 selectedStatusFilter === 'onboarding'
                   ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'text-zinc-400 hover:text-white bg-[#16171b] border border-[#26282f]'
+                  : 'text-zinc-400 hover:text-foreground bg-[var(--ui-surface)] border border-[var(--ui-border)]'
               }`}
             >
               Em Onboarding ({onboardingCount})
@@ -184,7 +184,7 @@ export function ClientsView() {
 
       {/* 3. GRID DE RESTAURANTES */}
       {filteredClients.length === 0 ? (
-        <div className="py-16 text-center rounded-3xl bg-[#16171b] border border-[#26282f] p-8 flex flex-col items-center gap-3">
+        <div className="py-16 text-center rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] p-8 flex flex-col items-center gap-3">
           <Building className="w-12 h-12 text-zinc-500 animate-pulse" />
           <h4 className="text-base font-bold text-zinc-200">Nenhum restaurante encontrado</h4>
           <p className="text-xs text-zinc-400 max-w-md">
@@ -193,7 +193,7 @@ export function ClientsView() {
           <button
             type="button"
             onClick={() => openClientModal()}
-            className="mt-2 px-4 py-2 rounded-xl bg-[#FF5A3C] text-white text-xs font-bold cursor-pointer"
+            className="mt-2 px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] text-foreground text-xs font-bold cursor-pointer"
           >
             Cadastrar Restaurante
           </button>
@@ -214,7 +214,7 @@ export function ClientsView() {
             return (
               <div
                 key={client.id}
-                className="bg-[#16171b] rounded-3xl border border-[#26282f] p-5 shadow-sm hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between gap-4 group"
+                className="bg-[var(--ui-surface)] rounded-3xl border border-[var(--ui-border)] p-5 shadow-sm hover:border-[var(--ui-accent)]/40 transition-all flex flex-col justify-between gap-4 group"
               >
                 {/* Header do Card */}
                 <div className="flex items-start justify-between gap-3">
@@ -222,7 +222,7 @@ export function ClientsView() {
                     <div className="flex items-center gap-2">
                       <h3
                         onClick={() => setDossierClient(client)}
-                        className="font-bold text-base text-white truncate font-heading hover:text-[#FF5A3C] transition-colors cursor-pointer"
+                        className="font-bold text-base text-foreground truncate font-heading hover:text-[var(--ui-accent)] transition-colors cursor-pointer"
                         title="Ver Dossiê 360º"
                       >
                         {client.nome}
@@ -246,7 +246,7 @@ export function ClientsView() {
                           href={`https://instagram.com/${client.instagram_handle.replace('@', '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-[#FF5A3C] hover:underline flex items-center gap-1"
+                          className="font-semibold text-[var(--ui-accent)] hover:underline flex items-center gap-1"
                         >
                           <span>{client.instagram_handle}</span>
                           <ExternalLink className="w-3 h-3" />
@@ -263,7 +263,7 @@ export function ClientsView() {
                     <button
                       type="button"
                       onClick={() => openClientModal(client)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                       title="Editar restaurante"
                     >
                       <Edit className="w-3.5 h-3.5" />
@@ -284,27 +284,27 @@ export function ClientsView() {
                 </div>
 
                 {/* Barra de Progresso de Reels do Mês */}
-                <div className="p-3 rounded-2xl bg-[#1c1d22] border border-[#26282f] flex flex-col gap-1.5">
+                <div className="p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-semibold text-zinc-300 flex items-center gap-1.5">
-                      <Video className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                      <Video className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                       Meta de Reels Mensal
                     </span>
-                    <span className="font-extrabold text-white">
+                    <span className="font-extrabold text-foreground">
                       {producedReels}/{targetReels} entregues
                     </span>
                   </div>
 
-                  <div className="w-full h-1.5 rounded-full bg-[#121316] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-[var(--ui-surface)] overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#FF5A3C] to-[#e04a2f] rounded-full transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-[var(--ui-accent)] to-[var(--ui-accent-hover)] rounded-full transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Dados de Contato e Endereço */}
-                <div className="flex flex-col gap-2 text-xs text-zinc-300 bg-[#1c1d22] p-3 rounded-2xl border border-[#26282f]">
+                <div className="flex flex-col gap-2 text-xs text-zinc-300 bg-[var(--ui-raised)] p-3 rounded-2xl border border-[var(--ui-border)]">
                   {client.endereco && (
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 text-[#38bdf8] shrink-0 mt-0.5" />
@@ -320,7 +320,7 @@ export function ClientsView() {
                   )}
 
                   {(client.telefone || client.contato) && (
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#26282f]/60">
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--ui-border)]/60">
                       <div className="flex items-center gap-2">
                         <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>{client.telefone || client.contato}</span>
@@ -330,7 +330,7 @@ export function ClientsView() {
                           href={waLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold text-[11px] transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-foreground font-semibold text-[11px] transition-colors"
                           title="Abrir conversa no WhatsApp"
                         >
                           <MessageCircle className="w-3 h-3" />
@@ -346,7 +346,7 @@ export function ClientsView() {
                   <button
                     type="button"
                     onClick={() => setDossierClient(client)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-[#21232b] hover:bg-[#2b2d37] text-white font-bold text-xs border border-[#2b2d35] transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                    className="flex-1 py-2 px-3 rounded-xl bg-[var(--ui-hover)] hover:bg-[var(--ui-border)] text-foreground font-bold text-xs border border-[var(--ui-border)] transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <span>Ver Dossiê 360º</span>
                   </button>
@@ -354,23 +354,23 @@ export function ClientsView() {
                   <button
                     type="button"
                     onClick={() => openDeliverableModal(client.id)}
-                    className="py-2 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-zinc-300 hover:text-white font-medium text-xs border border-[#2b2d35] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    className="py-2 px-3 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-300 hover:text-foreground font-medium text-xs border border-[var(--ui-border)] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     title="Adicionar novo vídeo para este cliente"
                   >
-                    <Plus className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                    <Plus className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                     <span>+ Reel</span>
                   </button>
                 </div>
 
                 {/* Pasta do Google Drive (Anti-Perda de Arquivos) */}
-                <div className="pt-2 border-t border-[#26282f] flex items-center justify-between gap-2">
+                <div className="pt-2 border-t border-[var(--ui-border)] flex items-center justify-between gap-2">
                   {client.drive_folder_url ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <a
                         href={client.drive_folder_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-[#38bdf8] text-xs font-semibold border border-[#2b2d35] transition-all"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-[#38bdf8] text-xs font-semibold border border-[var(--ui-border)] transition-all"
                       >
                         <FolderOpen className="w-3.5 h-3.5 text-[#38bdf8]" />
                         <span>Pasta Drive</span>
@@ -379,7 +379,7 @@ export function ClientsView() {
                       <button
                         type="button"
                         onClick={() => handleCopyFolder(client.drive_folder_url)}
-                        className="p-1.5 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-zinc-400 hover:text-white border border-[#2b2d35] transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-400 hover:text-foreground border border-[var(--ui-border)] transition-colors cursor-pointer"
                         title="Copiar link da pasta"
                       >
                         <Copy className="w-3.5 h-3.5" />

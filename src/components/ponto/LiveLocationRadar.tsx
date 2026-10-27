@@ -51,11 +51,11 @@ export function LiveLocationRadar() {
   const nearest = restaurantsWithDistance[0];
 
   return (
-    <div className="w-full bg-[#16171b] dark:bg-[#16171b] bg-white rounded-3xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-lg p-5 sm:p-6 flex flex-col gap-5">
+    <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-3xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 overflow-hidden shadow-lg p-5 sm:p-6 flex flex-col gap-5">
       {/* 1. Header do Radar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#26282f] dark:border-[#26282f] border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/30 shrink-0">
+          <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 shrink-0">
             <Compass className={`w-6 h-6 ${isLocating ? 'animate-spin' : ''}`} />
             {location && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -66,7 +66,7 @@ export function LiveLocationRadar() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-white dark:text-white text-zinc-900 font-heading">
+              <h3 className="text-base sm:text-lg font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
                 Localização Real do Dispositivo (GPS)
               </h3>
               {location && (
@@ -88,8 +88,8 @@ export function LiveLocationRadar() {
           disabled={isLocating}
           className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer self-start sm:self-auto ${
             location
-              ? 'bg-[#1f2026] hover:bg-[#282a32] text-zinc-200 border border-[#2b2d35]'
-              : 'bg-[#FF5A3C] hover:bg-[#e04a2f] text-white shadow-[#FF5A3C]/25 hover:scale-105 active:scale-95'
+              ? 'bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-200 border border-[var(--ui-border)]'
+              : 'brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground shadow-[var(--ui-accent)]/25 hover:scale-105 active:scale-95'
           }`}
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
@@ -98,7 +98,7 @@ export function LiveLocationRadar() {
               ? 'Obtendo GPS...'
               : location
               ? 'Atualizar Minha Posição'
-              : '📍 Solicitar Permissão de GPS'}
+              : 'Solicitar Permissão de GPS'}
           </span>
         </button>
       </div>
@@ -124,13 +124,13 @@ export function LiveLocationRadar() {
               </div>
             </div>
           ) : (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-[#1c1d24] via-[#16171b] to-[#1c1d24] border border-[#26282f] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-[var(--ui-raised)] via-[var(--ui-surface)] to-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0">
                   <Navigation className="w-6 h-6 animate-bounce" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-foreground">
                     Permita o acesso à sua localização
                   </h4>
                   <p className="text-xs text-zinc-400 mt-0.5 max-w-md">
@@ -143,7 +143,7 @@ export function LiveLocationRadar() {
                 type="button"
                 onClick={requestLocation}
                 disabled={isLocating}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-lg shadow-sky-500/25 transition-all cursor-pointer whitespace-nowrap"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-foreground font-bold text-xs shadow-lg shadow-sky-500/25 transition-all cursor-pointer whitespace-nowrap"
               >
                 {isLocating ? 'Aguardando Permissão...' : 'Conceder Permissão Agora'}
               </button>
@@ -159,10 +159,10 @@ export function LiveLocationRadar() {
           <div className="lg:col-span-5 flex flex-col justify-between gap-4">
             <div className="flex flex-col gap-3">
               {/* Card de Endereço Real */}
-              <div className="p-4 rounded-2xl bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 flex flex-col gap-2">
+              <div className="p-4 rounded-2xl bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                    <MapPin className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                     Endereço Real Detectado
                   </span>
                   <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -170,11 +170,11 @@ export function LiveLocationRadar() {
                   </span>
                 </div>
 
-                <div className="text-sm sm:text-base font-bold text-white dark:text-white text-zinc-900 leading-snug">
+                <div className="text-sm sm:text-base font-bold text-foreground dark:text-foreground text-zinc-900 leading-snug">
                   {location.address || 'Carregando nome da rua e bairro...'}
                 </div>
 
-                <div className="pt-2 border-t border-[#2b2d35] flex items-center justify-between text-xs text-zinc-400 font-mono">
+                <div className="pt-2 border-t border-[var(--ui-border)] flex items-center justify-between text-xs text-zinc-400 font-mono">
                   <span>Lat: {location.latitude.toFixed(6)}</span>
                   <span>Lng: {location.longitude.toFixed(6)}</span>
                 </div>
@@ -186,7 +186,7 @@ export function LiveLocationRadar() {
                   className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs ${
                     nearest.isInside
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                      : 'bg-zinc-800/50 border-[#2b2d35] text-zinc-300'
+                      : 'bg-zinc-800/50 border-[var(--ui-border)] text-zinc-300'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -196,12 +196,12 @@ export function LiveLocationRadar() {
                       <Building className="w-5 h-5 text-zinc-400 shrink-0" />
                     )}
                     <div>
-                      <div className="font-bold text-white">
+                      <div className="font-bold text-foreground">
                         {nearest.isInside ? 'Você está no restaurante!' : 'Restaurante mais próximo:'}
                       </div>
                       <div className="text-xs text-zinc-400">
                         <strong>{nearest.client.nome}</strong> está a{' '}
-                        <span className="font-bold text-white">{formatDistance(nearest.distance)}</span> de você.
+                        <span className="font-bold text-foreground">{formatDistance(nearest.distance)}</span> de você.
                       </div>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export function LiveLocationRadar() {
                   <button
                     type="button"
                     onClick={() => openPontoModal(nearest.client.id, undefined, 'entrada')}
-                    className="flex items-center gap-1 bg-[#FF5A3C] hover:bg-[#e04a2f] text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap"
+                    className="flex items-center gap-1 brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground px-3 py-1.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer whitespace-nowrap"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>Bater Ponto</span>
@@ -237,7 +237,7 @@ export function LiveLocationRadar() {
           </div>
 
           {/* Coluna Direita: Mapa Interativo OpenStreetMap Incorporado */}
-          <div className="lg:col-span-7 rounded-2xl overflow-hidden border border-[#2b2d35] shadow-inner bg-[#121316] relative min-h-[240px]">
+          <div className="lg:col-span-7 rounded-2xl overflow-hidden border border-[var(--ui-border)] shadow-inner bg-[var(--ui-surface)] relative min-h-[240px]">
             <iframe
               title="Mapa em Tempo Real"
               width="100%"
@@ -250,7 +250,7 @@ export function LiveLocationRadar() {
                 location.latitude + 0.005
               }&layer=mapnik&marker=${location.latitude},${location.longitude}`}
             />
-            <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-[10px] text-white font-mono border border-white/10 flex items-center gap-1.5 pointer-events-none">
+            <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-[10px] text-foreground font-mono border border-[var(--ui-border)] flex items-center gap-1.5 pointer-events-none">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Sua posição atual</span>
             </div>
@@ -260,7 +260,7 @@ export function LiveLocationRadar() {
 
       {/* 4. Radar de Distâncias até os 6 Restaurantes Clientes */}
       {location && (
-        <div className="flex flex-col gap-2.5 pt-2 border-t border-[#26282f] dark:border-[#26282f] border-slate-100">
+        <div className="flex flex-col gap-2.5 pt-2 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-zinc-400 uppercase tracking-wider">
               Distância até os Restaurantes da Escala
@@ -276,11 +276,11 @@ export function LiveLocationRadar() {
                 className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
                   isInside
                     ? 'bg-emerald-500/10 border-emerald-500/40 hover:border-emerald-500'
-                    : 'bg-[#1c1d22] border-[#2b2d35] hover:border-[#FF5A3C]/40'
+                    : 'bg-[var(--ui-raised)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]/40'
                 }`}
                 title={`Clique para bater ponto em ${client.nome}`}
               >
-                <div className="font-bold text-xs text-white truncate">{client.nome}</div>
+                <div className="font-bold text-xs text-foreground truncate">{client.nome}</div>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className={isInside ? 'text-emerald-400 font-bold' : 'text-zinc-400'}>
                     {formatDistance(distance)}

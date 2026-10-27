@@ -65,6 +65,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
   // Foco no input ao abrir
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the command palette on its externally controlled opening.
       setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -93,7 +94,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       title: 'Agendar Nova Gravação',
       subtitle: 'Escalar dupla e horário no restaurante',
       icon: Plus,
-      iconColor: 'text-[#FF5A3C]',
+      iconColor: 'text-[var(--ui-accent)]',
       action: () => {
         onClose();
         openNewEventModal();
@@ -168,9 +169,9 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
           title: c.nome,
           subtitle: `${c.instagram_handle || ''} • ${c.responsavel || c.endereco?.split('-')[0] || 'São Paulo'}`,
           icon: Building,
-          iconColor: 'text-[#FF5A3C]',
+          iconColor: 'text-[var(--ui-accent)]',
           badge: c.plano?.split('(')[0] || 'Gastro Pro',
-          badgeColor: 'bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/20',
+          badgeColor: 'bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20',
           action: () => {
             onClose();
             setCurrentView('clientes');
@@ -303,12 +304,12 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-[#141519] border border-[#26282f] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
+        className="w-full max-w-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDownList}
       >
         {/* Input de Busca */}
-        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-[#26282f] bg-[#17181d]">
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-[var(--ui-border)] bg-[var(--ui-surface)]">
           <Search className="w-5 h-5 text-zinc-400 shrink-0" />
           <input
             ref={inputRef}
@@ -319,25 +320,25 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
               setSelectedIndex(0);
             }}
             placeholder="Buscar restaurantes, gravações, reels, equipe ou comandos..."
-            className="w-full bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none"
+            className="w-full bg-transparent text-sm sm:text-base text-foreground placeholder-zinc-500 focus:outline-none"
           />
           {query ? (
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#26282f] cursor-pointer"
+              className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono text-zinc-400 bg-[#22242b] border border-[#2b2d35] rounded-md">
+            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono text-zinc-400 bg-[var(--ui-hover)] border border-[var(--ui-border)] rounded-md">
               ESC
             </kbd>
           )}
         </div>
 
         {/* Lista de Resultados */}
-        <div ref={listRef} className="flex-1 overflow-y-auto p-2 sm:p-3 divide-y divide-[#26282f]/30">
+        <div ref={listRef} className="flex-1 overflow-y-auto p-2 sm:p-3 divide-y divide-[var(--ui-border)]/30">
           {results.length === 0 ? (
             <div className="p-8 text-center flex flex-col items-center justify-center gap-2 text-zinc-400">
               <Search className="w-8 h-8 text-zinc-600 stroke-[1.5]" />
@@ -357,14 +358,14 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[#21232b] text-white shadow-sm'
-                      : 'text-zinc-300 hover:bg-[#1a1b20]'
+                      ? 'bg-[var(--ui-hover)] text-foreground shadow-sm'
+                      : 'text-zinc-300 hover:bg-[var(--ui-raised)]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-[#FF5A3C]/20' : 'bg-[#1e2026]'
+                        isSelected ? 'bg-[var(--ui-accent)]/20' : 'bg-[var(--ui-raised)]'
                       }`}
                     >
                       <Icon className={`w-4 h-4 ${item.iconColor || 'text-zinc-300'}`} />
@@ -372,7 +373,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
 
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-semibold truncate text-white">
+                        <span className="text-xs sm:text-sm font-semibold truncate text-foreground">
                           {item.title}
                         </span>
                         {item.badge && (
@@ -393,7 +394,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
 
                   <ArrowRight
                     className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform ${
-                      isSelected ? 'translate-x-0.5 text-[#FF5A3C]' : 'opacity-0'
+                      isSelected ? 'translate-x-0.5 text-[var(--ui-accent)]' : 'opacity-0'
                     }`}
                   />
                 </div>
@@ -403,14 +404,14 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
         </div>
 
         {/* Rodapé de Dicas */}
-        <div className="px-4 py-2.5 bg-[#101114] border-t border-[#26282f] flex items-center justify-between text-[10px] text-zinc-400">
+        <div className="px-4 py-2.5 bg-[var(--ui-surface)] border-t border-[var(--ui-border)] flex items-center justify-between text-[10px] text-zinc-400">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="px-1.5 py-0.5 bg-[#1e2026] rounded text-zinc-400 font-mono">↑</kbd>{' '}
-              <kbd className="px-1.5 py-0.5 bg-[#1e2026] rounded text-zinc-400 font-mono">↓</kbd> Navegar
+              <kbd className="px-1.5 py-0.5 bg-[var(--ui-raised)] rounded text-zinc-400 font-mono">↑</kbd>{' '}
+              <kbd className="px-1.5 py-0.5 bg-[var(--ui-raised)] rounded text-zinc-400 font-mono">↓</kbd> Navegar
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-[#1e2026] rounded text-zinc-400 font-mono">ENTER</kbd> Abrir
+              <kbd className="px-1.5 py-0.5 bg-[var(--ui-raised)] rounded text-zinc-400 font-mono">ENTER</kbd> Abrir
             </span>
           </div>
 

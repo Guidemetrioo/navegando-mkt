@@ -1,4 +1,5 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -62,14 +63,15 @@ export function DeliverableModal() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [filmmakerId, setFilmmakerId] = useState('emp-1');
   const [criadoraId, setCriadoraId] = useState('emp-5');
-  const [dataGravacao, setDataGravacao] = useState('2026-10-14');
+  const [dataGravacao, setDataGravacao] = useState(todayInSaoPaulo());
   const [dataPublicacao, setDataPublicacao] = useState('2026-10-18');
   const [observacoesAjuste, setObservacoesAjuste] = useState('');
 
   useEffect(() => {
     if (isDeliverableModalOpen) {
       if (editingDeliverable) {
-        setClientId(editingDeliverable.client_id);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset a draft when the externally controlled deliverable changes.
+      setClientId(editingDeliverable.client_id);
         setTitulo(editingDeliverable.titulo);
         setDescricao(editingDeliverable.descricao || '');
         setFormato(editingDeliverable.formato);
@@ -83,7 +85,7 @@ export function DeliverableModal() {
         );
         setFilmmakerId(editingDeliverable.filmmaker_id || employees[0]?.id || 'emp-1');
         setCriadoraId(editingDeliverable.criadora_id || employees[1]?.id || 'emp-5');
-        setDataGravacao(editingDeliverable.data_gravacao || '2026-10-14');
+        setDataGravacao(editingDeliverable.data_gravacao || todayInSaoPaulo());
         setDataPublicacao(editingDeliverable.data_publicacao_prevista || '2026-10-18');
         setObservacoesAjuste(editingDeliverable.observacoes_ajuste || '');
       } else {
@@ -101,7 +103,7 @@ export function DeliverableModal() {
         );
         setFilmmakerId(employees.find((e) => e.funcao === 'filmmaker')?.id || 'emp-1');
         setCriadoraId(employees.find((e) => e.funcao === 'criadora')?.id || 'emp-5');
-        setDataGravacao('2026-10-14');
+        setDataGravacao(todayInSaoPaulo());
         setDataPublicacao('2026-10-18');
         setObservacoesAjuste('');
       }
@@ -165,25 +167,25 @@ export function DeliverableModal() {
       onClick={closeDeliverableModal}
     >
       <div
-        className="relative w-full max-w-xl bg-[#16171b] border-t sm:border border-[#2b2d35] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-xl bg-[var(--ui-surface)] border-t sm:border border-[var(--ui-border)] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
         <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
 
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between border-b border-[#26282f] pb-4">
+        <div className="flex items-start justify-between border-b border-[var(--ui-border)] pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
               <FolderOpen className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white font-heading">
+                <h3 className="text-lg font-bold text-foreground font-heading">
                   {editingDeliverable ? 'Editar Arquivo / Entregável' : 'Novo Arquivo / Vídeo da Agência'}
                 </h3>
                 {editingDeliverable && (
-                  <span className="text-[10px] font-mono font-bold bg-[#FF5A3C]/20 text-[#FF5A3C] px-2 py-0.5 rounded-full border border-[#FF5A3C]/30">
+                  <span className="text-[10px] font-mono font-bold bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] px-2 py-0.5 rounded-full border border-[var(--ui-accent)]/30">
                     v{editingDeliverable.versao}
                   </span>
                 )}
@@ -197,7 +199,7 @@ export function DeliverableModal() {
           <button
             type="button"
             onClick={closeDeliverableModal}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#26282f] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -216,7 +218,7 @@ export function DeliverableModal() {
               placeholder="Ex: Reels: Preparo do Risoto de Camarão na Chapa"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
 
@@ -229,7 +231,7 @@ export function DeliverableModal() {
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               >
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -246,7 +248,7 @@ export function DeliverableModal() {
               <select
                 value={formato}
                 onChange={(e) => setFormato(e.target.value as DeliverableFormat)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               >
                 <option value="reels_9_16">Reels Dinâmico (9:16)</option>
                 <option value="feed_post">Feed Post (4:5 / 1:1)</option>
@@ -259,9 +261,9 @@ export function DeliverableModal() {
           </div>
 
           {/* Links do Google Drive (Anti-Perda e Anti-Extravio) */}
-          <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-3">
+          <div className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-white flex items-center gap-1.5 text-xs">
+              <span className="font-bold text-foreground flex items-center gap-1.5 text-xs">
                 <Link className="w-3.5 h-3.5 text-[#38bdf8]" />
                 Armazenamento em Nuvem (Google Drive / Dropbox)
               </span>
@@ -281,7 +283,7 @@ export function DeliverableModal() {
                 placeholder="https://drive.google.com/file/d/.../view"
                 value={driveUrl}
                 onChange={(e) => setDriveUrl(e.target.value)}
-                className="w-full bg-[#26282f] border border-[#32353e] rounded-xl px-3 py-1.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-border)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
 
@@ -295,7 +297,7 @@ export function DeliverableModal() {
                 placeholder="https://drive.google.com/drive/folders/..."
                 value={pastaDriveUrl}
                 onChange={(e) => setPastaDriveUrl(e.target.value)}
-                className="w-full bg-[#26282f] border border-[#32353e] rounded-xl px-3 py-1.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-border)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
               <p className="text-[10px] text-zinc-400 mt-1">
                 Garante que os arquivos brutos das câmeras fiquem catalogados antes da formatação dos cartões de memória.
@@ -307,12 +309,12 @@ export function DeliverableModal() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-zinc-300 mb-1">
-                🎥 Filmmaker / Câmera
+                Filmmaker / Câmera
               </label>
               <select
                 value={filmmakerId}
                 onChange={(e) => setFilmmakerId(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               >
                 {employees
                   .filter((e) => e.funcao === 'filmmaker')
@@ -326,15 +328,15 @@ export function DeliverableModal() {
 
             <div>
               <label className="block font-semibold text-zinc-300 mb-1">
-                ✨ Criadora / Apresentadora
+                Criadora / Apresentadora
               </label>
               <select
                 value={criadoraId}
                 onChange={(e) => setCriadoraId(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               >
                 {employees
-                  .filter((e) => e.funcao === 'criadora')
+                  .filter((e) => e.funcao === 'criadora' || e.funcao === 'modelo')
                   .map((emp) => (
                     <option key={emp.id} value={emp.id}>
                       {emp.nome} (Criadora)
@@ -353,14 +355,14 @@ export function DeliverableModal() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as DeliverableStatus)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               >
-                <option value="captado_raw">📥 Bruto RAW</option>
-                <option value="em_edicao">✂️ Em Edição</option>
-                <option value="aguardando_aprovacao">⏳ Aguardando Aprovação</option>
-                <option value="ajustes_solicitados">⚠️ Ajustes Solicitados</option>
-                <option value="aprovado">✅ Aprovado</option>
-                <option value="publicado">🚀 Publicado</option>
+                <option value="captado_raw">Bruto RAW</option>
+                <option value="em_edicao">Em Edição</option>
+                <option value="aguardando_aprovacao">Aguardando Aprovação</option>
+                <option value="ajustes_solicitados">Ajustes Solicitados</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="publicado">Publicado</option>
               </select>
             </div>
 
@@ -374,7 +376,7 @@ export function DeliverableModal() {
                 max={20}
                 value={versao}
                 onChange={(e) => setVersao(parseInt(e.target.value) || 1)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer text-center font-bold"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer text-center font-bold"
               />
             </div>
 
@@ -386,7 +388,7 @@ export function DeliverableModal() {
                 type="date"
                 value={dataPublicacao}
                 onChange={(e) => setDataPublicacao(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white focus:outline-none cursor-pointer"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground focus:outline-none cursor-pointer"
               />
             </div>
           </div>
@@ -403,7 +405,7 @@ export function DeliverableModal() {
                 placeholder="Ex: Trocar a música de fundo aos 0:12, dar mais destaque ao prato novo..."
                 value={observacoesAjuste}
                 onChange={(e) => setObservacoesAjuste(e.target.value)}
-                className="w-full bg-[#16171b] border border-amber-500/30 rounded-xl px-3 py-2 text-amber-200 placeholder:text-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none text-xs"
+                className="w-full bg-[var(--ui-surface)] border border-amber-500/30 rounded-xl px-3 py-2 text-amber-200 placeholder:text-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none text-xs"
               />
             </div>
           )}
@@ -421,8 +423,8 @@ export function DeliverableModal() {
                   onClick={() => setThumbnailUrl(preset.url)}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-colors cursor-pointer ${
                     thumbnailUrl === preset.url
-                      ? 'bg-[#FF5A3C] text-white border-[#FF5A3C]'
-                      : 'bg-[#1c1d22] text-zinc-300 border-[#2b2d35] hover:border-zinc-500'
+                      ? 'brand-solid bg-[var(--ui-accent)] text-foreground border-[var(--ui-accent)]'
+                      : 'bg-[var(--ui-raised)] text-zinc-300 border-[var(--ui-border)] hover:border-zinc-500'
                   }`}
                 >
                   {preset.label}
@@ -434,7 +436,7 @@ export function DeliverableModal() {
               placeholder="https://images.unsplash.com/..."
               value={thumbnailUrl}
               onChange={(e) => setThumbnailUrl(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-1.5 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
 
@@ -448,22 +450,22 @@ export function DeliverableModal() {
               placeholder="Ex: Destacar iluminação na mesa de entrada, foco no queijo derretendo, CTA para direct..."
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] resize-none"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] resize-none"
             />
           </div>
 
           {/* Botões */}
-          <div className="flex items-center gap-3 pt-3 border-t border-[#26282f]">
+          <div className="flex items-center gap-3 pt-3 border-t border-[var(--ui-border)]">
             <button
               type="button"
               onClick={closeDeliverableModal}
-              className="flex-1 py-2.5 rounded-xl border border-[#2b2d35] text-zinc-400 hover:text-white transition-colors cursor-pointer font-medium"
+              className="flex-1 py-2.5 rounded-xl border border-[var(--ui-border)] text-zinc-400 hover:text-foreground transition-colors cursor-pointer font-medium"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-[2] py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold transition-all shadow-lg shadow-[#FF5A3C]/25 cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex-[2] py-2.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold transition-all shadow-lg shadow-[var(--ui-accent)]/25 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{editingDeliverable ? 'Salvar Alterações do Arquivo' : 'Salvar Arquivo no Sistema'}</span>

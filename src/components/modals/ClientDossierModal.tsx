@@ -75,22 +75,22 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl bg-[#141519] border-t sm:border border-[#26282f] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-6 max-h-[92vh] overflow-y-auto pb-safe sm:pb-7 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-3xl bg-[var(--ui-surface)] border-t sm:border border-[var(--ui-border)] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-6 max-h-[92vh] overflow-y-auto pb-safe sm:pb-7 animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar mobile */}
         <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
 
         {/* 1. TOPO: Identidade do Restaurante & Ações */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#26282f] pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--ui-border)] pb-5">
           <div className="flex items-start gap-3.5">
-            <div className="w-13 h-13 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/20 flex items-center justify-center shrink-0">
+            <div className="w-13 h-13 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20 flex items-center justify-center shrink-0">
               <Building className="w-7 h-7" />
             </div>
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white font-heading">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-foreground font-heading">
                   {client.nome}
                 </h3>
                 <span
@@ -112,7 +112,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
                     href={`https://instagram.com/${client.instagram_handle.replace('@', '')}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[#FF5A3C] hover:underline flex items-center gap-1 font-semibold"
+                    className="text-[var(--ui-accent)] hover:underline flex items-center gap-1 font-semibold"
                   >
                     <span>{client.instagram_handle}</span>
                     <ExternalLink className="w-3 h-3" />
@@ -130,7 +130,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
                 onClose();
                 onEdit(client);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#21232b] hover:bg-[#2b2d37] text-zinc-200 text-xs font-semibold border border-[#2b2d35] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--ui-hover)] hover:bg-[var(--ui-border)] text-zinc-200 text-xs font-semibold border border-[var(--ui-border)] transition-colors cursor-pointer"
             >
               <Edit className="w-3.5 h-3.5" />
               <span>Editar</span>
@@ -139,7 +139,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-[#26282f] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -149,21 +149,21 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
         {/* 2. CARDS DE DESTAQUE: METAS DE CONTRATO & CONTATOS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {/* Card 1: Meta de Reels Mensais */}
-          <div className="p-4 rounded-2xl bg-[#1a1b21] border border-[#26282f] flex flex-col justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col justify-between gap-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                <Video className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                 Meta de Conteúdo
               </span>
-              <span className="text-xs font-extrabold text-white">
+              <span className="text-xs font-extrabold text-foreground">
                 {producedReels} / {targetReels} Reels
               </span>
             </div>
 
             <div>
-              <div className="w-full h-2 rounded-full bg-[#121316] overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-[var(--ui-surface)] overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#FF5A3C] to-[#e04a2f] transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[var(--ui-accent)] to-[var(--ui-accent-hover)] transition-all duration-500 rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -175,13 +175,13 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
           </div>
 
           {/* Card 2: Valor Contratado & Mensalidade */}
-          <div className="p-4 rounded-2xl bg-[#1a1b21] border border-[#26282f] flex flex-col justify-between gap-2">
+          <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col justify-between gap-2">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               Contrato Mensal
             </span>
             <div>
-              <div className="text-xl font-black text-white font-mono">
+              <div className="text-xl font-black text-foreground font-mono">
                 {client.valor_mensalidade ? `R$ ${client.valor_mensalidade.toLocaleString('pt-BR')}` : 'Sob Consulta'}
               </div>
               <span className="text-[10px] text-zinc-400">Renovação recorrente mensal</span>
@@ -189,7 +189,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
           </div>
 
           {/* Card 3: Google Drive & Cardápio */}
-          <div className="p-4 rounded-2xl bg-[#1a1b21] border border-[#26282f] flex flex-col justify-between gap-2">
+          <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col justify-between gap-2">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5 text-[#38bdf8]" />
               Links do Cliente
@@ -225,9 +225,9 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
         </div>
 
         {/* 3. BRIEFING & IDENTIDADE DA MARCA */}
-        <div className="p-4 rounded-2xl bg-[#18191f] border border-[#26282f] flex flex-col gap-2">
-          <span className="text-xs font-bold text-white flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#FF5A3C]" />
+        <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-2">
+          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
             Briefing & Diretrizes Visuais da Marca
           </span>
           <p className="text-xs text-zinc-300 leading-relaxed">
@@ -235,7 +235,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
           </p>
 
           {client.endereco && (
-            <div className="pt-2 border-t border-[#26282f] flex items-center justify-between text-xs text-zinc-400">
+            <div className="pt-2 border-t border-[var(--ui-border)] flex items-center justify-between text-xs text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-zinc-400" />
                 <span>{client.endereco}</span>
@@ -244,7 +244,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(client.endereco)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-zinc-400 hover:text-white underline shrink-0"
+                className="text-xs text-zinc-400 hover:text-foreground underline shrink-0"
               >
                 Ver no Maps
               </a>
@@ -255,8 +255,8 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
         {/* 4. ABAS DE HISTÓRICO: GRAVAÇÕES & ENTREGÁVEIS */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Video className="w-3.5 h-3.5 text-[#FF5A3C]" />
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Video className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
               Conteúdos & Gravações do Cliente ({clientDeliverables.length})
             </h4>
 
@@ -267,7 +267,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
                   onClose();
                   openNewEventModal();
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF5A3C]/15 text-[#FF5A3C] text-[11px] font-bold hover:bg-[#FF5A3C]/25 transition-colors cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] text-[11px] font-bold hover:bg-[var(--ui-accent)]/25 transition-colors cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Nova Gravação</span>
@@ -287,7 +287,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
           </div>
 
           {clientDeliverables.length === 0 ? (
-            <div className="p-6 text-center rounded-2xl bg-[#16171b] border border-[#26282f] text-zinc-400 text-xs">
+            <div className="p-6 text-center rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-zinc-400 text-xs">
               Nenhum entregável cadastrado ainda para este restaurante.
             </div>
           ) : (
@@ -299,10 +299,10 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
                     onClose();
                     openEditDeliverableModal(deliv);
                   }}
-                  className="p-3 rounded-xl bg-[#1a1b21] border border-[#26282f] hover:border-[#FF5A3C]/40 transition-all cursor-pointer flex flex-col justify-between gap-2"
+                  className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] hover:border-[var(--ui-accent)]/40 transition-all cursor-pointer flex flex-col justify-between gap-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-bold text-xs text-white line-clamp-1">
+                    <span className="font-bold text-xs text-foreground line-clamp-1">
                       {deliv.titulo}
                     </span>
                     <span
@@ -331,7 +331,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
         </div>
 
         {/* 5. AÇÕES RÁPIDAS DE CONTATO */}
-        <div className="pt-3 border-t border-[#26282f] flex flex-wrap items-center justify-between gap-3">
+        <div className="pt-3 border-t border-[var(--ui-border)] flex flex-wrap items-center justify-between gap-3">
           {client.telefone ? (
             <a
               href={getWhatsAppLink(client.telefone) || '#'}
@@ -349,7 +349,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#21232b] hover:bg-[#2b2d37] text-zinc-300 text-xs font-semibold cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[var(--ui-hover)] hover:bg-[var(--ui-border)] text-zinc-300 text-xs font-semibold cursor-pointer"
           >
             Fechar Dossiê
           </button>

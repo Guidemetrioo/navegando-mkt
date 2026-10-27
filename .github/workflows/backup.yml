@@ -1,0 +1,28 @@
+name: Encrypted operational backup
+on:
+  workflow_dispatch:
+# Daily scheduling is intentionally not enabled until the infrastructure and retention are configured.
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production-backup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run backup -- --out backup-output
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: navegando-encrypted-backup
+          path: backup-output/*.backup
+          if-no-files-found: error
+          retention-days: 14

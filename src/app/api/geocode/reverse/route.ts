@@ -1,74 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const lat = searchParams.get('lat');
-  const lng = searchParams.get('lng') || searchParams.get('lon');
-
-  if (!lat || !lng) {
-    return NextResponse.json({ error: 'Parâmetros lat e lng são obrigatórios.' }, { status: 400 });
-  }
-
+import { IS_DEMO } from '@/lib/app-mode';
+import { apiFailure, requireMember, ApiError, privateHeaders } from '@/lib/server/workspace-api';
+export async function GET(request:Request) {
   try {
-    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(
-      lat
-    )}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
-
-    const res = await fetch(nominatimUrl, {
-      headers: {
-        'User-Agent': 'NavegandoMKT-CRM/1.0 (contato@navegandomkt.com.br)',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
-      },
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      throw new Error(`Nominatim error: ${res.status}`);
-    }
-
-    const data = await res.json();
-    const address = data.address || {};
-
-    const road = address.road || address.pedestrian || address.street || '';
-    const houseNumber = address.house_number ? `, ${address.house_number}` : '';
-    const suburb = address.suburb || address.neighbourhood || address.city_district || '';
-    const city = address.city || address.town || address.municipality || '';
-    const state = address.state || '';
-
-    // Formatar endereço limpo no padrão brasileiro
-    let formattedShort = [
-      road ? `${road}${houseNumber}` : '',
-      suburb,
-      city ? (state ? `${city} - ${state}` : city) : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    if (!formattedShort) {
-      formattedShort = data.display_name || `${lat}, ${lng}`;
-    }
-
-    return NextResponse.json({
-      success: true,
-      address: formattedShort,
-      fullAddress: data.display_name,
-      details: {
-        road,
-        suburb,
-        city,
-        state,
-        postcode: address.postcode,
-      },
-    });
-  } catch (error: any) {
-    console.error('Erro na geocodificação reversa:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        address: `Coordenadas: ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`,
-        error: error.message,
-      },
-      { status: 200 }
-    );
-  }
+    if(!IS_DEMO) await requireMember();
+    const params=new URL(request.url).searchParams;
+    const rawLat=params.get('lat'),rawLng=params.get('lng')||params.get('lon');
+    const lat=Number(rawLat),lng=Number(rawLng);
+    if(rawLat===null || rawLng===null || !Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) throw new ApiError(400,'Coordenadas inválidas.');
+    return Response.json({success:true,address:`Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,geocoding:'not_configured'},{headers:privateHeaders});
+  } catch(error) {return apiFailure(error);}
 }

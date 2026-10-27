@@ -37,13 +37,13 @@ export function MentionsUgcView() {
   return (
     <div className="w-full flex flex-col gap-6">
       {/* Top Banner & Ações */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
             <MessageSquareHeart className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white dark:text-white text-zinc-900 font-heading">
+            <h2 className="text-lg font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
               Mural de UGC & Marcações dos Clientes
             </h2>
             <p className="text-xs text-zinc-400">
@@ -56,7 +56,7 @@ export function MentionsUgcView() {
         <button
           type="button"
           onClick={simulateNewMention}
-          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#FF5A3C]/10 hover:bg-[#FF5A3C]/20 text-[#FF5A3C] border border-[#FF5A3C]/30 text-xs font-bold transition-all hover:scale-[1.02] cursor-pointer"
+          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[var(--ui-accent)]/10 hover:bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 text-xs font-bold transition-all hover:scale-[1.02] cursor-pointer"
           title="Simula a chegada de um Story ou Post em tempo real via Webhook da Meta"
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -66,15 +66,15 @@ export function MentionsUgcView() {
 
       {/* Cartões de Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1 shadow-sm">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1 shadow-sm">
           <span className="text-xs text-zinc-400">Total de Marcações</span>
-          <div className="text-2xl font-bold font-heading text-white dark:text-white text-zinc-900 mt-1">
+          <div className="text-2xl font-bold font-heading text-foreground dark:text-foreground text-zinc-900 mt-1">
             {totalMentions}
           </div>
           <span className="text-[11px] text-zinc-400">Conteúdos de clientes</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1 shadow-sm">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1 shadow-sm">
           <span className="text-xs text-zinc-400">Pendentes de Repost</span>
           <div className="text-2xl font-bold font-heading text-amber-400 mt-1">
             {pendingReposts}
@@ -82,7 +82,7 @@ export function MentionsUgcView() {
           <span className="text-[11px] text-amber-400/80 font-medium">Aguardando social media</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1 shadow-sm">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1 shadow-sm">
           <span className="text-xs text-zinc-400">Radar de Influenciadores</span>
           <div className="text-2xl font-bold font-heading text-purple-400 mt-1">
             {influencerCount}
@@ -90,7 +90,7 @@ export function MentionsUgcView() {
           <span className="text-[11px] text-purple-400/80 font-semibold">Perfis com +10k seguidores</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1 shadow-sm">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1 shadow-sm">
           <span className="text-xs text-zinc-400">Menções em Stories</span>
           <div className="text-2xl font-bold font-heading text-rose-400 mt-1">
             {storiesCount}
@@ -101,14 +101,14 @@ export function MentionsUgcView() {
 
       {/* Barra de Filtros */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#16171b] dark:bg-[#16171b] bg-slate-100 rounded-xl border border-[#26282f] dark:border-[#26282f] border-slate-200 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-100 rounded-xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 text-xs">
           <button
             type="button"
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
               filterType === 'all'
-                ? 'bg-[#26282f] dark:bg-[#26282f] bg-white text-white dark:text-white text-zinc-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-white text-foreground dark:text-foreground text-zinc-900 shadow-sm'
+                : 'text-zinc-400 hover:text-foreground'
             }`}
           >
             Todas ({totalMentions})
@@ -118,8 +118,8 @@ export function MentionsUgcView() {
             onClick={() => setFilterType('pending')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
               filterType === 'pending'
-                ? 'bg-[#26282f] dark:bg-[#26282f] bg-white text-white dark:text-white text-zinc-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-white text-foreground dark:text-foreground text-zinc-900 shadow-sm'
+                : 'text-zinc-400 hover:text-foreground'
             }`}
           >
             Pendentes ({pendingReposts})
@@ -129,8 +129,8 @@ export function MentionsUgcView() {
             onClick={() => setFilterType('influencers')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
               filterType === 'influencers'
-                ? 'bg-[#26282f] dark:bg-[#26282f] bg-white text-white dark:text-white text-zinc-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-white text-foreground dark:text-foreground text-zinc-900 shadow-sm'
+                : 'text-zinc-400 hover:text-foreground'
             }`}
           >
             ⭐ Influenciadores ({influencerCount})
@@ -140,8 +140,8 @@ export function MentionsUgcView() {
             onClick={() => setFilterType('stories')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
               filterType === 'stories'
-                ? 'bg-[#26282f] dark:bg-[#26282f] bg-white text-white dark:text-white text-zinc-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-white text-foreground dark:text-foreground text-zinc-900 shadow-sm'
+                : 'text-zinc-400 hover:text-foreground'
             }`}
           >
             Stories ({storiesCount})
@@ -152,7 +152,7 @@ export function MentionsUgcView() {
         <select
           value={selectedClient}
           onChange={(e) => setSelectedClient(e.target.value)}
-          className="text-xs bg-[#16171b] dark:bg-[#16171b] bg-white text-zinc-200 dark:text-zinc-200 text-zinc-800 border border-[#26282f] dark:border-[#26282f] border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+          className="text-xs bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white text-zinc-200 dark:text-zinc-200 text-zinc-800 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
         >
           <option value="">Todos os Restaurantes</option>
           {clients.map((c) => (
@@ -168,23 +168,23 @@ export function MentionsUgcView() {
         {filteredMentions.map((men) => (
           <div
             key={men.id}
-            className={`p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border transition-all flex flex-col justify-between gap-3 shadow-sm ${
+            className={`p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border transition-all flex flex-col justify-between gap-3 shadow-sm ${
               men.reposted
-                ? 'border-[#26282f] dark:border-[#26282f] border-slate-200 opacity-80'
-                : 'border-[#FF5A3C]/40 shadow-md shadow-[#FF5A3C]/5'
+                ? 'border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 opacity-80'
+                : 'border-[var(--ui-accent)]/40 shadow-md shadow-[var(--ui-accent)]/5'
             }`}
           >
             {/* Topo: Autor & Badges */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 p-0.5 shrink-0">
-                  <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-foreground text-xs font-bold">
                     {men.author_username.slice(0, 2).toUpperCase()}
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-white dark:text-white text-zinc-900">
+                    <span className="text-xs font-bold text-foreground dark:text-foreground text-zinc-900">
                       @{men.author_username}
                     </span>
                     {men.is_influencer && (
@@ -228,13 +228,13 @@ export function MentionsUgcView() {
 
             {/* Legenda do Cliente */}
             {men.caption && (
-              <p className="text-xs text-zinc-300 dark:text-zinc-300 text-zinc-700 italic bg-[#1f2026] dark:bg-[#1f2026] bg-slate-50 p-2.5 rounded-xl border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200">
+              <p className="text-xs text-zinc-300 dark:text-zinc-300 text-zinc-700 italic bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 p-2.5 rounded-xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
                 &ldquo;{men.caption}&rdquo;
               </p>
             )}
 
             {/* Rodapé: Ação de Repost e Link */}
-            <div className="flex items-center justify-between pt-2 border-t border-[#26282f] dark:border-[#26282f] border-slate-100">
+            <div className="flex items-center justify-between pt-2 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
               <span className="text-[10px] text-zinc-400 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Recente
@@ -246,7 +246,7 @@ export function MentionsUgcView() {
                     href={men.permalink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition-colors"
                     title="Ver no Instagram"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -259,7 +259,7 @@ export function MentionsUgcView() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     men.reposted
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-[#FF5A3C] hover:bg-[#e04a2f] text-white shadow-sm'
+                      : 'brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground shadow-sm'
                   }`}
                 >
                   {men.reposted ? (

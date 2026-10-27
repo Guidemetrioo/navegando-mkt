@@ -1,4 +1,5 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -17,7 +18,7 @@ export function WeekView() {
   } = useAgenda();
 
   const weekDays = getWeekDates(currentDate);
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
 
   return (
     <div className="w-full flex flex-col gap-4">
@@ -35,17 +36,17 @@ export function WeekView() {
           return (
             <div
               key={iso}
-              className={`flex flex-col bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border transition-all p-3 min-h-[220px] ${
+              className={`flex flex-col bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border transition-all p-3 min-h-[220px] ${
                 isToday
-                  ? 'border-[#FF5A3C]/70 shadow-md shadow-[#FF5A3C]/10'
-                  : 'border-[#26282f] dark:border-[#26282f] border-slate-200'
+                  ? 'border-[var(--ui-accent)]/70 shadow-md shadow-[var(--ui-accent)]/10'
+                  : 'border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200'
               }`}
             >
               {/* Cabeçalho do Dia */}
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#26282f] dark:border-[#26282f] border-slate-100">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
                 <span
                   className={`text-sm font-bold font-heading ${
-                    isToday ? 'text-[#FF5A3C]' : 'text-zinc-100 dark:text-zinc-100 text-zinc-900'
+                    isToday ? 'text-[var(--ui-accent)]' : 'text-zinc-100 dark:text-zinc-100 text-zinc-900'
                   }`}
                 >
                   {dayName}
@@ -70,13 +71,13 @@ export function WeekView() {
                       <div
                         key={ev.id}
                         onClick={() => openEditEventModal(ev)}
-                        className={`group relative p-2.5 rounded-xl border bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 hover:border-[#FF5A3C]/50 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col gap-1.5`}
+                        className={`group relative p-2.5 rounded-xl border bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 hover:border-[var(--ui-accent)]/50 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col gap-1.5`}
                       >
                         {/* Linha vertical de destaque à esquerda */}
                         <div
                           className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${
                             ev.tipo === 'gravacao'
-                              ? 'bg-[#FF5A3C]'
+                              ? 'bg-[var(--ui-accent)]'
                               : ev.tipo === 'foto'
                               ? 'bg-[#0ea5e9]'
                               : ev.tipo === 'edicao'
@@ -96,7 +97,7 @@ export function WeekView() {
                         </div>
 
                         {/* Nome do Cliente */}
-                        <div className="text-sm font-bold text-white dark:text-white text-zinc-900 pl-1.5 leading-snug truncate">
+                        <div className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900 pl-1.5 leading-snug truncate">
                           {ev.client?.nome || 'Cliente não definido'}
                         </div>
 
@@ -130,7 +131,7 @@ export function WeekView() {
                 <button
                   type="button"
                   onClick={() => openNewEventModal(iso)}
-                  className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl border border-dashed border-[#2d2f38] dark:border-[#2d2f38] border-slate-300 hover:border-[#FF5A3C] hover:text-[#FF5A3C] text-xs font-medium text-zinc-400 transition-colors cursor-pointer"
+                  className="mt-2.5 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl border border-dashed border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 hover:border-[var(--ui-accent)] hover:text-[var(--ui-accent)] text-xs font-medium text-zinc-400 transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Adicionar</span>

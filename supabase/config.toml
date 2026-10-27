@@ -1,0 +1,4 @@
+project_id = "navegando-crm"
+
+[db.seed]
+enabled = false

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { DesignSelector } from '@/components/design/DesignSelector';
 import { useAgenda } from '@/context/AgendaContext';
 import { Employee, PontoTipo, PontoStatus } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
   USERS_DATABASE,
+  getDemoPassword,
   UserAccount,
   verifyCredentials,
   CLT_NORMS_2026,
@@ -40,7 +42,7 @@ import {
 import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 export function LoginCheckInView() {
-  const { clients, loginWithCheckIn } = useAgenda();
+  const { clients, loginWithCheckIn, loginDirect } = useAgenda();
 
   // Etapa atual: 'credenciais' -> 'bater_ponto'
   const [step, setStep] = useState<'credenciais' | 'bater_ponto'>('credenciais');
@@ -199,6 +201,8 @@ export function LoginCheckInView() {
       return;
     }
 
+    const result=loginDirect(check.user.employeeId,passwordInput);
+    if(result.success) return;
     setActiveUser(check.user);
 
     // Configurar tipo de ponto inicial de acordo com regime
@@ -231,10 +235,8 @@ export function LoginCheckInView() {
   const handleConfirmPontoAndEnter = () => {
     if (!activeUser) return;
 
-    // Foto fallback caso câmera não esteja aberta
-    const photoToUse =
-      photoDataUrl ||
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
+    if(!photoDataUrl || latitude===null || longitude===null || !accuracy) {setLoginError('Foto e localização reais são obrigatórias para registrar ponto.');return;}
+    const photoToUse=photoDataUrl;
 
     const isInterno = activeUser.regime === 'interno' || activeUser.funcao === 'interno';
 
@@ -243,11 +245,11 @@ export function LoginCheckInView() {
       statusLoc = distanceToRestaurant <= MAX_GEOFENCE_RADIUS_METERS ? 'no_local' : 'fora_do_raio';
     }
 
-    const res = loginWithCheckIn(activeUser.employeeId, activeUser.password, {
+    const res = loginWithCheckIn(activeUser.employeeId, getDemoPassword(activeUser), {
       photoUrl: photoToUse,
-      lat: latitude ?? -23.5505,
-      lng: longitude ?? -46.6333,
-      accuracy: accuracy ?? 8,
+      lat: latitude,
+      lng: longitude,
+      accuracy: accuracy,
       distancia_metros: distanceToRestaurant ?? undefined,
       address: isInterno ? 'Sede Agência Navegando MKT - Escritório Interno' : address,
       clientId: !isInterno ? selectedClientId : undefined,
@@ -264,18 +266,19 @@ export function LoginCheckInView() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#08080a] text-zinc-100 flex flex-col justify-between p-4 sm:p-6 lg:p-8 selection:bg-[#FF6600]/30 relative overflow-hidden fluid-glow">
+    <div className="login-shell min-h-screen w-full bg-[var(--ui-page)] text-zinc-100 flex flex-col justify-between p-4 sm:p-6 lg:p-8 selection:bg-[var(--ui-accent)]/30 relative overflow-hidden fluid-glow">
       {/* Background Decorativo com Auras de Luz Laranja Gastronômica */}
-      <div className="absolute -top-32 right-1/4 w-[500px] h-[500px] bg-[#FF6600]/12 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute -top-32 right-1/4 w-[500px] h-[500px] bg-[var(--ui-accent)]/12 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute -bottom-32 left-1/4 w-[400px] h-[400px] bg-[#FF4500]/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* 1. TOPO: Identidade Visual Oficial Navegando MKT */}
-      <header className="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
-        <NavegandoLogo variant="horizontal" size="md" showTagline withGlow />
+      <header className="login-header max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-[var(--ui-border)] relative z-10">
+        <NavegandoLogo variant="horizontal" size="md" showTagline withGlow={false} />
 
         <div className="flex items-center gap-3 text-right">
+          <DesignSelector />
           <div className="hidden sm:flex flex-col">
-            <span className="text-xs font-bold text-white font-mono">{currentTime}</span>
+            <span className="text-xs font-bold text-foreground font-mono">{currentTime}</span>
             <span className="text-[10px] text-zinc-400 capitalize">{currentDateStr}</span>
           </div>
           <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-1.5">
@@ -294,18 +297,18 @@ export function LoginCheckInView() {
           <div className="w-full max-w-xl flex flex-col gap-6 animate-in fade-in duration-200">
             {/* Card Principal de Login com Glassmorphism */}
             <div className="p-6 sm:p-8 rounded-3xl glass-card flex flex-col gap-6 relative overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#FF6600]/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--ui-accent)]/10 rounded-full blur-2xl pointer-events-none" />
 
               <div className="text-center space-y-2 flex flex-col items-center">
-                <NavegandoLogo variant="symbol" size="lg" withGlow className="mb-1" />
+                <NavegandoLogo variant="symbol" size="lg" withGlow={false} className="mb-1" />
                 <div className="flex items-center gap-1.5 justify-center">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 inline-flex items-center gap-1 shadow-sm">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 inline-flex items-center gap-1 shadow-sm">
                     <Sparkles className="w-3 h-3" />
-                    +1 Bilhão de Views • Marketing Gastronômico
+                    Navegando · Espaço de trabalho
                   </span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
-                  Acesso ao Sistema Navegando MKT
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-foreground tracking-tight">
+                  Acesse seu espaço de trabalho.
                 </h2>
                 <p className="text-xs text-zinc-400 max-w-md">
                   Digite seu usuário e senha cadastrados. O ponto eletrônico será solicitado imediatamente para liberar seu painel diário de prioridades.
@@ -331,7 +334,7 @@ export function LoginCheckInView() {
                       placeholder="Ex: felipe, alexandre, vitinho, isa, guilherme..."
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#14151a] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6600] transition-all"
+                      className="w-full pl-10 pr-3 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"
                       required
                     />
                   </div>
@@ -351,13 +354,13 @@ export function LoginCheckInView() {
                       placeholder="Ex: felipe123, vitinho123..."
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-[#14151a] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF6600] transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-zinc-400 hover:text-white cursor-pointer"
+                      className="absolute right-3 top-3 text-zinc-400 hover:text-foreground cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -369,16 +372,16 @@ export function LoginCheckInView() {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl gradient-cta active:scale-98 text-white font-black text-sm shadow-xl shadow-[#FF6600]/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3.5 rounded-xl gradient-cta active:scale-98 text-foreground font-black text-sm shadow-xl shadow-[var(--ui-accent)]/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
-                  <span>Continuar para Registro de Ponto</span>
+                  <span>Entrar no Sistema</span>
                   <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
               </form>
             </div>
 
             {/* SELEÇÃO RÁPIDA / CREDENCIAIS DA EQUIPE CONFORME ESPECIFICAÇÃO */}
-            <div className="p-5 rounded-3xl bg-[#141519] border border-[#26282f] flex flex-col gap-3">
+            <div className="p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#38bdf8]" />
@@ -388,51 +391,51 @@ export function LoginCheckInView() {
               </div>
 
               {/* Tabs por Categoria */}
-              <div className="flex items-center gap-1 p-1 bg-[#1a1b20] rounded-xl border border-[#2b2d35] overflow-x-auto">
+              <div className="flex items-center gap-1 p-1 bg-[var(--ui-raised)] rounded-xl border border-[var(--ui-border)] overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setQuickTab('donos')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    quickTab === 'donos' ? 'bg-[#FF5A3C] text-white' : 'text-zinc-400 hover:text-white'
+                    quickTab === 'donos' ? 'brand-solid bg-[var(--ui-accent)] text-foreground' : 'text-zinc-400 hover:text-foreground'
                   }`}
                 >
-                  👑 Donos (2)
+                  Donos (2)
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickTab('gerentes')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    quickTab === 'gerentes' ? 'bg-[#FF5A3C] text-white' : 'text-zinc-400 hover:text-white'
+                    quickTab === 'gerentes' ? 'brand-solid bg-[var(--ui-accent)] text-foreground' : 'text-zinc-400 hover:text-foreground'
                   }`}
                 >
-                  👔 Gerentes (4)
+                  Gerentes (4)
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickTab('filmmakers')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    quickTab === 'filmmakers' ? 'bg-[#38bdf8] text-black font-black' : 'text-zinc-400 hover:text-white'
+                    quickTab === 'filmmakers' ? 'bg-[#38bdf8] text-black font-black' : 'text-zinc-400 hover:text-foreground'
                   }`}
                 >
-                  🎥 Filmmakers (3)
+                  Filmmakers (3)
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickTab('modelos')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    quickTab === 'modelos' ? 'bg-[#FF6600] text-white shadow-md shadow-[#FF6600]/30' : 'text-zinc-400 hover:text-white'
+                    quickTab === 'modelos' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-md shadow-[var(--ui-accent)]/30' : 'text-zinc-400 hover:text-foreground'
                   }`}
                 >
-                  <span>✨ Modelos #influencer (4)</span>
+                  <span>Modelos & Criadoras (4)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickTab('internos')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    quickTab === 'internos' ? 'bg-emerald-500 text-black font-black' : 'text-zinc-400 hover:text-white'
+                    quickTab === 'internos' ? 'bg-emerald-500 text-black font-black' : 'text-zinc-400 hover:text-foreground'
                   }`}
                 >
-                  🏢 CLT Interno (7)
+                  CLT Interno (7)
                 </button>
               </div>
 
@@ -454,17 +457,17 @@ export function LoginCheckInView() {
                       onClick={() => handleSelectQuickUser(user)}
                       className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-[#FF6600]/15 border-[#FF6600] text-white shadow-md shadow-[#FF6600]/20'
-                          : 'bg-[#14151a] border-white/5 text-zinc-300 hover:border-white/20'
+                          ? 'bg-[var(--ui-accent)]/15 border-[var(--ui-accent)] text-foreground shadow-md shadow-[var(--ui-accent)]/20'
+                          : 'bg-[var(--ui-surface)] border-[var(--ui-border)] text-zinc-300 hover:border-[var(--ui-border)]'
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-xs text-white truncate">
+                          <span className="font-bold text-xs text-foreground truncate">
                             {user.nome}
                           </span>
                           {user.funcao === 'modelo' && (
-                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-[#FF6600]/20 text-[#FF6600] border border-[#FF6600]/30">
+                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30">
                               #influencer
                             </span>
                           )}
@@ -473,7 +476,7 @@ export function LoginCheckInView() {
                           {user.cargo}
                         </span>
                       </div>
-                      <span className="text-[9px] font-mono px-2 py-1 rounded-lg bg-black/60 text-[#FF6600] shrink-0 border border-white/10 font-bold">
+                      <span className="text-[9px] font-mono px-2 py-1 rounded-lg bg-black/60 text-[var(--ui-accent)] shrink-0 border border-[var(--ui-border)] font-bold">
                         {user.username}123
                       </span>
                     </button>
@@ -490,17 +493,17 @@ export function LoginCheckInView() {
         {step === 'bater_ponto' && activeUser && (
           <div className="w-full max-w-2xl flex flex-col gap-5 animate-in fade-in duration-200">
             {/* Header com Dados do Usuário & Regime */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+            <div className="p-4 sm:p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
               <div className="flex items-center gap-3.5">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md"
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-foreground font-bold text-lg shrink-0 shadow-md"
                   style={{ backgroundColor: `hsl(${activeUser.cor}, 70%, 45%)` }}
                 >
                   {activeUser.nome.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white font-heading">
+                    <h3 className="text-base font-bold text-foreground font-heading">
                       {activeUser.nome}
                     </h3>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 uppercase">
@@ -508,7 +511,7 @@ export function LoginCheckInView() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-400">
-                    Login validado: <strong className="text-white">@{activeUser.username}</strong> • Ponto Obrigatório
+                    Login validado: <strong className="text-foreground">@{activeUser.username}</strong> • Ponto Obrigatório
                   </p>
                 </div>
               </div>
@@ -519,15 +522,15 @@ export function LoginCheckInView() {
                   stopCamera();
                   setStep('credenciais');
                 }}
-                className="text-xs text-zinc-400 hover:text-white underline cursor-pointer self-start sm:self-auto"
+                className="text-xs text-zinc-400 hover:text-foreground underline cursor-pointer self-start sm:self-auto"
               >
                 Trocar de Usuário
               </button>
             </div>
 
-            {/* SE REGIME INTERNO: NORMAS CLT 2026/2027 COM 3 BATIDAS */}
+            {/* SE REGIME INTERNO: NORMAS configurada pela agência COM 3 BATIDAS */}
             {(activeUser.regime === 'interno' || activeUser.funcao === 'interno') ? (
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-5 shadow-2xl">
+              <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-5 shadow-2xl">
                 {/* Banner da Nova CLT */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
@@ -555,14 +558,14 @@ export function LoginCheckInView() {
                       onClick={() => setPontoTipo('entrada')}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         pontoTipo === 'entrada'
-                          ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-md'
-                          : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-400 hover:border-zinc-500'
+                          ? 'bg-emerald-500/20 border-emerald-500 text-foreground shadow-md'
+                          : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-400 hover:border-zinc-500'
                       }`}
                     >
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
                         1ª Batida do Dia
                       </span>
-                      <span className="font-bold text-sm text-white">🌅 Entrada Manhã</span>
+                      <span className="font-bold text-sm text-foreground">Entrada Manhã</span>
                       <span className="text-[10px] text-zinc-400">Início da jornada diária</span>
                     </button>
 
@@ -571,14 +574,14 @@ export function LoginCheckInView() {
                       onClick={() => setPontoTipo('almoco')}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         pontoTipo === 'almoco'
-                          ? 'bg-amber-500/20 border-amber-500 text-white shadow-md'
-                          : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-400 hover:border-zinc-500'
+                          ? 'bg-amber-500/20 border-amber-500 text-foreground shadow-md'
+                          : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-400 hover:border-zinc-500'
                       }`}
                     >
                       <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
                         2ª Batida CLT
                       </span>
-                      <span className="font-bold text-sm text-white">🍽️ Almoço (1h a 2h)</span>
+                      <span className="font-bold text-sm text-foreground">Almoço (1h a 2h)</span>
                       <span className="text-[10px] text-zinc-400">Intervalo intrajornada</span>
                     </button>
 
@@ -587,22 +590,22 @@ export function LoginCheckInView() {
                       onClick={() => setPontoTipo('saida')}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         pontoTipo === 'saida'
-                          ? 'bg-rose-500/20 border-rose-500 text-white shadow-md'
-                          : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-400 hover:border-zinc-500'
+                          ? 'bg-rose-500/20 border-rose-500 text-foreground shadow-md'
+                          : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-400 hover:border-zinc-500'
                       }`}
                     >
                       <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1">
                         3ª Batida Final
                       </span>
-                      <span className="font-bold text-sm text-white">🚪 Saída Expediente</span>
+                      <span className="font-bold text-sm text-foreground">Saída Expediente</span>
                       <span className="text-[10px] text-zinc-400">Encerramento da jornada</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Câmera e Selfie Obrigatória */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-[#1c1d22] border border-[#2b2d35]">
-                  <div className="relative w-32 h-32 rounded-2xl bg-black overflow-hidden border-2 border-[#2b2d35] shrink-0 flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
+                  <div className="relative w-32 h-32 rounded-2xl bg-black overflow-hidden border-2 border-[var(--ui-border)] shrink-0 flex items-center justify-center">
                     {photoDataUrl ? (
                       <img src={photoDataUrl} alt="Selfie" className="w-full h-full object-cover" />
                     ) : isCameraActive ? (
@@ -615,13 +618,13 @@ export function LoginCheckInView() {
 
                   <div className="flex-1 space-y-2 text-center sm:text-left">
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <span className="text-xs font-bold text-white">Comprovação Facial Presencial</span>
+                      <span className="text-xs font-bold text-foreground">Comprovação Facial Presencial</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                         Obrigatório CLT
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">
-                      Horário verificado: <strong className="text-white font-mono">{currentTime}</strong> • Local: Sede Agência Navegando MKT
+                      Horário verificado: <strong className="text-foreground font-mono">{currentTime}</strong> • Local: Sede Agência Navegando MKT
                     </p>
 
                     <div className="flex items-center gap-2 justify-center sm:justify-start pt-1">
@@ -640,7 +643,7 @@ export function LoginCheckInView() {
                             setPhotoDataUrl(null);
                             startCamera();
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#2b2d35] hover:bg-[#383a44] text-white text-xs font-medium transition-all cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-[var(--ui-border)] hover:bg-[var(--ui-border)] text-foreground text-xs font-medium transition-all cursor-pointer"
                         >
                           {photoDataUrl ? 'Tirar Outra Foto' : 'Reativar Câmera'}
                         </button>
@@ -659,7 +662,7 @@ export function LoginCheckInView() {
                     placeholder="Ex: Trabalho na ilha de edição com foco nos vídeos da Mooca..."
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -677,7 +680,7 @@ export function LoginCheckInView() {
               /* ========================================================
                  SE REGIME EXTERNO: FILMMAKERS E MODELOS NOS RESTAURANTES
                  ======================================================== */
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#16171b] border border-[#26282f] flex flex-col gap-5 shadow-2xl">
+              <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-5 shadow-2xl">
                 {/* Banner Equipe Externa */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-[#38bdf8]/10 via-[#38bdf8]/5 to-transparent border border-[#38bdf8]/20 flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-[#38bdf8]/20 text-[#38bdf8] shrink-0">
@@ -701,10 +704,10 @@ export function LoginCheckInView() {
                     className={`p-3 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
                       pontoTipo === 'entrada'
                         ? 'bg-[#38bdf8]/20 border-[#38bdf8] text-[#38bdf8] shadow-md'
-                        : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-400 hover:border-zinc-500'
+                        : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-400 hover:border-zinc-500'
                     }`}
                   >
-                    🟢 Entrada no Restaurante
+                    Entrada no Restaurante
                   </button>
 
                   <button
@@ -713,10 +716,10 @@ export function LoginCheckInView() {
                     className={`p-3 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
                       pontoTipo === 'saida'
                         ? 'bg-rose-500/20 border-rose-500 text-rose-400 shadow-md'
-                        : 'bg-[#1c1d22] border-[#2b2d35] text-zinc-400 hover:border-zinc-500'
+                        : 'bg-[var(--ui-raised)] border-[var(--ui-border)] text-zinc-400 hover:border-zinc-500'
                     }`}
                   >
-                    🔴 Saída do Restaurante
+                    Saída do Restaurante
                   </button>
                 </div>
 
@@ -728,7 +731,7 @@ export function LoginCheckInView() {
                   <select
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
-                    className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8] cursor-pointer"
+                    className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#38bdf8] cursor-pointer"
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -739,13 +742,13 @@ export function LoginCheckInView() {
                 </div>
 
                 {/* Card de GPS e Distância até o Restaurante */}
-                <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#26282f] flex items-center justify-between text-xs">
+                <div className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between text-xs">
                   <div className="space-y-0.5">
                     <span className="text-[10px] text-zinc-400 flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-[#38bdf8]" />
                       Geolocalização do Aparelho
                     </span>
-                    <span className="font-bold text-white block">
+                    <span className="font-bold text-foreground block">
                       {currentRestaurant?.nome || 'Restaurante'}
                     </span>
                     <span className="text-[11px] text-zinc-400 block">
@@ -759,8 +762,8 @@ export function LoginCheckInView() {
                 </div>
 
                 {/* Câmera e Selfie no Restaurante */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-[#1c1d22] border border-[#2b2d35]">
-                  <div className="relative w-32 h-32 rounded-2xl bg-black overflow-hidden border-2 border-[#2b2d35] shrink-0 flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
+                  <div className="relative w-32 h-32 rounded-2xl bg-black overflow-hidden border-2 border-[var(--ui-border)] shrink-0 flex items-center justify-center">
                     {photoDataUrl ? (
                       <img src={photoDataUrl} alt="Selfie" className="w-full h-full object-cover" />
                     ) : isCameraActive ? (
@@ -773,13 +776,13 @@ export function LoginCheckInView() {
 
                   <div className="flex-1 space-y-2 text-center sm:text-left">
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <span className="text-xs font-bold text-white">Selfie no Restaurante</span>
+                      <span className="text-xs font-bold text-foreground">Selfie no Restaurante</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#38bdf8]/15 text-[#38bdf8] border border-[#38bdf8]/30">
                         GPS + Foto
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">
-                      Horário: <strong className="text-white font-mono">{currentTime}</strong>
+                      Horário: <strong className="text-foreground font-mono">{currentTime}</strong>
                     </p>
 
                     <div className="flex items-center gap-2 justify-center sm:justify-start pt-1">
@@ -798,7 +801,7 @@ export function LoginCheckInView() {
                             setPhotoDataUrl(null);
                             startCamera();
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#2b2d35] hover:bg-[#383a44] text-white text-xs font-medium transition-all cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-[var(--ui-border)] hover:bg-[var(--ui-border)] text-foreground text-xs font-medium transition-all cursor-pointer"
                         >
                           {photoDataUrl ? 'Tirar Outra Foto' : 'Reativar Câmera'}
                         </button>
@@ -823,11 +826,11 @@ export function LoginCheckInView() {
       </main>
 
       {/* 3. RODAPÉ: Informações de Segurança */}
-      <footer className="max-w-5xl w-full mx-auto pt-4 border-t border-[#26282f] text-center text-xs text-zinc-400 flex flex-col sm:flex-row items-center justify-between gap-2 relative z-10">
+      <footer className="max-w-5xl w-full mx-auto pt-4 border-t border-[var(--ui-border)] text-center text-xs text-zinc-400 flex flex-col sm:flex-row items-center justify-between gap-2 relative z-10">
         <span>© 2026 Navegando MKT • Sistema Integrado de Gestão & Ponto Eletrônico</span>
         <span className="flex items-center gap-1.5 text-zinc-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Normas CLT 2026/2027 • Geolocalização & Biometria</span>
+          <span>Normas configurada pela agência • Geolocalização & Biometria</span>
         </span>
       </footer>
     </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
+import { EventTipo, EventStatus, ConflictRecord, Client, DespesaGravacao, CategoriaDespesa } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
   X,
@@ -20,6 +20,12 @@ import {
   FolderOpen,
   CheckCircle2,
   Building,
+  Receipt,
+  DollarSign,
+  MessageCircle,
+  Send,
+  Check,
+  Plus,
 } from 'lucide-react';
 
 export function EventModal() {
@@ -35,10 +41,19 @@ export function EventModal() {
     employees,
     addClient,
     userRole,
+    addDespesaGravacao,
+    sendManualWhatsAppConfirmation,
   } = useAgenda();
 
-  // Aba ativa: 'agenda' ou 'relatorio'
-  const [activeTab, setActiveTab] = useState<'agenda' | 'relatorio'>('agenda');
+  // Aba ativa: 'agenda', 'relatorio' ou 'despesas'
+  const [activeTab, setActiveTab] = useState<'agenda' | 'relatorio' | 'despesas'>('agenda');
+
+  // Estados do formulário de Despesas
+  const [despCategoria, setDespCategoria] = useState<CategoriaDespesa>('transporte');
+  const [despDescricao, setDespDescricao] = useState('');
+  const [despValor, setDespValor] = useState('');
+  const [despEmployeeId, setDespEmployeeId] = useState(loggedEmployeeId);
+  const [despComprovanteUrl, setDespComprovanteUrl] = useState('');
 
   // Estados do formulário de Agenda
   const [clientId, setClientId] = useState('');
@@ -58,14 +73,9 @@ export function EventModal() {
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [status, setStatus] = useState<EventStatus>('agendado');
 
-  // Estados do Relatório do Filmmaker
-  const [pratosGravados, setPratosGravados] = useState('');
-  const [takesCount, setTakesCount] = useState<number>(20);
-  const [equipamentoUsado, setEquipamentoUsado] = useState('');
-  const [ocorrenciasCozinha, setOcorrenciasCozinha] = useState('');
+  // Estados do Relatório do Filmmaker (campo único livre)
+  const [relatorioTexto, setRelatorioTexto] = useState('');
   const [driveFolderLink, setDriveFolderLink] = useState('');
-  const [avaliacaoSessao, setAvaliacaoSessao] = useState<'otima' | 'boa' | 'regular' | 'com_imprevistos'>('otima');
-  const [relatorioObs, setRelatorioObs] = useState('');
 
   // Conflitos detectados
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
@@ -74,6 +84,7 @@ export function EventModal() {
   // Sincronizar ao abrir/mudar editingEvent
   useEffect(() => {
     if (editingEvent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the form from the selected event when the modal opens.
       setClientId(editingEvent.client_id || '');
       const existingClient = clients.find((c) => c.id === editingEvent.client_id);
       setClientSearch(existingClient ? existingClient.nome : '');
@@ -92,21 +103,11 @@ export function EventModal() {
       // Carregar dados existentes do Relatório do Filmmaker
       const rep = editingEvent.relatorio_filmmaker;
       if (rep) {
-        setPratosGravados(rep.pratos_gravados || '');
-        setTakesCount(rep.takes_gravados_qtd ?? 20);
-        setEquipamentoUsado(rep.equipamento_usado || '');
-        setOcorrenciasCozinha(rep.ocorrencias_cozinha || '');
+        setRelatorioTexto(rep.relatorio_texto || rep.observacoes || rep.pratos_gravados || '');
         setDriveFolderLink(rep.pasta_brutos_link || existingClient?.drive_folder_url || '');
-        setAvaliacaoSessao(rep.avaliacao_sessao || 'otima');
-        setRelatorioObs(rep.observacoes || '');
       } else {
-        setPratosGravados('');
-        setTakesCount(20);
-        setEquipamentoUsado('Sony FX3 + 24-70mm f/2.8 GM + Gimbal DJI RS3 Pro');
-        setOcorrenciasCozinha('');
+        setRelatorioTexto('');
         setDriveFolderLink(existingClient?.drive_folder_url || '');
-        setAvaliacaoSessao('otima');
-        setRelatorioObs('');
       }
 
       // Se já foi realizado ou se o usuário logado é filmmaker, default pode ser 'agenda'
@@ -210,15 +211,49 @@ export function EventModal() {
       preenchido_por_id: loggedEmployeeId,
       preenchido_por_nome: loggedMember ? loggedMember.nome : 'Filmmaker',
       preenchido_em: new Date().toISOString(),
-      pratos_gravados: pratosGravados,
-      takes_gravados_qtd: Number(takesCount) || 0,
-      equipamento_usado: equipamentoUsado,
-      ocorrencias_cozinha: ocorrenciasCozinha,
+      relatorio_texto: relatorioTexto.trim(),
+      observacoes: relatorioTexto.trim(),
       pasta_brutos_link: driveFolderLink,
-      avaliacao_sessao: avaliacaoSessao,
-      observacoes: relatorioObs,
     });
     closeEventModal();
+  };
+
+  const currentEventExpenses = useMemo(() => {
+    return editingEvent?.despesas || [];
+  }, [editingEvent?.despesas]);
+
+  const totalEventExpenses = useMemo(() => {
+    return currentEventExpenses.reduce((sum, d) => sum + d.valor, 0);
+  }, [currentEventExpenses]);
+
+  const handleCreateDespesa = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(despValor.replace(',', '.'));
+    if (!val || val <= 0) {
+      alert('Informe um valor numérico válido para a despesa.');
+      return;
+    }
+    if (!despDescricao.trim()) {
+      alert('Descreva a despesa (ex: Uber ida e volta, Almoço da equipe, etc).');
+      return;
+    }
+    const emp = employees.find((e) => e.id === despEmployeeId) || employees[0];
+
+    addDespesaGravacao({
+      event_id: editingEvent.id,
+      employee_id: emp.id,
+      employee_nome: emp.nome,
+      categoria: despCategoria,
+      descricao: despDescricao.trim(),
+      valor: val,
+      data: date || new Date().toISOString().slice(0, 10),
+      comprovante_url: despComprovanteUrl.trim() || undefined,
+      status: 'pendente',
+    });
+
+    setDespDescricao('');
+    setDespValor('');
+    setDespComprovanteUrl('');
   };
 
   const currentClient = clients.find((c) => c.id === clientId) || editingEvent.client;
@@ -229,66 +264,84 @@ export function EventModal() {
       onClick={closeEventModal}
     >
       <div
-        className="relative w-full max-w-xl bg-[#16171b] dark:bg-[#16171b] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6"
+        className="relative w-full max-w-xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
         <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
 
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#26282f] dark:border-[#26282f] border-slate-200">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
           <div>
-            <h3 className="text-xl font-bold text-white dark:text-white text-zinc-900 font-heading">
+            <h3 className="text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
               {isEditing ? (currentClient?.nome || 'Detalhes da Gravação') : 'Nova Gravação'}
             </h3>
             <p className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-600 mt-0.5">
-              {isEditing ? 'Alterne entre escala da agenda e relatório da gravação.' : 'Escalone a equipe e defina horário e local.'}
+              {isEditing ? 'Alterne entre escala, relatório do filmmaker e despesas operacionais.' : 'Escalone a equipe e defina horário e local.'}
             </p>
           </div>
 
           <button
             type="button"
             onClick={closeEventModal}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#26282f] dark:hover:bg-[#26282f] hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Abas Superiores: Agenda vs Relatório do Filmmaker */}
+        {/* Abas Superiores: Agenda vs Relatório vs Custos */}
         {isEditing && (
-          <div className="flex items-center gap-2 p-1 bg-[#121316] rounded-xl border border-[#26282f]">
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--ui-surface)] rounded-xl border border-[var(--ui-border)]">
             <button
               type="button"
               onClick={() => setActiveTab('agenda')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'agenda'
-                  ? 'bg-[#FF5A3C] text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1b20]'
+                  ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              <span>Agenda & Escala</span>
+              <span>Agenda</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('relatorio')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'relatorio'
                   ? 'bg-[#38bdf8] text-black shadow-sm font-black'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1b20]'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Relatório do Filmmaker</span>
+              <span>Relatório</span>
               {editingEvent?.relatorio_filmmaker?.preenchido ? (
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Preenchido ✓
+                  OK
                 </span>
               ) : (
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Pendente
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('despesas')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'despesas'
+                  ? 'bg-amber-500 text-black shadow-sm font-black'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Despesas</span>
+              {currentEventExpenses.length > 0 && (
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-black/20 text-black">
+                  {currentEventExpenses.length}
                 </span>
               )}
             </button>
@@ -361,22 +414,22 @@ export function EventModal() {
                   if (!e.target.value) setClientId('');
                 }}
                 onFocus={() => setIsClientDropdownOpen(true)}
-                className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-3 py-2 text-sm text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-sm text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
               <Search className="w-4 h-4 text-zinc-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
 
             {/* Dropdown de Autocomplete */}
             {isClientDropdownOpen && (
-              <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[#1c1d22] dark:bg-[#1c1d22] bg-white border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl shadow-xl divide-y divide-[#2b2d35] dark:divide-[#2b2d35] divide-slate-100">
+              <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl shadow-xl divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-100">
                 {filteredClients.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => handleSelectClient(c)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-[#26282f] dark:hover:bg-[#26282f] hover:bg-slate-100 flex flex-col cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 flex flex-col cursor-pointer"
                   >
-                    <span className="font-bold text-white dark:text-white text-zinc-900">
+                    <span className="font-bold text-foreground dark:text-foreground text-zinc-900">
                       {c.nome}
                     </span>
                     {c.endereco && (
@@ -393,7 +446,7 @@ export function EventModal() {
                     setShowNewClientForm(true);
                     setIsClientDropdownOpen(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-xs text-[#FF5A3C] hover:bg-[#FF5A3C]/10 flex items-center gap-1.5 font-semibold cursor-pointer"
+                  className="w-full text-left px-3 py-2 text-xs text-[var(--ui-accent)] hover:bg-[var(--ui-accent)]/10 flex items-center gap-1.5 font-semibold cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Cadastrar novo restaurante &quot;{clientSearch}&quot;</span>
@@ -404,8 +457,8 @@ export function EventModal() {
 
           {/* Form Embutido de Novo Cliente */}
           {showNewClientForm && (
-            <div className="p-3 rounded-xl bg-[#202127] border border-[#FF5A3C]/30 flex flex-col gap-2 animate-in fade-in">
-              <span className="text-xs font-bold text-[#FF5A3C] flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-accent)]/30 flex flex-col gap-2 animate-in fade-in">
+              <span className="text-xs font-bold text-[var(--ui-accent)] flex items-center gap-1">
                 <Building className="w-3.5 h-3.5" />
                 Novo Restaurante / Cliente
               </span>
@@ -414,7 +467,7 @@ export function EventModal() {
                 placeholder="Nome do Restaurante *"
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
-                className="w-full bg-[#16171b] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                className="w-full bg-[var(--ui-surface)] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-foreground"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -422,14 +475,14 @@ export function EventModal() {
                   placeholder="Contato / WhatsApp"
                   value={newClientContact}
                   onChange={(e) => setNewClientContact(e.target.value)}
-                  className="w-full bg-[#16171b] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  className="w-full bg-[var(--ui-surface)] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-foreground"
                 />
                 <input
                   type="text"
                   placeholder="Bairro / Endereço"
                   value={newClientAddress}
                   onChange={(e) => setNewClientAddress(e.target.value)}
-                  className="w-full bg-[#16171b] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  className="w-full bg-[var(--ui-surface)] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-foreground"
                 />
               </div>
               <div className="flex justify-end gap-2 mt-1">
@@ -443,7 +496,7 @@ export function EventModal() {
                 <button
                   type="button"
                   onClick={handleCreateNewClient}
-                  className="px-3 py-1 bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-semibold text-xs rounded-lg"
+                  className="px-3 py-1 brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-semibold text-xs rounded-lg"
                 >
                   Salvar Cliente
                 </button>
@@ -461,7 +514,7 @@ export function EventModal() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
 
@@ -473,7 +526,7 @@ export function EventModal() {
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
 
@@ -485,7 +538,7 @@ export function EventModal() {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
           </div>
@@ -503,8 +556,8 @@ export function EventModal() {
                   onClick={() => setTipo(t)}
                   className={`py-1.5 px-2 text-xs font-medium rounded-xl border text-center capitalize transition-all cursor-pointer ${
                     tipo === t
-                      ? 'bg-[#FF5A3C] text-white border-[#FF5A3C] font-bold shadow-sm'
-                      : 'bg-[#1c1d22] text-zinc-400 border-[#2b2d35] hover:text-white'
+                      ? 'brand-solid bg-[var(--ui-accent)] text-foreground border-[var(--ui-accent)] font-bold shadow-sm'
+                      : 'bg-[var(--ui-raised)] text-zinc-400 border-[var(--ui-border)] hover:text-foreground'
                   }`}
                 >
                   {t === 'gravacao' ? 'Gravação' : t === 'foto' ? 'Fotografia' : t === 'edicao' ? 'Edição' : 'Reunião'}
@@ -524,7 +577,7 @@ export function EventModal() {
                 placeholder="Ex: Mooca, Jardins, etc."
                 value={local}
                 onChange={(e) => setLocal(e.target.value)}
-                className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-3 py-1.5 text-xs text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
               <MapPin className="w-4 h-4 text-zinc-400 absolute right-3 top-2 pointer-events-none" />
             </div>
@@ -541,7 +594,7 @@ export function EventModal() {
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 flex flex-col gap-3">
+            <div className="p-3 rounded-xl bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 flex flex-col gap-3">
               {/* Grupo Filmmakers */}
               <div>
                 <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#38bdf8] uppercase tracking-wider mb-1.5">
@@ -567,7 +620,7 @@ export function EventModal() {
               </div>
 
               {/* Divisor */}
-              <div className="border-t border-[#2b2d35] dark:border-[#2b2d35] border-slate-200" />
+              <div className="border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200" />
 
               {/* Grupo Meninas dos Vídeos (Criadoras) */}
               <div>
@@ -595,7 +648,7 @@ export function EventModal() {
 
               {/* Outros se houver */}
               {employees.some((emp) => !emp.funcao) && (
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#2b2d35]">
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[var(--ui-border)]">
                   {employees
                     .filter((emp) => !emp.funcao)
                     .map((emp) => {
@@ -615,6 +668,69 @@ export function EventModal() {
             </div>
           </div>
 
+          {/* Status do Evento & Confirmação WhatsApp */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                Status da Gravação
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as EventStatus)}
+                className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-medium"
+              >
+                <option value="agendado">Agendado (Aguardando)</option>
+                <option value="confirmado">Confirmado (Cliente / WhatsApp)</option>
+                <option value="realizado">Realizado (Finalizado)</option>
+                <option value="cancelado">Cancelado / Remarcar</option>
+              </select>
+            </div>
+
+            {/* Status WhatsApp */}
+            <div className="flex flex-col justify-between">
+              <span className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                Confirmação via WhatsApp
+              </span>
+              <div className="flex items-center gap-2">
+                {status === 'confirmado' ? (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold w-full justify-center">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Confirmado pelo Cliente
+                  </span>
+                ) : editingEvent?.confirmacao_whatsapp?.enviado ? (
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="flex items-center gap-1 text-[11px] text-amber-400 font-medium truncate">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      Aguardando Resposta
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => sendManualWhatsAppConfirmation(editingEvent.id)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                      title="Reenviar mensagem de confirmação"
+                    >
+                      <Send className="w-3 h-3" />
+                      Reenviar
+                    </button>
+                  </div>
+                ) : editingEvent ? (
+                  <button
+                    type="button"
+                    onClick={() => sendManualWhatsAppConfirmation(editingEvent.id)}
+                    className="w-full py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Enviar Confirmação WhatsApp
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-zinc-500 italic py-1 text-center w-full block">
+                    Disponível após criar a gravação
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Observações */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
@@ -625,7 +741,7 @@ export function EventModal() {
               placeholder="Ex: Levar gimbal, lentes macro, chegar 15 min antes..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-[#1c1d22] dark:bg-[#1c1d22] bg-slate-50 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-300 rounded-xl px-3 py-2 text-xs text-white dark:text-white text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
         </div>
@@ -635,14 +751,14 @@ export function EventModal() {
             ABA 2: RELATÓRIO DO FILMMAKER (PRODUÇÃO DE VÍDEO)
             ========================================== */}
         {activeTab === 'relatorio' && (
-          <div className="flex flex-col gap-3.5 animate-in fade-in">
+          <div className="flex flex-col gap-4 animate-in fade-in">
             {/* Card com resumo da sessão */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#171922] to-[#121318] border border-[#26282f] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-wider">
                   Produção no Cliente
                 </span>
-                <h4 className="text-sm font-bold text-white">
+                <h4 className="text-sm font-bold text-foreground">
                   {currentClient?.nome || 'Restaurante Parceiro'}
                 </h4>
                 <p className="text-[11px] text-zinc-400">
@@ -663,150 +779,17 @@ export function EventModal() {
               )}
             </div>
 
-            {/* Pratos e Bebidas Gravados */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Pratos e Bebidas Gravados na Sessão *
+            {/* Campo ÚNICO para o relato livre do filmmaker */}
+            <div className="flex flex-col gap-2">
+              <label className="block text-xs font-semibold text-zinc-300">
+                Relatório da Gravação
               </label>
               <textarea
-                rows={2}
-                placeholder="Ex: Tomahawk 900g na brasa, Picanha Nobre ao ponto, Provoleta grelhada e Drink com fumaça..."
-                value={pratosGravados}
-                onChange={(e) => setPratosGravados(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
-              />
-            </div>
-
-            {/* Quantidade de Takes e Avaliação */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Quantidade Total de Takes
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="300"
-                    value={takesCount}
-                    onChange={(e) => setTakesCount(Number(e.target.value) || 0)}
-                    className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
-                  />
-                  <span className="text-xs text-zinc-500 whitespace-nowrap">takes gravados</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Avaliação da Sessão
-                </label>
-                <select
-                  value={avaliacaoSessao}
-                  onChange={(e) => setAvaliacaoSessao(e.target.value as any)}
-                  className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
-                >
-                  <option value="otima">🌟 Sessão Ótima (100% no prazo)</option>
-                  <option value="boa">👍 Boa (Pequenos ajustes)</option>
-                  <option value="regular">😐 Regular (Iluminação/tempo)</option>
-                  <option value="com_imprevistos">⚠️ Com Imprevistos (Cozinha/atraso)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Equipamentos Utilizados com Tags Rápidas */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-zinc-300">
-                  Equipamento Utilizado
-                </label>
-                <span className="text-[10px] text-zinc-400">Clique para adicionar rápido:</span>
-              </div>
-              <input
-                type="text"
-                placeholder="Ex: Sony FX3 + 24-70mm GM II + Gimbal RS3 Pro + Luz Amaran 60x"
-                value={equipamentoUsado}
-                onChange={(e) => setEquipamentoUsado(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8] mb-2"
-              />
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  'Sony FX3',
-                  'Sony A7S III',
-                  '24-70mm GM',
-                  '90mm Macro',
-                  'Gimbal DJI RS3',
-                  'Luz Amaran 60x',
-                  'Nanlite Pavotube',
-                  'Lapela Hollyland',
-                ].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => {
-                      if (!equipamentoUsado.includes(tag)) {
-                        setEquipamentoUsado((prev) => (prev ? `${prev}, ${tag}` : tag));
-                      }
-                    }}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#22242b] hover:bg-[#2e313c] text-zinc-300 hover:text-white border border-[#2f323c] transition-colors cursor-pointer"
-                  >
-                    + {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Ocorrências de Cozinha e Bastidores */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Ocorrências de Cozinha / Bastidores do Restaurante
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Ex: Prato principal atrasou 15 min, mas chef foi super receptivo. Mesa ao lado da janela teve ótima luz natural."
-                value={ocorrenciasCozinha}
-                onChange={(e) => setOcorrenciasCozinha(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
-              />
-            </div>
-
-            {/* Link da Pasta de Brutos no Google Drive */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Link da Pasta de Brutos no Google Drive
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/drive/folders/..."
-                  value={driveFolderLink}
-                  onChange={(e) => setDriveFolderLink(e.target.value)}
-                  className="flex-1 bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
-                />
-                {driveFolderLink && (
-                  <a
-                    href={driveFolderLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-xl bg-[#26282f] hover:bg-[#32353f] text-[#38bdf8] transition-colors"
-                    title="Testar link no navegador"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Observações Gerais */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Observações Adicionais para a Ilha de Edição
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Ex: Take 12 da mordida da Milena é o melhor hook para o início do Reels..."
-                value={relatorioObs}
-                onChange={(e) => setRelatorioObs(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
+                rows={11}
+                placeholder="Escreva livremente aqui o relato da gravação: pratos preparados, bastidores, ocorrências no restaurante, orientações para a equipe de edição, ou qualquer detalhe da sessão..."
+                value={relatorioTexto}
+                onChange={(e) => setRelatorioTexto(e.target.value)}
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-2xl p-4 text-xs text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#38bdf8] resize-y min-h-[240px] leading-relaxed font-sans"
               />
             </div>
 
@@ -820,8 +803,192 @@ export function EventModal() {
           </div>
         )}
 
+        {/* ==========================================
+            ABA 3: CUSTOS & DESPESAS DA GRAVAÇÃO
+            ========================================== */}
+        {activeTab === 'despesas' && (
+          <div className="flex flex-col gap-4 animate-in fade-in">
+            {/* Header com resumo */}
+            <div className="p-3.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                  Reembolsos & Custos Operacionais
+                </span>
+                <h4 className="text-sm font-bold text-foreground">
+                  Despesas em {currentClient?.nome || 'Restaurante'}
+                </h4>
+                <p className="text-[11px] text-zinc-400">
+                  Transporte, alimentação e insumos lançados pela equipe.
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Total da Sessão</span>
+                <span className="text-base font-extrabold text-foreground font-mono">
+                  R$ {totalEventExpenses.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Formulário para adicionar nova despesa */}
+            <form onSubmit={handleCreateDespesa} className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-3">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-[var(--ui-accent)]" />
+                Lançar Despesa da Sessão
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {/* Categoria */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                    Categoria *
+                  </label>
+                  <select
+                    value={despCategoria}
+                    onChange={(e) => setDespCategoria(e.target.value as CategoriaDespesa)}
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  >
+                    <option value="transporte">Transporte (Uber / Combustível)</option>
+                    <option value="alimentacao">Alimentação / Refeição</option>
+                    <option value="estacionamento">Estacionamento</option>
+                    <option value="insumos">Insumos / Pilhas / Produção</option>
+                    <option value="outros">Outros Gastos</option>
+                  </select>
+                </div>
+
+                {/* Valor */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                    Valor (R$) *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 48,50"
+                    value={despValor}
+                    onChange={(e) => setDespValor(e.target.value)}
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-mono"
+                    required
+                  />
+                </div>
+
+                {/* Colaborador solicitante */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                    Colaborador *
+                  </label>
+                  <select
+                    value={despEmployeeId}
+                    onChange={(e) => setDespEmployeeId(e.target.value)}
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  >
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Descrição do Gasto *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Uber ida e volta da agência até o restaurante com iluminação"
+                  value={despDescricao}
+                  onChange={(e) => setDespDescricao(e.target.value)}
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  required
+                />
+              </div>
+
+              {/* Link / URL Comprovante */}
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                  Link do Comprovante / Cupom Fiscal (Opcional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/... ou link do comprovante"
+                  value={despComprovanteUrl}
+                  onChange={(e) => setDespComprovanteUrl(e.target.value)}
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-mono"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Adicionar Despesa da Gravação
+              </button>
+            </form>
+
+            {/* Lista de Despesas Lançadas */}
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-bold text-zinc-300">
+                Despesas Registradas ({currentEventExpenses.length})
+              </span>
+
+              {currentEventExpenses.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] text-center text-xs text-zinc-400">
+                  Nenhuma despesa lançada para esta gravação ainda.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {currentEventExpenses.map((d) => (
+                    <div
+                      key={d.id}
+                      className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-foreground">{d.descricao}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              d.status === 'reembolsado'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : d.status === 'aprovado'
+                                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}
+                          >
+                            {d.status === 'reembolsado' ? 'Reembolsado' : d.status === 'aprovado' ? 'Aprovado' : 'Pendente'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-zinc-400">
+                          {d.employee_nome} • {d.categoria.toUpperCase()} • {new Date(d.data).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="font-mono font-bold text-foreground text-sm block">
+                          R$ {d.valor.toFixed(2)}
+                        </span>
+                        {d.comprovante_url && (
+                          <a
+                            href={d.comprovante_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-[#38bdf8] hover:underline"
+                          >
+                            Ver Comprovante
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Rodapé com Ações */}
-        <div className="flex items-center justify-between pt-3 border-t border-[#26282f] dark:border-[#26282f] border-slate-200 mt-2">
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 mt-2">
           {isEditing && userRole === 'admin' ? (
             <button
               type="button"
@@ -843,7 +1010,7 @@ export function EventModal() {
             <button
               type="button"
               onClick={closeEventModal}
-              className="px-3.5 py-2 rounded-xl bg-[#22242b] dark:bg-[#22242b] bg-slate-100 hover:bg-[#2b2e38] text-xs font-medium text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[var(--ui-hover)] dark:bg-[var(--ui-hover)] bg-slate-100 hover:bg-[var(--ui-border)] text-xs font-medium text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
@@ -855,13 +1022,22 @@ export function EventModal() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#38bdf8] hover:bg-[#0284c7] text-black font-bold text-xs shadow-md shadow-[#38bdf8]/20 transition-all hover:scale-[1.02] cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Salvar Relatório do Filmmaker</span>
+                <span>Salvar Relatório</span>
+              </button>
+            ) : activeTab === 'despesas' ? (
+              <button
+                type="button"
+                onClick={closeEventModal}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Concluir Despesas</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => handleSubmit(false)}
-                className="px-4 py-2 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-semibold text-xs shadow-md shadow-[#FF5A3C]/20 transition-all hover:scale-[1.02] cursor-pointer"
+                className="px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-semibold text-xs shadow-md shadow-[var(--ui-accent)]/20 transition-all hover:scale-[1.02] cursor-pointer"
               >
                 {isEditing ? 'Salvar alterações' : 'Criar gravação'}
               </button>

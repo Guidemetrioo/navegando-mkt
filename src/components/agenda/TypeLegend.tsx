@@ -4,7 +4,7 @@ import React from 'react';
 
 export function TypeLegend() {
   const types = [
-    { label: 'Gravação', dotColor: 'bg-[#FF5A3C]' },
+    { label: 'Gravação', dotColor: 'bg-[var(--ui-accent)]' },
     { label: 'Fotografia', dotColor: 'bg-[#0ea5e9]' },
     { label: 'Edição', dotColor: 'bg-[#a855f7]' },
     { label: 'Reunião', dotColor: 'bg-[#a1a1aa]' },

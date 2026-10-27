@@ -1,5 +1,5 @@
 export type EventTipo = 'gravacao' | 'foto' | 'edicao' | 'reuniao';
-export type EventStatus = 'agendado' | 'realizado' | 'cancelado';
+export type EventStatus = 'agendado' | 'confirmado' | 'realizado' | 'cancelado';
 export type UserRole = 'admin' | 'funcionario';
 export type TeamRole = 'dono' | 'gerente' | 'filmmaker' | 'modelo' | 'criadora' | 'interno';
 export type WorkRegime = 'interno' | 'externo';
@@ -71,6 +71,7 @@ export interface RelatorioFilmmaker {
   preenchido_por_id?: string;
   preenchido_por_nome?: string;
   preenchido_em?: string;
+  relatorio_texto?: string;
   pratos_gravados?: string;
   takes_gravados_qtd?: number;
   equipamento_usado?: string;
@@ -91,6 +92,8 @@ export interface EventItem {
   observacoes?: string | null;
   status: EventStatus;
   relatorio_filmmaker?: RelatorioFilmmaker;
+  despesas?: DespesaGravacao[];
+  confirmacao_whatsapp?: WhatsAppConfirmacaoInfo;
   created_at?: string;
   // Relacionamentos carregados
   client?: Client;
@@ -257,4 +260,121 @@ export interface MediaDeliverable {
   event?: EventItem;
   filmmaker?: Employee;
   criadora?: Employee;
+}
+
+// ==========================================
+// TIPOS: DESPESAS DE GRAVAÇÃO (Inseridas pelos Colaboradores)
+// ==========================================
+
+export type CategoriaDespesa = 'transporte' | 'alimentacao' | 'estacionamento' | 'insumos' | 'outros';
+export type StatusDespesa = 'pendente' | 'aprovado' | 'reembolsado' | 'recusado';
+
+export interface DespesaGravacao {
+  id: string;
+  event_id: string;
+  employee_id: string;
+  employee_nome: string;
+  categoria: CategoriaDespesa;
+  descricao: string;
+  valor: number;
+  data: string; // YYYY-MM-DD
+  comprovante_url?: string;
+  status: StatusDespesa;
+  observacao_gestor?: string;
+  created_at: string;
+  // Campos populados
+  client_nome?: string;
+}
+
+// ==========================================
+// TIPOS: CONTROLE FINANCEIRO EXECUTIVO (Gestores)
+// ==========================================
+
+export type TransacaoTipo = 'receita' | 'despesa';
+export type TransacaoCategoria =
+  | 'mensalidade_cliente'
+  | 'salario_equipe'
+  | 'custo_gravacao'
+  | 'equipamento'
+  | 'software_infra'
+  | 'impostos'
+  | 'outros';
+export type TransacaoStatus = 'pago' | 'pendente' | 'atrasado' | 'cancelado';
+
+export interface TransacaoFinanceira {
+  id: string;
+  tipo: TransacaoTipo;
+  categoria: TransacaoCategoria;
+  descricao: string;
+  valor: number;
+  data_vencimento: string; // YYYY-MM-DD
+  data_pagamento?: string | null;
+  status: TransacaoStatus;
+  client_id?: string | null;
+  employee_id?: string | null;
+  event_id?: string | null;
+  despesa_gravacao_id?: string | null;
+  forma_pagamento?: 'pix' | 'boleto' | 'transferencia' | 'cartao';
+  comprovante_url?: string;
+  observacoes?: string;
+  created_at: string;
+  // Populados
+  cliente_nome?: string;
+  employee_nome?: string;
+}
+
+export interface FuncionarioSalario {
+  employee_id: string;
+  nome: string;
+  cargo: string;
+  regime: WorkRegime;
+  tipo_contrato: 'clt' | 'pj' | 'freelancer_diaria';
+  valor_base: number; // Salário fixo mensal ou valor base da diária
+  dia_pagamento: number; // Ex: dia 5 ou dia 20
+  chave_pix?: string;
+  banco?: string;
+  status_mes_atual: 'pago' | 'pendente';
+  data_ultimo_pagamento?: string;
+}
+
+// ==========================================
+// TIPOS: WHATSAPP BOT & CONFIRMAÇÃO AUTOMÁTICA
+// ==========================================
+
+export type ConfirmacaoStatus = 'pendente' | 'confirmado' | 'remarcar' | 'cancelado';
+
+export interface WhatsAppConfirmacaoInfo {
+  enviado: boolean;
+  enviado_em?: string;
+  telefone_destino?: string;
+  status_resposta?: ConfirmacaoStatus;
+  resposta_recebida_em?: string;
+  ultima_mensagem?: string;
+}
+
+export interface WhatsAppConfig {
+  conectado: boolean;
+  status: 'desconectado' | 'gerando_qrcode' | 'conectado' | 'reconectando';
+  instancia_nome: string;
+  numero_conectado?: string;
+  pairing_code?: string;
+  qr_code?: string;
+  auto_confirmacao_d1: boolean;
+  horario_envio_padrao: string;
+  template_mensagem: string;
+  tentativas_webhook: number;
+  ultima_verificacao?: string;
+}
+
+export interface WhatsAppMessageLog {
+  id: string;
+  event_id?: string;
+  client_id?: string;
+  cliente_nome: string;
+  numero_destino: string;
+  tipo: 'envio_confirmacao' | 'resposta_cliente' | 'notificacao_equipe' | 'manual';
+  mensagem: string;
+  status: 'enviada' | 'entregue' | 'lida' | 'respondida' | 'falha';
+  resposta_detectada?: 'confirmado' | 'remarcar' | 'outro';
+  data_hora: string;
 }

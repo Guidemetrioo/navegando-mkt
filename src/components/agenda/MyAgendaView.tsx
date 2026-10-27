@@ -34,14 +34,14 @@ export function MyAgendaView() {
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
       {/* Header do Perfil do Funcionário */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200">
+      <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
         <div className="flex items-center gap-3">
           {currentEmployee && <EmployeeBadge employee={currentEmployee} size="lg" showRole />}
           <div>
             <div className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-500 font-medium">
-              {currentEmployee?.funcao === 'filmmaker' ? '🎥 Filmmaker (Câmera & Vídeo)' : '✨ Apresentadora / Criadora'}
+              {currentEmployee?.funcao === 'filmmaker' ? 'Filmmaker (Câmera & Vídeo)' : 'Apresentadora / Modelo'}
             </div>
-            <div className="text-sm font-bold text-white dark:text-white text-zinc-900">
+            <div className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900">
               {myEvents.length} {myEvents.length === 1 ? 'gravação agendada' : 'gravações agendadas'}
             </div>
           </div>
@@ -54,13 +54,13 @@ export function MyAgendaView() {
       </div>
 
       {/* Banner de Ação Rápida: Bater Ponto no Restaurante */}
-      <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-emerald-500/30 flex items-center justify-between gap-3 shadow-sm">
+      <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-emerald-500/30 flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
             <Camera className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-white dark:text-white text-zinc-900">
+            <div className="text-xs font-bold text-foreground dark:text-foreground text-zinc-900">
               Chegou no restaurante da gravação?
             </div>
             <div className="text-[11px] text-zinc-400">
@@ -72,7 +72,7 @@ export function MyAgendaView() {
         <button
           type="button"
           onClick={() => openPontoModal()}
-          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-foreground font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer whitespace-nowrap active:scale-95"
         >
           <Camera className="w-3.5 h-3.5" />
           <span>Bater Ponto</span>
@@ -80,7 +80,7 @@ export function MyAgendaView() {
       </div>
 
       {sortedDates.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200">
+        <div className="p-12 text-center rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
           <Calendar className="w-10 h-10 mx-auto text-zinc-500 mb-2" />
           <h3 className="text-base font-semibold text-zinc-200 dark:text-zinc-200 text-zinc-800">
             Nenhuma gravação escalada
@@ -102,10 +102,10 @@ export function MyAgendaView() {
               <div key={dateStr} className="flex flex-col gap-2.5">
                 {/* Divisor do Dia */}
                 <div className="flex items-center gap-2 px-1">
-                  <span className="text-xs font-bold text-[#FF5A3C] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[var(--ui-accent)] uppercase tracking-wider">
                     {dayName}, {dayNum} de {monthStr}
                   </span>
-                  <div className="h-px bg-[#26282f] dark:bg-[#26282f] bg-slate-200 flex-1" />
+                  <div className="h-px bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-slate-200 flex-1" />
                 </div>
 
                 {/* Cartões do Dia */}
@@ -120,8 +120,8 @@ export function MyAgendaView() {
                         onClick={() => {
                           if (userRole === 'admin') openEditEventModal(ev);
                         }}
-                        className={`p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-3 shadow-sm ${
-                          userRole === 'admin' ? 'cursor-pointer hover:border-[#FF5A3C]/40' : ''
+                        className={`p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-3 shadow-sm ${
+                          userRole === 'admin' ? 'cursor-pointer hover:border-[var(--ui-accent)]/40' : ''
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -133,7 +133,7 @@ export function MyAgendaView() {
                           </span>
 
                           <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 dark:text-zinc-300 text-zinc-800">
-                            <Clock className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                            <Clock className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                             <span>
                               {formatTimeClean(ev.hora_inicio)} às {formatTimeClean(ev.hora_fim)}
                             </span>
@@ -142,7 +142,7 @@ export function MyAgendaView() {
 
                         {/* Nome do Restaurante / Cliente */}
                         <div>
-                          <h4 className="text-base font-bold text-white dark:text-white text-zinc-900 font-heading">
+                          <h4 className="text-base font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
                             {ev.client?.nome || 'Cliente'}
                           </h4>
                           {ev.local && (
@@ -155,14 +155,14 @@ export function MyAgendaView() {
 
                         {/* Observações da Produção */}
                         {ev.observacoes && (
-                          <div className="p-2.5 rounded-xl bg-[#1f2026] dark:bg-[#1f2026] bg-slate-50 text-xs text-zinc-300 dark:text-zinc-300 text-zinc-700 border border-[#2b2d35] dark:border-[#2b2d35] border-slate-200">
-                            <span className="font-semibold text-[#FF5A3C]">Obs: </span>
+                          <div className="p-2.5 rounded-xl bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 text-xs text-zinc-300 dark:text-zinc-300 text-zinc-700 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
+                            <span className="font-semibold text-[var(--ui-accent)]">Obs: </span>
                             {ev.observacoes}
                           </div>
                         )}
 
                         {/* Equipe escalada neste job */}
-                        <div className="flex items-center justify-between pt-2 border-t border-[#26282f] dark:border-[#26282f] border-slate-100">
+                        <div className="flex items-center justify-between pt-2 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-[11px] text-zinc-400 mr-0.5">Dupla no restaurante:</span>
                             {(ev.employees || []).map((emp) => (
@@ -193,7 +193,7 @@ export function MyAgendaView() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-[#FF5A3C] hover:underline"
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--ui-accent)] hover:underline"
                               >
                                 <Navigation className="w-3.5 h-3.5" />
                                 <span>Como chegar</span>

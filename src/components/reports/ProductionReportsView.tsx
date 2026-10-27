@@ -141,22 +141,22 @@ export function ProductionReportsView() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in pb-12">
       {/* 1. CABEÇALHO */}
-      <div className="relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[#121319] via-[#0d0e14] to-[#160d08] border border-white/10 shadow-2xl">
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#FF6600]/15 rounded-full blur-[100px] pointer-events-none" />
+      <div className="relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-[var(--ui-surface)] via-[var(--ui-page)] to-[var(--ui-surface)] border border-[var(--ui-border)] shadow-2xl">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[var(--ui-accent)]/15 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute right-6 bottom-4 opacity-10 pointer-events-none hidden md:block">
           <NavegandoLogo size={120} variant="symbol" />
         </div>
 
         <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30">
-              <Video className="w-5 h-5 text-[#FF6600]" />
+            <span className="p-2 rounded-xl bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30">
+              <Video className="w-5 h-5 text-[var(--ui-accent)]" />
             </span>
-            <span className="text-xs font-black text-[#FF6600] tracking-wider uppercase">
+            <span className="text-xs font-black text-[var(--ui-accent)] tracking-wider uppercase">
               Relatórios de Produção de Vídeo • Navegando MKT
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black font-heading text-foreground tracking-tight">
             Relatórios por Dia e Restaurante
           </h1>
           <p className="text-xs sm:text-sm text-zinc-300 max-w-2xl leading-relaxed">
@@ -168,7 +168,7 @@ export function ProductionReportsView() {
           <button
             type="button"
             onClick={handleExportSummary}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#14151b] hover:bg-[#1f2026] text-zinc-300 hover:text-white border border-white/10 font-semibold text-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[var(--ui-surface)] hover:bg-[var(--ui-raised)] text-zinc-300 hover:text-foreground border border-[var(--ui-border)] font-semibold text-xs transition-colors cursor-pointer"
             title="Copiar relatório formatado"
           >
             <Download className="w-4 h-4 text-emerald-400" />
@@ -177,7 +177,7 @@ export function ProductionReportsView() {
           <button
             type="button"
             onClick={() => openNewEventModal()}
-            className="gradient-cta flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all cursor-pointer"
+            className="gradient-cta flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-foreground font-bold text-xs shadow-lg transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nova Gravação</span>
@@ -187,18 +187,18 @@ export function ProductionReportsView() {
 
       {/* 2. STATS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
           <div className="flex items-center justify-between text-zinc-400 text-xs">
             <span>Gravações Relatadas</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl sm:text-3xl font-black text-white font-heading">
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-heading">
               {stats.relatoriosPreenchidos}
             </span>
             <span className="text-xs text-zinc-500">/ {stats.totalSessoes} sessoes</span>
           </div>
-          <div className="w-full bg-[#202127] rounded-full h-1.5 mt-2 overflow-hidden">
+          <div className="w-full bg-[var(--ui-raised)] rounded-full h-1.5 mt-2 overflow-hidden">
             <div
               className="bg-emerald-500 h-full rounded-full transition-all"
               style={{ width: `${stats.taxaPreenchimento}%` }}
@@ -209,7 +209,7 @@ export function ProductionReportsView() {
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
           <div className="flex items-center justify-between text-zinc-400 text-xs">
             <span>Total de Takes Gravados</span>
             <Camera className="w-4 h-4 text-[#38bdf8]" />
@@ -225,7 +225,7 @@ export function ProductionReportsView() {
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
           <div className="flex items-center justify-between text-zinc-400 text-xs">
             <span>Sessões Impecáveis</span>
             <Star className="w-4 h-4 text-amber-400" />
@@ -241,13 +241,13 @@ export function ProductionReportsView() {
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-1">
           <div className="flex items-center justify-between text-zinc-400 text-xs">
             <span>Restaurantes Atendidos</span>
-            <Building className="w-4 h-4 text-[#FF6600]" />
+            <Building className="w-4 h-4 text-[var(--ui-accent)]" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl sm:text-3xl font-black text-white font-heading">
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-heading">
               {clients.length}
             </span>
             <span className="text-xs text-zinc-500">parceiros ativos</span>
@@ -259,10 +259,10 @@ export function ProductionReportsView() {
       </div>
 
       {/* 3. BARRA DE FILTROS: DIA E CLIENTE */}
-      <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col gap-3">
+      <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <span className="flex items-center gap-2 text-xs font-bold text-zinc-300 uppercase tracking-wider">
-            <Filter className="w-3.5 h-3.5 text-[#FF6600]" />
+            <Filter className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
             <span>Filtrar Relatórios por Dia e Cliente</span>
           </span>
 
@@ -270,7 +270,7 @@ export function ProductionReportsView() {
             <button
               type="button"
               onClick={handleClearFilters}
-              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
             >
               <RefreshCw className="w-3 h-3" />
               <span>Limpar filtros</span>
@@ -287,7 +287,7 @@ export function ProductionReportsView() {
               placeholder="Buscar prato, equipamento..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-[#1c1d22] border border-[#2b2d35] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
+              className="w-full pl-9 pr-3 py-2 bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl text-xs text-foreground placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
 
@@ -296,9 +296,9 @@ export function ProductionReportsView() {
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
             >
-              <option value="all">🍽️ Todos os Restaurantes ({clients.length})</option>
+              <option value="all">Todos os Restaurantes ({clients.length})</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome}
@@ -313,7 +313,7 @@ export function ProductionReportsView() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
               title="Filtrar por dia específico"
             />
           </div>
@@ -323,9 +323,9 @@ export function ProductionReportsView() {
             <select
               value={selectedFilmmakerId}
               onChange={(e) => setSelectedFilmmakerId(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
             >
-              <option value="all">🎥 Todos os Filmmakers</option>
+              <option value="all">Todos os Filmmakers</option>
               {employees
                 .filter((e) => e.funcao === 'filmmaker')
                 .map((emp) => (
@@ -340,12 +340,12 @@ export function ProductionReportsView() {
           <div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#FF6600] cursor-pointer"
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
             >
-              <option value="all">📋 Todos os Status</option>
-              <option value="preenchido">✓ Relatórios Preenchidos</option>
-              <option value="pendente">⚠️ Relatórios Pendentes</option>
+              <option value="all">Todos os Status</option>
+              <option value="preenchido">Relatórios Preenchidos</option>
+              <option value="pendente">Relatórios Pendentes</option>
             </select>
           </div>
         </div>
@@ -360,16 +360,16 @@ export function ProductionReportsView() {
         </div>
 
         {filteredEvents.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col items-center gap-3">
+          <div className="p-12 text-center rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col items-center gap-3">
             <FileText className="w-10 h-10 text-zinc-600" />
-            <h3 className="text-base font-bold text-white">Nenhum relatório encontrado</h3>
+            <h3 className="text-base font-bold text-foreground">Nenhum relatório encontrado</h3>
             <p className="text-xs text-zinc-400 max-w-sm">
               Não há gravações que correspondam aos filtros selecionados de dia ou cliente.
             </p>
             <button
               type="button"
               onClick={handleClearFilters}
-              className="mt-2 px-4 py-2 rounded-xl bg-[#22242b] text-zinc-200 text-xs font-semibold hover:bg-[#2c2f38] transition-colors cursor-pointer"
+              className="mt-2 px-4 py-2 rounded-xl bg-[var(--ui-hover)] text-zinc-200 text-xs font-semibold hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
             >
               Limpar Filtros
             </button>
@@ -384,16 +384,16 @@ export function ProductionReportsView() {
               return (
                 <div
                   key={ev.id}
-                  className="p-5 rounded-2xl bg-[#16171b] border border-[#26282f] hover:border-[#38bdf8]/50 transition-all shadow-md flex flex-col gap-4"
+                  className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] hover:border-[#38bdf8]/50 transition-all shadow-md flex flex-col gap-4"
                 >
                   {/* Topo do Card: Cliente, Data e Status */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-[#26282f]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-[var(--ui-border)]">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#FF6600]/10 border border-[#FF6600]/20 flex items-center justify-center text-[#FF6600] font-black text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--ui-accent)]/10 border border-[var(--ui-accent)]/20 flex items-center justify-center text-[var(--ui-accent)] font-black text-sm shrink-0">
                         {client?.nome ? client.nome.slice(0, 2).toUpperCase() : 'CL'}
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                           <span>{client?.nome || 'Restaurante'}</span>
                           {client?.instagram_handle && (
                             <span className="text-[11px] font-normal text-zinc-400">
@@ -403,7 +403,7 @@ export function ProductionReportsView() {
                         </h3>
                         <p className="text-xs text-zinc-400 flex items-center gap-2">
                           <span className="flex items-center gap-1 text-zinc-300">
-                            <Calendar className="w-3 h-3 text-[#FF6600]" />
+                            <Calendar className="w-3 h-3 text-[var(--ui-accent)]" />
                             {ev.data}
                           </span>
                           <span>•</span>
@@ -435,11 +435,11 @@ export function ProductionReportsView() {
                       )}
 
                       {rep?.avaliacao_sessao && (
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#1c1d22] border border-[#2b2d35] text-zinc-300">
-                          {rep.avaliacao_sessao === 'otima' && '🌟 Sessão Ótima'}
-                          {rep.avaliacao_sessao === 'boa' && '👍 Sessão Boa'}
-                          {rep.avaliacao_sessao === 'regular' && '😐 Sessão Regular'}
-                          {rep.avaliacao_sessao === 'com_imprevistos' && '⚠️ Com Imprevistos'}
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--ui-raised)] border border-[var(--ui-border)] text-zinc-300">
+                          {rep.avaliacao_sessao === 'otima' && 'Sessão Ótima'}
+                          {rep.avaliacao_sessao === 'boa' && 'Sessão Boa'}
+                          {rep.avaliacao_sessao === 'regular' && 'Sessão Regular'}
+                          {rep.avaliacao_sessao === 'com_imprevistos' && 'Com Imprevistos'}
                         </span>
                       )}
                     </div>
@@ -450,24 +450,24 @@ export function ProductionReportsView() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                       {/* Coluna 1: Pratos Gravados e Takes */}
                       <div className="space-y-3">
-                        <div className="p-3 rounded-xl bg-[#1c1d22] border border-[#26282f]">
+                        <div className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
                           <span className="text-[10px] font-bold text-[#38bdf8] uppercase tracking-wider block mb-1">
-                            🍽️ Pratos e Bebidas Gravados:
+                            Relato do Filmmaker:
                           </span>
-                          <p className="text-zinc-200 font-medium leading-relaxed">
-                            {rep?.pratos_gravados || 'Nenhum prato especificado.'}
+                          <p className="text-zinc-200 font-medium leading-relaxed whitespace-pre-line">
+                            {rep?.relatorio_texto || rep?.observacoes || rep?.pratos_gravados || 'Nenhum detalhe especificado.'}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 p-2.5 rounded-xl bg-[#1c1d22] border border-[#26282f]">
+                          <div className="flex-1 p-2.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
                             <span className="text-[10px] text-zinc-400 block">Total de Takes</span>
-                            <span className="text-base font-bold text-white">
+                            <span className="text-base font-bold text-foreground">
                               {rep?.takes_gravados_qtd || 0} takes
                             </span>
                           </div>
 
-                          <div className="flex-1 p-2.5 rounded-xl bg-[#1c1d22] border border-[#26282f]">
+                          <div className="flex-1 p-2.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
                             <span className="text-[10px] text-zinc-400 block">Preenchido Por</span>
                             <span className="text-xs font-bold text-zinc-200 truncate block">
                               {rep?.preenchido_por_nome || 'Filmmaker'}
@@ -479,9 +479,9 @@ export function ProductionReportsView() {
                       {/* Coluna 2: Equipamento, Ocorrências e Link Drive */}
                       <div className="space-y-3">
                         {rep?.equipamento_usado && (
-                          <div className="p-2.5 rounded-xl bg-[#1c1d22] border border-[#26282f]">
+                          <div className="p-2.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">
-                              🎥 Equipamento Usado:
+                              Equipamento Usado:
                             </span>
                             <p className="text-zinc-300">{rep.equipamento_usado}</p>
                           </div>
@@ -490,16 +490,16 @@ export function ProductionReportsView() {
                         {rep?.ocorrencias_cozinha && (
                           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200">
                             <span className="text-[10px] font-bold uppercase tracking-wider block mb-0.5 text-amber-400">
-                              ⚠️ Ocorrências da Cozinha:
+                              Ocorrências:
                             </span>
                             <p className="text-xs leading-relaxed">{rep.ocorrencias_cozinha}</p>
                           </div>
                         )}
 
                         {rep?.observacoes && (
-                          <div className="p-2.5 rounded-xl bg-[#1c1d22] border border-[#26282f]">
+                          <div className="p-2.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">
-                              📝 Observações para Edição:
+                              Observações para Edição:
                             </span>
                             <p className="text-zinc-300 italic">{rep.observacoes}</p>
                           </div>
@@ -528,7 +528,7 @@ export function ProductionReportsView() {
                   )}
 
                   {/* Rodapé do Card: Equipe Escalada + Botões de Ação */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#26282f]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[var(--ui-border)]">
                     {/* Chips dos funcionários */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-bold text-zinc-400 uppercase">Equipe:</span>
@@ -554,7 +554,7 @@ export function ProductionReportsView() {
                       <button
                         type="button"
                         onClick={() => openEditEventModal(ev)}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#22242b] hover:bg-[#2b2e38] text-zinc-200 hover:text-white text-xs font-semibold border border-[#2f323c] transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--ui-hover)] hover:bg-[var(--ui-border)] text-zinc-200 hover:text-foreground text-xs font-semibold border border-[var(--ui-border)] transition-colors cursor-pointer"
                       >
                         <FileText className="w-3.5 h-3.5 text-[#38bdf8]" />
                         <span>{isPreenchido ? 'Editar Relatório' : 'Abrir Relatório'}</span>

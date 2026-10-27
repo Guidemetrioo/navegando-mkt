@@ -94,7 +94,7 @@ export function getMonthMatrix(year: number, monthIndex: number): { date: Date; 
   const startMonday = getMonday(firstOfMonth);
 
   const matrix: { date: Date; isCurrentMonth: boolean; iso: string }[][] = [];
-  let currentDay = new Date(startMonday);
+  const currentDay = new Date(startMonday);
 
   // Criar 5 ou 6 semanas até cobrir o mês
   for (let week = 0; week < 6; week++) {
@@ -143,4 +143,11 @@ export function formatTimeClean(timeStr: string): string {
   if (!timeStr) return '';
   const parts = timeStr.split(':');
   return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+}
+
+/** Agency reporting day, independent of the device timezone. */
+export function todayInSaoPaulo(now=new Date()): string {
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+  const part=(type:string)=>parts.find(p=>p.type===type)!.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }

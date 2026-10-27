@@ -1,6 +1,8 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React, { useState } from 'react';
+import { IS_DEMO } from '@/lib/app-mode';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
@@ -14,8 +16,6 @@ import {
   TrendingUp,
   MessageSquare,
   ShieldCheck,
-  Sun,
-  Moon,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -27,6 +27,8 @@ import {
   LogOut,
   Home,
   FileText,
+  DollarSign,
+  Smartphone,
 } from 'lucide-react';
 import { canUserAccessView, USERS_DATABASE } from '@/lib/auth-users';
 import { NavegandoLogo } from '../brand/NavegandoLogo';
@@ -39,16 +41,16 @@ interface AppSidebarProps {
 export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarProps = {}) {
   const {
     currentView,
+    isDataSaved,
+    userRole,
+    canManage,
     setCurrentView,
     employees,
     loggedEmployeeId,
     setLoggedEmployeeId,
-    theme,
-    toggleTheme,
     deliverables,
     pontos,
     events,
-    isDataSaved,
     openNewEventModal,
     openDeliverableModal,
     openPontoModal,
@@ -63,7 +65,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
     (d) => d.status === 'aguardando_aprovacao'
   ).length;
 
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
   const todayEventsCount = events.filter((e) => e.data === todayIso).length;
 
   interface NavItem {
@@ -81,31 +83,30 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
 
   const navGroups: NavGroup[] = [
     {
-      groupTitle: 'Central Pessoal & Liderança',
+      groupTitle: 'Visão geral',
       items: [
         {
           id: 'home',
-          label: 'Início (Meu Painel)',
-          icon: Sparkles,
-          badge: 'Prioridades',
-          badgeColor: 'bg-[#FF5A3C]/20 text-[#FF5A3C]',
+          label: 'Meu painel',
+          icon: Home,
+          badgeColor: 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)]',
         },
         {
           id: 'dashboard',
-          label: 'Dashboard Executivo',
+          label: 'Indicadores',
           icon: LayoutDashboard,
         },
       ],
     },
     {
-      groupTitle: 'Produção & Campo',
+      groupTitle: 'Produção',
       items: [
         {
           id: 'mes',
           label: 'Agenda Geral',
           icon: Calendar,
           badge: todayEventsCount > 0 ? `${todayEventsCount} hoje` : undefined,
-          badgeColor: 'bg-[#FF5A3C]/20 text-[#FF5A3C]',
+          badgeColor: 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)]',
         },
         {
           id: 'escala',
@@ -119,22 +120,20 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
         {
           id: 'ponto',
-          label: 'Ponto & GPS Real',
+          label: 'Ponto e localização',
           icon: MapPin,
-          badge: 'GPS Ao Vivo',
           badgeColor: 'bg-emerald-500/15 text-emerald-400',
         },
         {
           id: 'relatorios',
           label: 'Relatórios dos Vídeos',
           icon: FileText,
-          badge: 'Campo',
           badgeColor: 'bg-[#38bdf8]/15 text-[#38bdf8]',
         },
       ],
     },
     {
-      groupTitle: 'Arquivos & Clientes (DAM)',
+      groupTitle: 'Relacionamento',
       items: [
         {
           id: 'arquivos',
@@ -145,13 +144,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
         {
           id: 'clientes',
-          label: 'Restaurantes Parceiros',
+          label: 'Restaurantes',
           icon: Building,
         },
       ],
     },
     {
-      groupTitle: 'Redes Sociais & Métricas',
+      groupTitle: 'Performance',
       items: [
         {
           id: 'metricas-reels',
@@ -165,12 +164,34 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
       ],
     },
+    ...(canManage
+      ? [
+          {
+            groupTitle: 'Gestão Executiva',
+            items: [
+              {
+                id: 'financeiro' as AgendaView,
+                label: 'Controle Financeiro',
+                icon: DollarSign,
+                badgeColor: 'bg-amber-500/20 text-amber-400',
+              },
+              {
+                id: 'whatsapp' as AgendaView,
+                label: 'WhatsApp & Bot',
+                icon: Smartphone,
+                badge: 'Automação',
+                badgeColor: 'bg-emerald-500/20 text-emerald-400',
+              },
+            ],
+          },
+        ]
+      : []),
     {
-      groupTitle: 'Dados & Segurança',
+      groupTitle: 'Sistema',
       items: [
         {
           id: 'backups',
-          label: 'Segurança & Backup',
+          label: 'Backup',
           icon: ShieldCheck,
           badge: isDataSaved ? 'Salvo' : 'Salvando...',
           badgeColor: 'bg-emerald-500/15 text-emerald-400',
@@ -185,23 +206,25 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       {isMobileOpen && (
         <div
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 md:hidden animate-in fade-in"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden animate-in fade-in"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-screen flex flex-col justify-between bg-[#111215] dark:bg-[#111215] bg-white border-r border-[#26282f] dark:border-[#26282f] border-slate-200 transition-all duration-300 z-50 md:z-30 shrink-0 ${
-          isCollapsed ? 'md:w-20' : 'md:w-64 lg:md:w-72'
-        } w-72 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}`}
+        data-collapsed={isCollapsed}
+        data-mobile-open={isMobileOpen}
+        className={`crm-sidebar fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen flex flex-col justify-between bg-[var(--ui-surface)] border-r border-[var(--ui-border)] transition-all duration-300 z-50 lg:z-30 shrink-0 ${
+          isCollapsed ? 'lg:w-20' : 'lg:w-64 xl:w-72'
+        } w-72 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* 1. TOPO: Branding da Agência Navegando MKT */}
-        <div className="p-4 border-b border-[#26282f] dark:border-[#26282f] border-slate-200 flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--ui-border)] flex items-center justify-between">
           {!isCollapsed ? (
             <div className="flex flex-col gap-1 min-w-0">
-              <NavegandoLogo variant="horizontal" size="md" showTagline withGlow />
+              <NavegandoLogo variant="horizontal" size="md" showTagline withGlow={false} />
               {currentMember?.funcao === 'modelo' && (
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF6600]/15 text-[#FF6600] border border-[#FF6600]/30 flex items-center gap-1">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center gap-1">
                     <Sparkles className="w-2.5 h-2.5" />
                     #influencer gastronômica
                   </span>
@@ -210,7 +233,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             </div>
           ) : (
             <div className="mx-auto">
-              <NavegandoLogo variant="symbol" size="sm" withGlow />
+              <NavegandoLogo variant="symbol" size="sm" withGlow={false} />
             </div>
           )}
 
@@ -218,7 +241,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             <button
               type="button"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden md:flex p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer"
+              className="hidden lg:flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
               title={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
             >
               {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -227,7 +250,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="flex md:hidden p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer"
+                className="flex lg:hidden p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                 title="Fechar menu"
               >
                 <X className="w-5 h-5" />
@@ -237,18 +260,18 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         </div>
 
       {/* 2. BOTÃO DE AÇÃO RÁPIDA PRINCIPAL */}
-      <div className="p-3 border-b border-[#26282f]/60">
+      <div className="p-3 border-b border-[var(--ui-border)]/60">
         {!isCollapsed ? (
-          currentMember?.funcao === 'modelo' ? (
+          userRole!=='admin' ? (
             <button
               type="button"
               onClick={() => {
                 openPontoModal();
                 if (onCloseMobile) onCloseMobile();
               }}
-              className="w-full flex items-center justify-center gap-2 py-3 px-3 rounded-xl gradient-cta active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-[#FF6600]/25 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-3 rounded-xl gradient-cta active:scale-95 text-foreground font-extrabold text-xs shadow-lg shadow-[var(--ui-accent)]/25 transition-all cursor-pointer"
             >
-              <Camera className="w-4 h-4 text-white" />
+              <Camera className="w-4 h-4 text-foreground" />
               <span>Bater Ponto no Restaurante</span>
             </button>
           ) : (
@@ -259,7 +282,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                   openNewEventModal();
                   if (onCloseMobile) onCloseMobile();
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl gradient-cta active:scale-95 text-white font-bold text-xs shadow-md shadow-[#FF6600]/25 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl gradient-cta active:scale-95 text-foreground font-bold text-xs shadow-md shadow-[var(--ui-accent)]/25 transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Gravação</span>
@@ -270,7 +293,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                   openPontoModal();
                   if (onCloseMobile) onCloseMobile();
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#1c1d22] hover:bg-[#282a32] active:scale-95 text-zinc-200 border border-[#2b2d35] font-bold text-xs transition-all hover:text-white cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] active:scale-95 text-zinc-200 border border-[var(--ui-border)] font-bold text-xs transition-all hover:text-foreground cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5 text-[#38bdf8]" />
                 <span>Ponto</span>
@@ -280,17 +303,17 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         ) : (
           <button
             type="button"
-            onClick={() => (currentMember?.funcao === 'modelo' ? openPontoModal() : openNewEventModal())}
-            className="w-10 h-10 mx-auto rounded-xl bg-[#FF5A3C] text-white flex items-center justify-center shadow-md cursor-pointer"
-            title={currentMember?.funcao === 'modelo' ? 'Bater Ponto' : 'Nova Gravação'}
+            onClick={() => (userRole!=='admin' ? openPontoModal() : openNewEventModal())}
+            className="w-10 h-10 mx-auto rounded-xl brand-solid bg-[var(--ui-accent)] text-foreground flex items-center justify-center shadow-md cursor-pointer"
+            title={userRole!=='admin' ? 'Bater Ponto' : 'Nova Gravação'}
           >
-            {currentMember?.funcao === 'modelo' ? <Camera className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            {userRole!=='admin' ? <Camera className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
           </button>
         )}
       </div>
 
       {/* 3. NAVEGAÇÃO AGRUPADA COM CONTROLE RIGOROSO DE ACESSO */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-5 custom-scrollbar">
+      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto p-3 space-y-5 custom-scrollbar">
         {navGroups.map((group) => {
           const accessibleItems = group.items.filter((item) =>
             canUserAccessView(currentMember?.funcao, item.id)
@@ -320,20 +343,21 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#FF6600]/15 text-[#FF6600] font-bold border border-[#FF6600]/30 shadow-[0_0_15px_rgba(255,102,0,0.15)]'
+                        ? 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] font-bold border border-[var(--ui-accent)]/30 shadow-[0_0_15px_rgba(255,102,0,0.15)]'
                         : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
                     } ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                    aria-current={isActive ? 'page' : undefined}
                     title={item.label}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#FF6600] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-zinc-400'}`} />
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[var(--ui-accent)] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-zinc-400'}`} />
                       {!isCollapsed && <span className="truncate">{item.label}</span>}
                     </div>
 
                     {!isCollapsed && item.badge && (
                       <span
                         className={`text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                          item.badgeColor || 'bg-[#26282f] text-zinc-300'
+                          item.badgeColor || 'bg-[var(--ui-border)] text-zinc-300'
                         }`}
                       >
                         {item.badge}
@@ -348,15 +372,15 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       </nav>
 
       {/* 4. RODAPÉ: MEMBRO LOGADO & CONTROLE DE TEMA */}
-      <div className="p-3 border-t border-[#26282f] dark:border-[#26282f] border-slate-200 bg-[#0e0f12] dark:bg-[#0e0f12] bg-slate-50 flex flex-col gap-2">
+      <div className="p-3 border-t border-[var(--ui-border)] bg-[var(--ui-page)] flex flex-col gap-2">
         {!isCollapsed ? (
           <>
             {/* Seletor de Membro Atual */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#141418] border border-white/10 shadow-inner">
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-inner">
               <div className="flex items-center gap-2 min-w-0">
                 <EmployeeBadge employee={currentMember} size="sm" />
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-foreground truncate">
                     {currentMember.nome}
                   </div>
                   <div className="text-[10px] text-zinc-400 truncate">
@@ -366,52 +390,53 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
               </div>
 
               <select
+                disabled={!IS_DEMO}
                 value={loggedEmployeeId}
                 onChange={(e) => setLoggedEmployeeId(e.target.value)}
-                className="text-[10px] bg-[#1f2026] text-zinc-300 border border-[#2b2d35] rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer"
+                className="text-[10px] bg-[var(--ui-raised)] text-zinc-300 border border-[var(--ui-border)] rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer"
                 title="Trocar membro logado"
               >
-                <optgroup label="👑 Donos & Diretores" className="bg-[#1b1d22] text-[#fbbf24] font-bold">
+                <optgroup label="Donos & Diretores" className="bg-[var(--ui-raised)] text-[#fbbf24] font-bold">
                   {employees
                     .filter((e) => e.funcao === 'dono')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
                         {emp.nome} (Dono)
                       </option>
                     ))}
                 </optgroup>
-                <optgroup label="⭐ Gerentes" className="bg-[#1b1d22] text-[#38bdf8] font-bold">
+                <optgroup label="Gerentes" className="bg-[var(--ui-raised)] text-[#38bdf8] font-bold">
                   {employees
                     .filter((e) => e.funcao === 'gerente')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
                         {emp.nome} (Gerente)
                       </option>
                     ))}
                 </optgroup>
-                <optgroup label="🎥 Filmmakers" className="bg-[#1b1d22] text-[#34d399] font-bold">
+                <optgroup label="Filmmakers" className="bg-[var(--ui-raised)] text-[#34d399] font-bold">
                   {employees
                     .filter((e) => e.funcao === 'filmmaker')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
                         {emp.nome} (Filmmaker)
                       </option>
                     ))}
                 </optgroup>
-                <optgroup label="✨ Modelos (#influencer)" className="bg-[#1b1d22] text-[#f472b6] font-bold">
+                <optgroup label="Modelos & Criadoras" className="bg-[var(--ui-raised)] text-[#f472b6] font-bold">
                   {employees
                     .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
                         {emp.nome} (Modelo)
                       </option>
                     ))}
                 </optgroup>
-                <optgroup label="🏢 Equipe Interna (CLT 3 Batidas)" className="bg-[#1b1d22] text-[#a78bfa] font-bold">
+                <optgroup label="Equipe Interna (CLT 3 Batidas)" className="bg-[var(--ui-raised)] text-[#a78bfa] font-bold">
                   {employees
                     .filter((e) => e.funcao === 'interno')
                     .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-white font-normal">
+                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
                         {emp.nome} (Interno)
                       </option>
                     ))}
@@ -423,18 +448,10 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             <div className="flex items-center justify-between px-1 text-[11px] text-zinc-400">
               <span className="flex items-center gap-1.5 text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Base 100% Salva</span>
+                <span>{isDataSaved ? 'Sistema Operacional Ativo' : 'Salvando alterações...'}</span>
               </span>
 
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="p-1 rounded-lg hover:bg-[#26282f] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                  title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-                >
-                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                </button>
                 <button
                   type="button"
                   onClick={logout}
@@ -449,13 +466,6 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         ) : (
           <div className="flex flex-col items-center gap-2">
             <EmployeeBadge employee={currentMember} size="sm" />
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-[#26282f] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
             <button
               type="button"
               onClick={logout}

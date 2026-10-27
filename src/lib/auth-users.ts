@@ -1,3 +1,5 @@
+import { IS_DEMO } from '@/lib/app-mode';
+import { mayAccess } from '@/lib/workspace';
 import { TeamRole, WorkRegime } from '@/types/database';
 
 export interface UserAccount {
@@ -5,7 +7,6 @@ export interface UserAccount {
   nome: string;
   username: string;
   aliases: string[];
-  password: string; // padrão: nome123
   funcao: TeamRole;
   regime: WorkRegime;
   cargo: string;
@@ -30,7 +31,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Felipe Assis',
     username: 'felipe',
     aliases: ['felipeassis', 'felipe assis'],
-    password: 'felipe123',
     funcao: 'dono',
     regime: 'interno',
     cargo: 'Dono & Diretor Executivo',
@@ -41,7 +41,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Gabriela Lorente',
     username: 'gabriela',
     aliases: ['gabrielalorente', 'gabi', 'gabriela lorente'],
-    password: 'gabriela123',
     funcao: 'dono',
     regime: 'interno',
     cargo: 'Dona & Diretora de Operações',
@@ -56,7 +55,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Alexandre',
     username: 'alexandre',
     aliases: ['ale', 'ale123', 'alexandre'],
-    password: 'alexandre123',
     funcao: 'gerente',
     regime: 'interno',
     cargo: 'Gerente Geral & Contas',
@@ -67,7 +65,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Victor Cordoba',
     username: 'vitinho',
     aliases: ['victorcordoba', 'vitinho', 'cordoba'],
-    password: 'vitinho123',
     funcao: 'gerente',
     regime: 'externo',
     cargo: 'Gerente de Produção & Filmmaker Líder',
@@ -78,7 +75,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Matheus',
     username: 'matheus',
     aliases: ['matheusger', 'matheus'],
-    password: 'matheus123',
     funcao: 'gerente',
     regime: 'interno',
     cargo: 'Gerente Operacional',
@@ -89,7 +85,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Larissa',
     username: 'larissa',
     aliases: ['lari', 'larissa'],
-    password: 'larissa123',
     funcao: 'gerente',
     regime: 'interno',
     cargo: 'Gerente de Atendimento & Social Media',
@@ -105,7 +100,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Victor',
     username: 'victor',
     aliases: ['victor'],
-    password: 'victor123',
     funcao: 'filmmaker',
     regime: 'externo',
     cargo: 'Filmmaker Gastronômico',
@@ -116,7 +110,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Matheus Gimenez',
     username: 'gimenez',
     aliases: ['matheusgimenez', 'gimenez'],
-    password: 'gimenez123',
     funcao: 'filmmaker',
     regime: 'externo',
     cargo: 'Filmmaker Gastronômico',
@@ -127,7 +120,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Henry',
     username: 'henry',
     aliases: ['henri', 'henry'],
-    password: 'henry123',
     funcao: 'filmmaker',
     regime: 'externo',
     cargo: 'Filmmaker Gastronômico',
@@ -143,7 +135,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Isa',
     username: 'isa',
     aliases: ['isabela', 'isa'],
-    password: 'isa123',
     funcao: 'modelo',
     regime: 'externo',
     cargo: 'Apresentadora & Modelo Gastronômica',
@@ -154,7 +145,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Gi',
     username: 'gi',
     aliases: ['giovana', 'gi'],
-    password: 'gi123',
     funcao: 'modelo',
     regime: 'externo',
     cargo: 'Apresentadora & Modelo Gastronômica',
@@ -165,7 +155,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Mi',
     username: 'mi',
     aliases: ['milena', 'mi'],
-    password: 'mi123',
     funcao: 'modelo',
     regime: 'externo',
     cargo: 'Apresentadora & Modelo Gastronômica',
@@ -176,7 +165,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Ju',
     username: 'ju',
     aliases: ['julia', 'ju'],
-    password: 'ju123',
     funcao: 'modelo',
     regime: 'externo',
     cargo: 'Apresentadora & Modelo Gastronômica',
@@ -192,7 +180,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Guilherme',
     username: 'guilherme',
     aliases: ['gui', 'guilherme'],
-    password: 'guilherme123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Estrategista & Operações Internas',
@@ -203,7 +190,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Carol',
     username: 'carol',
     aliases: ['caroline', 'carol'],
-    password: 'carol123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Editora de Vídeo & Pós-Produção',
@@ -214,7 +200,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Bruna',
     username: 'bruna',
     aliases: ['bruna'],
-    password: 'bruna123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Social Media & Copywriter',
@@ -225,7 +210,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Lucas Verraz',
     username: 'lucas',
     aliases: ['lucasverraz', 'verraz', 'lucas verraz'],
-    password: 'lucas123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Editor de Vídeo & Colorista',
@@ -236,7 +220,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Evelin',
     username: 'evelin',
     aliases: ['evelyn', 'evelin'],
-    password: 'evelin123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Designer Gráfica & Criativos',
@@ -247,7 +230,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Julia Int',
     username: 'juliaint',
     aliases: ['julia interno', 'julia_int', 'juliaint'],
-    password: 'juliaint123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Gestora de Tráfego & Performance',
@@ -258,7 +240,6 @@ export const USERS_DATABASE: UserAccount[] = [
     nome: 'Augusto',
     username: 'augusto',
     aliases: ['guto', 'augusto'],
-    password: 'augusto123',
     funcao: 'interno',
     regime: 'interno',
     cargo: 'Atendimento & Suporte ao Cliente',
@@ -287,39 +268,12 @@ export function findUserByLogin(loginInput: string): UserAccount | undefined {
  * Login: nome do funcionário
  * Senha: (nome deles 123)
  */
-export function verifyCredentials(
-  loginInput: string,
-  passwordInput: string
-): { valid: boolean; user?: UserAccount; error?: string } {
-  const user = findUserByLogin(loginInput);
-
-  if (!user) {
-    // Suporte a fallback de admin direto para testes
-    if (loginInput.trim().toLowerCase() === 'admin' && (passwordInput === 'admin123' || passwordInput === '123456')) {
-      const felipe = USERS_DATABASE[0];
-      return { valid: true, user: felipe };
-    }
-    return { valid: false, error: 'Usuário não localizado no sistema da agência.' };
-  }
-
-  const cleanPass = passwordInput.trim();
-  // Aceita senha do padrão (nome123) ou variações configuradas
-  const isValid =
-    cleanPass === user.password ||
-    cleanPass === `${user.username}123` ||
-    cleanPass === `${user.nome.toLowerCase().replace(/\s+/g, '')}123` ||
-    cleanPass === '123456' ||
-    cleanPass === 'admin123';
-
-  if (!isValid) {
-    return {
-      valid: false,
-      user,
-      error: `Senha incorreta para ${user.nome}. Padrão: ${user.username}123`,
-    };
-  }
-
-  return { valid: true, user };
+export function getDemoPassword(user: UserAccount): string { return IS_DEMO ? `${user.username}123` : ''; }
+export function verifyCredentials(loginInput: string,passwordInput: string): {valid:boolean;user?:UserAccount;error?:string} {
+  if (!IS_DEMO) return {valid:false,error:'Use sua conta individual de produção.'};
+  const user=findUserByLogin(loginInput);
+  if (!user || passwordInput !== getDemoPassword(user)) return {valid:false,error:'Credenciais de acesso inválidas. Verifique seu login e senha.'};
+  return {valid:true,user};
 }
 
 /**
@@ -331,46 +285,7 @@ export function verifyCredentials(
  * - Internos: Meu Painel, Ponto CLT e Agenda
  */
 export function canUserAccessView(funcao: TeamRole | undefined, viewId: string): boolean {
-  if (!funcao) return true;
-
-  // Donos e Gerentes têm acesso TOTAL
-  if (funcao === 'dono' || funcao === 'gerente') {
-    return true;
-  }
-
-  // Modelos: Apenas Agenda e Início
-  if (funcao === 'modelo' || funcao === 'criadora') {
-    return viewId === 'home' || viewId === 'mes' || viewId === 'semana' || viewId === 'minha-agenda' || viewId === 'ponto';
-  }
-
-  // Filmmakers: Agenda, DAM, Relatórios e Métricas de Instagram
-  if (funcao === 'filmmaker') {
-    return (
-      viewId === 'home' ||
-      viewId === 'mes' ||
-      viewId === 'semana' ||
-      viewId === 'escala' ||
-      viewId === 'minha-agenda' ||
-      viewId === 'ponto' ||
-      viewId === 'arquivos' ||
-      viewId === 'metricas-reels' ||
-      viewId === 'relatorios'
-    );
-  }
-
-  // Equipe Interna: Início, Ponto CLT, Agenda e Arquivos
-  if (funcao === 'interno') {
-    return (
-      viewId === 'home' ||
-      viewId === 'ponto' ||
-      viewId === 'mes' ||
-      viewId === 'semana' ||
-      viewId === 'minha-agenda' ||
-      viewId === 'arquivos'
-    );
-  }
-
-  return true;
+  return mayAccess(funcao,viewId);
 }
 
 /**

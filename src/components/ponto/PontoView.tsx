@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 import { useAgenda } from '@/context/AgendaContext';
 import { PontoRegistro } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -46,7 +47,7 @@ export function PontoView() {
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; nome: string; dataHora: string } | null>(null);
 
   // Escopo de visibilidade: modelos só visualizam o seu próprio ponto
-  const basePontos = isModelo
+  const basePontos = !isManagerOrOwner
     ? pontos.filter((p) => p.employee_id === currentMember?.id)
     : pontos;
 
@@ -63,7 +64,7 @@ export function PontoView() {
   const entradasNoLocal = basePontos.filter(
     (p) => p.tipo === 'entrada' && p.status_localizacao === 'no_local'
   ).length;
-  const pontosHoje = basePontos.filter((p) => p.data_hora.startsWith('2026-10-14')).length;
+  const pontosHoje = basePontos.filter((p) => todayInSaoPaulo(new Date(p.data_hora))===todayInSaoPaulo()).length;
   const foraDoRaio = basePontos.filter((p) => p.status_localizacao === 'fora_do_raio').length;
 
   return (
@@ -71,8 +72,8 @@ export function PontoView() {
       {/* 0. Radar de Localização Real com Permissão do Dispositivo & Mapa */}
       <LiveLocationRadar />
 
-      {/* 0.1 Banner de Normas CLT 2026/2027 & Cargas Horárias */}
-      <div className="p-5 rounded-2xl bg-[#16171b] border border-[#26282f] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 0.1 Banner de Normas configurada pela agência & Cargas Horárias */}
+      <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
             <Scale className="w-6 h-6" />
@@ -80,13 +81,13 @@ export function PontoView() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
-                Norma CLT 2026/2027
+                Norma configurada pela agência
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">
                 Regime Interno vs Externo
               </span>
             </div>
-            <h3 className="text-base font-bold text-white">
+            <h3 className="text-base font-bold text-foreground">
               Carga Horária & Normas de Ponto da Agência Navegando MKT
             </h3>
             <p className="text-xs text-zinc-300 max-w-3xl leading-relaxed">
@@ -99,7 +100,7 @@ export function PontoView() {
         <button
           type="button"
           onClick={() => openPontoModal()}
-          className="gradient-cta flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-lg transition-all shrink-0 cursor-pointer self-start md:self-auto"
+          className="gradient-cta flex items-center gap-2 px-4 py-2.5 rounded-xl text-foreground font-bold text-xs shadow-lg transition-all shrink-0 cursor-pointer self-start md:self-auto"
         >
           <Camera className="w-4 h-4" />
           <span>Bater Ponto Agora</span>
@@ -109,48 +110,48 @@ export function PontoView() {
       {/* 1. Header com KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* KPI 1 */}
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1">
           <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
             <span>Pontos Registrados</span>
-            <Clock className="w-4 h-4 text-[#FF6600]" />
+            <Clock className="w-4 h-4 text-[var(--ui-accent)]" />
           </div>
-          <div className="text-2xl font-bold text-white dark:text-white text-zinc-900 font-heading mt-1">
+          <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {totalPontos}
           </div>
           <span className="text-[11px] text-zinc-500">Histórico da equipe na rua</span>
         </div>
 
         {/* KPI 2 */}
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1">
           <div className="flex items-center justify-between text-xs font-semibold text-emerald-400">
             <span>Validados no Local</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-white dark:text-white text-zinc-900 font-heading mt-1">
+          <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {entradasNoLocal}
           </div>
           <span className="text-[11px] text-zinc-500">&lt; {MAX_GEOFENCE_RADIUS_METERS}m do restaurante</span>
         </div>
 
         {/* KPI 3 */}
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1">
           <div className="flex items-center justify-between text-xs font-semibold text-[#38bdf8]">
             <span>Registros Hoje</span>
             <Calendar className="w-4 h-4 text-[#38bdf8]" />
           </div>
-          <div className="text-2xl font-bold text-white dark:text-white text-zinc-900 font-heading mt-1">
+          <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {pontosHoje}
           </div>
           <span className="text-[11px] text-zinc-500">Filmmakers & Criadoras</span>
         </div>
 
         {/* KPI 4 */}
-        <div className="p-4 rounded-2xl bg-[#16171b] dark:bg-[#16171b] bg-white border border-[#26282f] dark:border-[#26282f] border-slate-200 flex flex-col gap-1">
+        <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 flex flex-col gap-1">
           <div className="flex items-center justify-between text-xs font-semibold text-amber-400">
             <span>Fora do Raio</span>
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-bold text-white dark:text-white text-zinc-900 font-heading mt-1">
+          <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {foraDoRaio}
           </div>
           <span className="text-[11px] text-zinc-500">Alertas de auditoria</span>
@@ -158,16 +159,16 @@ export function PontoView() {
       </div>
 
       {/* 2. Barra de Controle: Filtros e Botão de Ação */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
         <div className="flex flex-wrap items-center gap-2">
           {/* Filtro por Membro */}
           <select
             value={selectedFilterEmpId}
             onChange={(e) => setSelectedFilterEmpId(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
             <option value="all">Toda a equipe ({employees.length})</option>
-            <optgroup label="🎥 Filmmakers">
+            <optgroup label="Filmmakers">
               {employees
                 .filter((e) => e.funcao === 'filmmaker')
                 .map((emp) => (
@@ -176,12 +177,12 @@ export function PontoView() {
                   </option>
                 ))}
             </optgroup>
-            <optgroup label="✨ Meninas dos Vídeos">
+            <optgroup label="Modelos & Criadoras">
               {employees
-                .filter((e) => e.funcao === 'criadora')
+                .filter((e) => e.funcao === 'criadora' || e.funcao === 'modelo')
                 .map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.nome} (Criadora)
+                    {emp.nome} (Modelo)
                   </option>
                 ))}
             </optgroup>
@@ -191,7 +192,7 @@ export function PontoView() {
           <select
             value={selectedFilterClientId}
             onChange={(e) => setSelectedFilterClientId(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
             <option value="all">Todos os Restaurantes ({clients.length})</option>
             {clients.map((c) => (
@@ -205,23 +206,23 @@ export function PontoView() {
           <select
             value={selectedFilterTipo}
             onChange={(e) => setSelectedFilterTipo(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
             <option value="all">Entradas & Saídas</option>
-            <option value="entrada">🟢 Apenas Entradas</option>
-            <option value="saida">🔴 Apenas Saídas</option>
+            <option value="entrada">Apenas Entradas</option>
+            <option value="saida">Apenas Saídas</option>
           </select>
         </div>
 
         {/* Lado Direito: Alternador de Visualização & Botão Bater Ponto */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
           {/* Seletor Cards / Tabela */}
-          <div className="flex items-center p-1 bg-[#1f2026] rounded-xl border border-[#2b2d35] text-xs">
+          <div className="flex items-center p-1 bg-[var(--ui-raised)] rounded-xl border border-[var(--ui-border)] text-xs">
             <button
               type="button"
               onClick={() => setActiveTab('cards')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'cards' ? 'bg-[#FF6600] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTab === 'cards' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Visualização em Cards"
             >
@@ -231,7 +232,7 @@ export function PontoView() {
               type="button"
               onClick={() => setActiveTab('tabela')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'tabela' ? 'bg-[#FF6600] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTab === 'tabela' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Tabela de Auditoria"
             >
@@ -243,7 +244,7 @@ export function PontoView() {
           <button
             type="button"
             onClick={() => openPontoModal()}
-            className="gradient-cta flex items-center gap-1.5 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="gradient-cta flex items-center gap-1.5 text-foreground font-bold text-xs px-3.5 py-2 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Bater Ponto Agora</span>
@@ -253,7 +254,7 @@ export function PontoView() {
 
       {/* 3. CONTEÚDO PRINCIPAL (Cards ou Tabela) */}
       {filteredPontos.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl bg-[#16171b] border border-[#26282f] p-8 flex flex-col items-center gap-3">
+        <div className="py-16 text-center rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] p-8 flex flex-col items-center gap-3">
           <Camera className="w-10 h-10 text-zinc-500 animate-pulse" />
           <h4 className="text-base font-bold text-zinc-200">Nenhum registro de ponto encontrado</h4>
           <p className="text-xs text-zinc-500 max-w-sm">
@@ -262,14 +263,14 @@ export function PontoView() {
           <button
             type="button"
             onClick={() => openPontoModal()}
-            className="mt-2 text-xs font-bold text-[#FF6600] hover:underline"
+            className="mt-2 text-xs font-bold text-[var(--ui-accent)] hover:underline"
           >
             Registrar ponto agora
           </button>
         </div>
       ) : activeTab === 'cards' ? (
-        /* VISUALIZAÇÃO EM CARDS / COMPROVANTES */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* VISUALIZAÇÃO EM CARDS / COMPROVANTES SIMÉTRICOS */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
           {filteredPontos.map((p) => {
             const isEntry = p.tipo === 'entrada';
             const isInside = p.status_localizacao === 'no_local';
@@ -281,91 +282,109 @@ export function PontoView() {
             const timeFormatted = dateObj.toLocaleTimeString('pt-BR', {
               hour: '2-digit',
               minute: '2-digit',
+              second: '2-digit',
             });
 
             return (
               <div
                 key={p.id}
-                className="bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm hover:border-[#FF6600]/40 transition-all flex flex-col justify-between"
+                className="bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 overflow-hidden shadow-sm hover:border-[var(--ui-accent)]/40 hover:shadow-md transition-all flex flex-col justify-between h-full min-h-[290px]"
               >
                 {/* Header do Cartão */}
-                <div className="p-4 pb-3 flex items-start justify-between border-b border-[#26282f] dark:border-[#26282f] border-slate-100">
+                <div className="p-4 pb-3 flex items-start justify-between border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100 min-h-[56px]">
                   <div className="flex items-center gap-2.5">
                     {p.employee && <EmployeeBadge employee={p.employee} size="md" showRole />}
                   </div>
 
                   {p.tipo === 'entrada' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                      🟢 Entrada
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Entrada
                     </span>
                   )}
                   {p.tipo === 'almoco' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      🍽️ Almoço
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Almoço
                     </span>
                   )}
                   {p.tipo === 'saida' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                      🔴 Saída
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      Saída
                     </span>
                   )}
                 </div>
 
                 {/* Corpo: Foto e Detalhes */}
-                <div className="p-4 flex gap-3.5">
-                  {/* Foto / Selfie clicável */}
-                  <div
-                    className="relative w-24 h-28 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-[#2b2d35] group"
-                    onClick={() =>
-                      setZoomPhoto({
-                        url: p.foto_url,
-                        nome: p.employee?.nome || 'Membro da Equipe',
-                        dataHora: `${dateFormatted} às ${timeFormatted}`,
-                      })
-                    }
-                    title="Clique para ampliar a foto"
-                  >
-                    <img
-                      src={p.foto_url}
-                      alt="Selfie"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
-                    />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
-                      Ampliar 🔍
+                <div className="p-4 flex gap-3.5 items-start">
+                  {/* Foto / Selfie clicável OU Espaço para foto da pessoa */}
+                  {p.foto_url ? (
+                    <div
+                      className="relative w-24 h-28 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-[var(--ui-border)] group shadow-sm"
+                      onClick={() =>
+                        setZoomPhoto({
+                          url: p.foto_url,
+                          nome: p.employee?.nome || 'Membro da Equipe',
+                          dataHora: `${dateFormatted} às ${timeFormatted}`,
+                        })
+                      }
+                      title="Clique para ampliar a foto"
+                    >
+                      <img
+                        src={p.foto_url}
+                        alt="Foto do colaborador"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-foreground text-[10px] font-bold">
+                        Ampliar Foto
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div
+                      className="relative w-24 h-28 rounded-xl border-2 border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)]/60 flex flex-col items-center justify-center text-center p-2 shrink-0 group hover:border-[var(--ui-accent)]/50 transition-colors"
+                      title="Espaço para foto do colaborador"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-[var(--ui-surface)] border border-[var(--ui-border)] flex items-center justify-center text-zinc-400 group-hover:text-[var(--ui-accent)] transition-colors mb-1 shadow-sm">
+                        <Camera className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-medium text-zinc-400 leading-tight">
+                        Espaço para foto
+                      </span>
+                    </div>
+                  )}
 
                   {/* Detalhes do Restaurante e Horário */}
                   <div className="flex flex-col justify-between flex-1 min-w-0">
                     <div>
-                      <div className="flex items-center gap-1 text-[11px] text-zinc-400 font-medium">
-                        <Clock className="w-3 h-3 text-[#FF6600]" />
+                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-medium font-mono">
+                        <Clock className="w-3.5 h-3.5 text-[var(--ui-accent)] shrink-0" />
                         <span>
-                          {dateFormatted} às <strong>{timeFormatted}</strong>
+                          {dateFormatted} às <strong className="text-foreground">{timeFormatted}</strong>
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-white dark:text-white text-zinc-900 truncate mt-1">
-                        {p.client?.nome || 'Restaurante'}
+                      <h4 className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900 truncate mt-1.5" title={p.client?.nome || 'Sede Agência'}>
+                        {p.client?.nome || 'Sede Navegando MKT'}
                       </h4>
 
                       {p.endereco ? (
-                        <div className="text-[11px] text-zinc-300 truncate flex items-center gap-1 mt-0.5" title={p.endereco}>
-                          <MapPin className="w-3 h-3 text-[#FF6600] shrink-0" />
+                        <div className="text-[11px] text-zinc-400 truncate flex items-center gap-1 mt-1" title={p.endereco}>
+                          <MapPin className="w-3 h-3 text-[var(--ui-accent)] shrink-0" />
                           <span className="truncate">{p.endereco}</span>
                         </div>
                       ) : p.client?.endereco ? (
-                        <div className="text-[11px] text-zinc-400 truncate flex items-center gap-1 mt-0.5">
+                        <div className="text-[11px] text-zinc-400 truncate flex items-center gap-1 mt-1" title={p.client.endereco}>
                           <MapPin className="w-3 h-3 text-zinc-500 shrink-0" />
-                          <span>{p.client.endereco}</span>
+                          <span className="truncate">{p.client.endereco}</span>
                         </div>
                       ) : null}
                     </div>
 
                     {/* Badge de Validação de Geolocalização */}
-                    <div className="mt-2">
+                    <div className="mt-2.5">
                       <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg border ${
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-lg border ${
                           isInside
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
@@ -386,26 +405,30 @@ export function PontoView() {
                   </div>
                 </div>
 
-                {/* Observação (se houver) */}
-                {p.observacao && (
-                  <div className="px-4 pb-3">
-                    <p className="text-[11px] text-zinc-400 bg-[#1f2026] dark:bg-[#1f2026] bg-slate-50 p-2 rounded-xl border border-[#2b2d35] italic">
+                {/* Observação (se houver) ou Espaço Simétrico */}
+                <div className="px-4 pb-3 flex-1 flex flex-col justify-end">
+                  {p.observacao ? (
+                    <p className="text-[11px] text-zinc-300 dark:text-zinc-300 text-zinc-600 bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 p-2.5 rounded-xl border border-[var(--ui-border)] italic leading-relaxed line-clamp-2">
                       &quot;{p.observacao}&quot;
                     </p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-[11px] text-zinc-500 bg-[var(--ui-raised)]/40 p-2.5 rounded-xl border border-dashed border-[var(--ui-border)]/50 italic text-center">
+                      Sem observações adicionais
+                    </div>
+                  )}
+                </div>
 
                 {/* Rodapé: Link Mapa e Hash de Segurança */}
-                <div className="px-4 py-2.5 bg-[#121316] dark:bg-[#121316] bg-slate-50 border-t border-[#26282f] dark:border-[#26282f] border-slate-100 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+                <div className="px-4 py-2.5 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
                   <span className="truncate">GPS: {p.latitude.toFixed(4)}, {p.longitude.toFixed(4)}</span>
                   <a
                     href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#38bdf8] hover:underline flex items-center gap-0.5"
+                    className="text-[#38bdf8] hover:underline flex items-center gap-1 font-sans font-semibold"
                   >
                     <span>Google Maps</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
+                    <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               </div>
@@ -414,70 +437,82 @@ export function PontoView() {
         </div>
       ) : (
         /* VISUALIZAÇÃO EM TABELA DE AUDITORIA */
-        <div className="w-full bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm">
+        <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs min-w-[800px]">
               <thead>
-                <tr className="border-b border-[#26282f] dark:border-[#26282f] border-slate-200 bg-[#121316] dark:bg-[#121316] bg-slate-50 text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
+                <tr className="border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4">Foto</th>
-                  <th className="py-3 px-4">Membro</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4">Data / Horário</th>
-                  <th className="py-3 px-4">Restaurante</th>
+                  <th className="py-3 px-4">Colaborador</th>
+                  <th className="py-3 px-4">Batida</th>
+                  <th className="py-3 px-4">Horário Exato</th>
+                  <th className="py-3 px-4">Restaurante / Local</th>
                   <th className="py-3 px-4">Geolocalização (GPS)</th>
                   <th className="py-3 px-4">Mapa</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#26282f] dark:divide-[#26282f] divide-slate-100">
+              <tbody className="divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-100">
                 {filteredPontos.map((p) => {
                   const isEntry = p.tipo === 'entrada';
                   const isInside = p.status_localizacao === 'no_local';
                   const dateObj = new Date(p.data_hora);
                   const dateStr = dateObj.toLocaleDateString('pt-BR');
-                  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                   return (
-                    <tr key={p.id} className="hover:bg-[#1a1b20] transition-colors">
+                    <tr key={p.id} className="hover:bg-[var(--ui-raised)] transition-colors">
                       <td className="py-2.5 px-4">
-                        <img
-                          src={p.foto_url}
-                          alt="Foto"
-                          onClick={() =>
-                            setZoomPhoto({
-                              url: p.foto_url,
-                              nome: p.employee?.nome || 'Membro',
-                              dataHora: `${dateStr} às ${timeStr}`,
-                            })
-                          }
-                          className="w-10 h-10 rounded-xl object-cover border border-[#2b2d35] cursor-pointer hover:scale-110 transition-transform shadow"
-                        />
+                        {p.foto_url ? (
+                          <img
+                            src={p.foto_url}
+                            alt="Foto do colaborador"
+                            onClick={() =>
+                              setZoomPhoto({
+                                url: p.foto_url,
+                                nome: p.employee?.nome || 'Membro',
+                                dataHora: `${dateStr} às ${timeStr}`,
+                              })
+                            }
+                            className="w-10 h-10 rounded-xl object-cover border border-[var(--ui-border)] cursor-pointer hover:scale-110 transition-transform shadow"
+                          />
+                        ) : (
+                          <div
+                            className="w-10 h-10 rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)] flex items-center justify-center text-zinc-400"
+                            title="Espaço para foto do colaborador"
+                          >
+                            <Camera className="w-4 h-4 text-zinc-400" />
+                          </div>
+                        )}
                       </td>
-                      <td className="py-2.5 px-4 font-semibold text-white">
+                      <td className="py-2.5 px-4 font-semibold text-foreground">
                         {p.employee && <EmployeeBadge employee={p.employee} size="sm" showRole />}
                       </td>
                       <td className="py-2.5 px-4">
                         {p.tipo === 'entrada' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                            🟢 Entrada
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            Entrada
                           </span>
                         )}
                         {p.tipo === 'almoco' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            🍽️ Almoço
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            Almoço
                           </span>
                         )}
                         {p.tipo === 'saida' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                            🔴 Saída
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                            Saída
                           </span>
                         )}
                       </td>
                       <td className="py-2.5 px-4 text-zinc-300">
-                        <div>{dateStr}</div>
-                        <div className="text-[10px] text-zinc-500 font-mono">{timeStr}</div>
+                        <div className="font-medium text-foreground">{dateStr}</div>
+                        <div className="text-[11px] text-emerald-400 font-mono font-bold">{timeStr}</div>
                       </td>
                       <td className="py-2.5 px-4">
-                        <div className="font-bold text-white truncate max-w-[180px]">
+                        <div className="font-bold text-foreground truncate max-w-[180px]">
                           {p.client?.nome || 'Restaurante'}
                         </div>
                         <div className="text-[10px] text-zinc-400 truncate max-w-[180px]">
@@ -531,24 +566,24 @@ export function PontoView() {
           onClick={() => setZoomPhoto(null)}
         >
           <div
-            className="relative max-w-md w-full bg-[#16171b] rounded-3xl border border-[#2b2d35] p-5 flex flex-col gap-4 shadow-2xl"
+            className="relative max-w-md w-full bg-[var(--ui-surface)] rounded-3xl border border-[var(--ui-border)] p-5 flex flex-col gap-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-base font-bold text-white font-heading">{zoomPhoto.nome}</h4>
+                <h4 className="text-base font-bold text-foreground font-heading">{zoomPhoto.nome}</h4>
                 <p className="text-xs text-zinc-400">{zoomPhoto.dataHora}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setZoomPhoto(null)}
-                className="p-1 rounded-xl text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1 rounded-xl text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="rounded-2xl overflow-hidden border border-[#2b2d35] shadow-inner bg-black">
+            <div className="rounded-2xl overflow-hidden border border-[var(--ui-border)] shadow-inner bg-black">
               <img
                 src={zoomPhoto.url}
                 alt="Zoom Selfie"
@@ -564,7 +599,7 @@ export function PontoView() {
               <button
                 type="button"
                 onClick={() => setZoomPhoto(null)}
-                className="text-xs font-semibold text-zinc-400 hover:text-white"
+                className="text-xs font-semibold text-zinc-400 hover:text-foreground"
               >
                 Fechar
               </button>

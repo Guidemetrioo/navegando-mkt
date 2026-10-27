@@ -1,4 +1,5 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -19,21 +20,21 @@ export function MonthView() {
   const matrix = getMonthMatrix(year, month);
 
   // Hoje no protótipo é 14 de Outubro de 2026 (ou hoje real)
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
 
   return (
-    <div className="w-full bg-[#16171b] dark:bg-[#16171b] bg-white rounded-2xl border border-[#26282f] dark:border-[#26282f] border-slate-200 overflow-hidden shadow-sm">
+    <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 overflow-hidden shadow-sm">
       {/* Cabeçalho dos dias da semana (Seg..Dom) */}
-      <div className="grid grid-cols-7 border-b border-[#26282f] dark:border-[#26282f] border-slate-200 bg-[#121316] dark:bg-[#121316] bg-slate-50 text-xs font-semibold text-zinc-400 dark:text-zinc-400 text-zinc-600 text-center py-2.5">
+      <div className="grid grid-cols-7 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 text-xs font-semibold text-zinc-400 dark:text-zinc-400 text-zinc-600 text-center py-2.5">
         {WEEKDAYS_SHORT.map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
 
       {/* Grade de dias */}
-      <div className="divide-y divide-[#26282f] dark:divide-[#26282f] divide-slate-200">
+      <div className="divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-200">
         {matrix.map((week, weekIdx) => (
-          <div key={weekIdx} className="grid grid-cols-7 divide-x divide-[#26282f] dark:divide-[#26282f] divide-slate-200">
+          <div key={weekIdx} className="grid grid-cols-7 divide-x divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-200">
             {week.map((cell) => {
               const dayEvents = filteredEvents.filter((ev) => ev.data === cell.iso);
               const isToday = cell.iso === todayIso;
@@ -45,8 +46,8 @@ export function MonthView() {
                   onClick={() => openDayDetailModal(cell.iso)}
                   className={`min-h-[75px] sm:min-h-[110px] p-1.5 sm:p-2 transition-colors cursor-pointer group flex flex-col justify-between ${
                     !cell.isCurrentMonth
-                      ? 'bg-[#121316]/60 dark:bg-[#121316]/60 bg-slate-100/40 text-zinc-600 dark:text-zinc-600'
-                      : 'hover:bg-[#1c1e24] dark:hover:bg-[#1c1e24] hover:bg-slate-50 text-zinc-200 dark:text-zinc-200 text-zinc-900'
+                      ? 'bg-[var(--ui-surface)]/60 dark:bg-[var(--ui-surface)]/60 bg-slate-100/40 text-zinc-600 dark:text-zinc-600'
+                      : 'hover:bg-[var(--ui-raised)] dark:hover:bg-[var(--ui-raised)] hover:bg-slate-50 text-zinc-200 dark:text-zinc-200 text-zinc-900'
                   }`}
                 >
                   {/* Número do dia */}
@@ -54,7 +55,7 @@ export function MonthView() {
                     <span
                       className={`inline-flex items-center justify-center text-xs font-semibold rounded-full w-6 h-6 transition-transform group-hover:scale-105 ${
                         isToday
-                          ? 'bg-[#FF5A3C] text-white font-bold shadow-md shadow-[#FF5A3C]/30'
+                          ? 'brand-solid bg-[var(--ui-accent)] text-foreground font-bold shadow-md shadow-[var(--ui-accent)]/30'
                           : !cell.isCurrentMonth
                           ? 'text-zinc-600 dark:text-zinc-600 text-zinc-400'
                           : 'text-zinc-300 dark:text-zinc-300 text-zinc-700'
@@ -103,11 +104,11 @@ export function MonthView() {
                                 employee={emp}
                                 size="sm"
                                 showName={false}
-                                className="ring-1 ring-[#16171b] w-4 h-4 text-[9px]"
+                                className="ring-1 ring-[var(--ui-surface)] w-4 h-4 text-[9px]"
                               />
                             ))}
                             {(ev.employees || []).length > 3 && (
-                              <span className="w-4 h-4 rounded-full bg-zinc-700 text-[8px] flex items-center justify-center text-white ring-1 ring-[#16171b]">
+                              <span className="w-4 h-4 rounded-full bg-zinc-700 text-[8px] flex items-center justify-center text-foreground ring-1 ring-[var(--ui-surface)]">
                                 +{(ev.employees || []).length - 3}
                               </span>
                             )}

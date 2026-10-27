@@ -28,20 +28,20 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 
         let icon = <Info className="w-4 h-4 text-sky-400 shrink-0" />;
         let borderColor = 'border-sky-500/30';
-        let bgGlow = 'bg-[#181a20]/95 shadow-sky-500/10';
+        let bgGlow = 'bg-[var(--ui-raised)]/95 shadow-sky-500/10';
 
         if (isSuccess) {
           icon = <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
           borderColor = 'border-emerald-500/40';
-          bgGlow = 'bg-[#151c18]/95 shadow-emerald-500/10';
+          bgGlow = 'bg-[var(--ui-surface)]/95 shadow-emerald-500/10';
         } else if (isWarning) {
           icon = <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />;
           borderColor = 'border-amber-500/40';
-          bgGlow = 'bg-[#1c1a14]/95 shadow-amber-500/10';
+          bgGlow = 'bg-[var(--ui-surface)]/95 shadow-amber-500/10';
         } else if (isError) {
           icon = <XCircle className="w-4 h-4 text-rose-400 shrink-0" />;
           borderColor = 'border-rose-500/40';
-          bgGlow = 'bg-[#1c1517]/95 shadow-rose-500/10';
+          bgGlow = 'bg-[var(--ui-surface)]/95 shadow-rose-500/10';
         }
 
         return (
@@ -58,7 +58,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             <button
               type="button"
               onClick={() => onDismiss(toast.id)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Fechar"
             >
               <X className="w-3.5 h-3.5" />

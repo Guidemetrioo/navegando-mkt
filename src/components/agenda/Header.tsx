@@ -20,10 +20,10 @@ export function Header() {
   const currentLoggedEmployee = employees.find((e) => e.id === loggedEmployeeId);
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/5">
+    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--ui-border)]">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-heading">
-          Navegando MKT <span className="text-[#FF6600]">•</span> Agenda da equipe
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground font-heading">
+          Navegando MKT <span className="text-[var(--ui-accent)]">•</span> Agenda da equipe
         </h1>
         <p className="text-sm text-zinc-400 mt-1">
           Quem grava, onde e para qual restaurante parceiro, em cada dia.
@@ -32,13 +32,13 @@ export function Header() {
 
       <div className="flex flex-wrap items-center gap-3">
         {/* Simulador de Papel / Perfil */}
-        <div className="flex items-center gap-2 bg-[#121318] p-1 rounded-xl border border-white/10 text-xs">
+        <div className="flex items-center gap-2 bg-[var(--ui-surface)] p-1 rounded-xl border border-[var(--ui-border)] text-xs">
           <button
             type="button"
             onClick={() => setUserRole('admin')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors font-medium ${
               userRole === 'admin'
-                ? 'bg-[#FF6600] text-white shadow-sm'
+                ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -50,7 +50,7 @@ export function Header() {
             onClick={() => setUserRole('funcionario')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors font-medium ${
               userRole === 'funcionario'
-                ? 'bg-[#FF6600] text-white shadow-sm'
+                ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -64,22 +64,22 @@ export function Header() {
           <select
             value={loggedEmployeeId}
             onChange={(e) => setLoggedEmployeeId(e.target.value)}
-            className="text-xs bg-[#121318] text-zinc-200 border border-white/10 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#FF6600]"
+            className="text-xs bg-[var(--ui-surface)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
-            <optgroup label="🎥 Filmmakers" className="bg-[#121318] text-[#38bdf8] font-bold">
+            <optgroup label="Filmmakers" className="bg-[var(--ui-surface)] text-[#38bdf8] font-bold">
               {employees
                 .filter((e) => e.funcao === 'filmmaker')
                 .map((emp) => (
-                  <option key={emp.id} value={emp.id} className="bg-[#121318] text-white font-normal">
+                  <option key={emp.id} value={emp.id} className="bg-[var(--ui-surface)] text-foreground font-normal">
                     {emp.nome} (Filmmaker)
                   </option>
                 ))}
             </optgroup>
-            <optgroup label="✨ Modelos #influencer" className="bg-[#121318] text-[#f472b6] font-bold">
+            <optgroup label="Modelos & Criadoras" className="bg-[var(--ui-surface)] text-[#f472b6] font-bold">
               {employees
-                .filter((e) => e.funcao === 'criadora')
+                .filter((e) => e.funcao === 'criadora' || e.funcao === 'modelo')
                 .map((emp) => (
-                  <option key={emp.id} value={emp.id} className="bg-[#121318] text-white font-normal">
+                  <option key={emp.id} value={emp.id} className="bg-[var(--ui-surface)] text-foreground font-normal">
                     {emp.nome} (Modelo Gastronômica)
                   </option>
                 ))}
@@ -92,7 +92,7 @@ export function Header() {
           type="button"
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-          className="p-2 text-zinc-400 hover:text-white hover:bg-[#1b1d22] rounded-xl border border-white/10 transition-colors"
+          className="p-2 text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] rounded-xl border border-[var(--ui-border)] transition-colors"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
         </button>
@@ -101,7 +101,7 @@ export function Header() {
         <button
           type="button"
           onClick={() => openPontoModal()}
-          className="flex items-center gap-1.5 bg-[#14151b] hover:bg-[#1d1f27] text-emerald-400 border border-emerald-500/30 font-semibold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-1.5 bg-[var(--ui-surface)] hover:bg-[var(--ui-raised)] text-emerald-400 border border-emerald-500/30 font-semibold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
           title="Registrar ponto com foto e GPS"
         >
           <Camera className="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => openNewEventModal()}
-            className="gradient-cta flex items-center gap-2 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="gradient-cta flex items-center gap-2 text-foreground font-bold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Nova gravação</span>

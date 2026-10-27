@@ -34,6 +34,7 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.local.example
+!.env.admin.example
 
 # vercel
 .vercel
@@ -41,3 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Identity mappings and encrypted recovery copies
+config/team-emails.csv
+backup-output/
+*.backup
+
+!.env.admin.example

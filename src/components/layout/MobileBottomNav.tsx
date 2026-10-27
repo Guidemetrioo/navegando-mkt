@@ -1,4 +1,5 @@
 'use client';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React from 'react';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
@@ -27,7 +28,7 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
     openPontoModal,
   } = useAgenda();
 
-  const todayIso = '2026-10-14';
+  const todayIso = todayInSaoPaulo();
   const todayEventsCount = events.filter((e) => e.data === todayIso).length;
   const pendingApprovalsCount = deliverables.filter(
     (d) => d.status === 'aguardando_aprovacao' || d.status === 'ajustes_solicitados'
@@ -42,7 +43,7 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
   return (
     <nav
       aria-label="Navegação Mobile"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111215]/95 backdrop-blur-xl border-t border-[#26282f] pb-safe px-2 pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] transition-all"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--ui-surface)]/95 backdrop-blur-xl border-t border-[var(--ui-border)] pb-safe px-2 pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] transition-all"
     >
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {/* 1. Início (Meu Painel) */}
@@ -51,14 +52,14 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
           onClick={() => setCurrentView('home')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
             currentView === 'home'
-              ? 'text-[#FF5A3C]'
+              ? 'text-[var(--ui-accent)]'
               : 'text-zinc-400 hover:text-zinc-200 active:scale-95'
           }`}
         >
           <div className="relative">
             <Sparkles className="w-5 h-5" />
             {currentView === 'home' && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF5A3C]" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--ui-accent)]" />
             )}
           </div>
           <span className="text-[10px] font-semibold mt-1 tracking-tight">Início</span>
@@ -70,19 +71,19 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
           onClick={() => setCurrentView('mes')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
             isCalendarActive
-              ? 'text-[#FF5A3C]'
+              ? 'text-[var(--ui-accent)]'
               : 'text-zinc-400 hover:text-zinc-200 active:scale-95'
           }`}
         >
           <div className="relative">
             <Calendar className="w-5 h-5" />
             {todayEventsCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-[#FF5A3C] text-[9px] font-black text-white flex items-center justify-center border border-[#111215]">
+              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full brand-solid bg-[var(--ui-accent)] text-[9px] font-black text-foreground flex items-center justify-center border border-[var(--ui-surface)]">
                 {todayEventsCount}
               </span>
             )}
             {isCalendarActive && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF5A3C]" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--ui-accent)]" />
             )}
           </div>
           <span className="text-[10px] font-semibold mt-1 tracking-tight">Agenda</span>
@@ -97,15 +98,15 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
           <div
             className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-active:scale-90 ${
               currentView === 'ponto'
-                ? 'bg-gradient-to-tr from-[#FF5A3C] to-[#e04a2f] text-white shadow-[#FF5A3C]/40'
-                : 'bg-[#1e2027] border border-[#2f323c] text-white hover:border-[#FF5A3C]/50'
+                ? 'bg-gradient-to-tr from-[var(--ui-accent)] to-[var(--ui-accent-hover)] text-foreground shadow-[var(--ui-accent)]/40'
+                : 'bg-[var(--ui-raised)] border border-[var(--ui-border)] text-foreground hover:border-[var(--ui-accent)]/50'
             }`}
           >
             <MapPin className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <span
             className={`text-[10px] font-bold mt-1 tracking-tight flex items-center gap-1 ${
-              currentView === 'ponto' ? 'text-[#FF5A3C]' : 'text-zinc-300'
+              currentView === 'ponto' ? 'text-[var(--ui-accent)]' : 'text-zinc-300'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
@@ -119,19 +120,19 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
           onClick={() => setCurrentView('arquivos')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
             currentView === 'arquivos'
-              ? 'text-[#FF5A3C]'
+              ? 'text-[var(--ui-accent)]'
               : 'text-zinc-400 hover:text-zinc-200 active:scale-95'
           }`}
         >
           <div className="relative">
             <FolderOpen className="w-5 h-5" />
             {pendingApprovalsCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-[9px] font-black text-black flex items-center justify-center border border-[#111215]">
+              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-[9px] font-black text-black flex items-center justify-center border border-[var(--ui-surface)]">
                 {pendingApprovalsCount}
               </span>
             )}
             {currentView === 'arquivos' && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF5A3C]" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--ui-accent)]" />
             )}
           </div>
           <span className="text-[10px] font-semibold mt-1 tracking-tight">Arquivos</span>

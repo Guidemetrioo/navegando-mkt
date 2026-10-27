@@ -36,8 +36,8 @@ const KANBAN_COLUMNS: { id: DeliverableStatus; title: string; color: string; bor
   { id: 'em_edicao', title: 'Em Edição', color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-500/10' },
   { id: 'aguardando_aprovacao', title: 'Aguardando Cliente', color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/10' },
   { id: 'ajustes_solicitados', title: 'Ajustes Pedidos', color: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500/10' },
-  { id: 'aprovado', title: 'Aprovado ✓', color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10' },
-  { id: 'publicado', title: 'Publicado 🚀', color: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500/10' },
+  { id: 'aprovado', title: 'Aprovado', color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10' },
+  { id: 'publicado', title: 'Publicado', color: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500/10' },
 ];
 
 export function FilesDeliverablesView() {
@@ -86,9 +86,9 @@ export function FilesDeliverablesView() {
       case 'ajustes_solicitados':
         return { label: 'Ajustes Pedidos', color: 'bg-rose-500/15 text-rose-400 border-rose-500/30' };
       case 'aprovado':
-        return { label: 'Aprovado ✓', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+        return { label: 'Aprovado', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
       case 'publicado':
-        return { label: 'Publicado 🚀', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' };
+        return { label: 'Publicado', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30' };
     }
   };
 
@@ -128,14 +128,14 @@ export function FilesDeliverablesView() {
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">
       {/* 1. HEADER DA CENTRAL DE ARQUIVOS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[#16171b] border border-[#26282f] shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
             <FolderOpen className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-heading">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
                 Central de Arquivos & Entregáveis (DAM)
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -150,12 +150,12 @@ export function FilesDeliverablesView() {
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {/* Alternador de Visualização (Grade vs Kanban) */}
-          <div className="inline-flex p-1 bg-[#1a1b20] rounded-xl border border-[#26282f] gap-1">
+          <div className="inline-flex p-1 bg-[var(--ui-raised)] rounded-xl border border-[var(--ui-border)] gap-1">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === 'grid' ? 'bg-[#FF5A3C] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                viewMode === 'grid' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Visualização em Grade"
             >
@@ -166,7 +166,7 @@ export function FilesDeliverablesView() {
               type="button"
               onClick={() => setViewMode('kanban')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === 'kanban' ? 'bg-[#FF5A3C] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                viewMode === 'kanban' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Pipeline / Funil de Produção"
             >
@@ -178,7 +178,7 @@ export function FilesDeliverablesView() {
           <button
             type="button"
             onClick={() => openDeliverableModal()}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold text-xs shadow-lg shadow-[#FF5A3C]/20 transition-all hover:scale-105 cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs shadow-lg shadow-[var(--ui-accent)]/20 transition-all hover:scale-105 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Novo Arquivo / Vídeo</span>
@@ -188,30 +188,30 @@ export function FilesDeliverablesView() {
 
       {/* 2. STATS RÁPIDOS DA OPERAÇÃO DE VÍDEO */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="p-3.5 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <span className="text-[10px] text-zinc-400 uppercase font-semibold">Total de Peças</span>
-          <span className="text-xl font-bold text-white mt-1">{deliverables.length}</span>
+          <span className="text-xl font-bold text-foreground mt-1">{deliverables.length}</span>
         </div>
-        <div className="p-3.5 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <span className="text-[10px] text-zinc-400 uppercase font-semibold">Brutos Gravados</span>
           <span className="text-xl font-bold text-zinc-300 mt-1">{countRaw}</span>
         </div>
-        <div className="p-3.5 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <span className="text-[10px] text-purple-400 uppercase font-semibold">Em Edição</span>
           <span className="text-xl font-bold text-purple-400 mt-1">{countEditing}</span>
         </div>
-        <div className="p-3.5 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <span className="text-[10px] text-amber-400 uppercase font-semibold">Aguardando Cliente</span>
           <span className="text-xl font-bold text-amber-400 mt-1">{countPendingClient}</span>
         </div>
-        <div className="p-3.5 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <span className="text-[10px] text-emerald-400 uppercase font-semibold">Aprovados / Publicados</span>
           <span className="text-xl font-bold text-emerald-400 mt-1">{countApproved}</span>
         </div>
       </div>
 
       {/* 3. BARRA DE PESQUISA & FILTROS */}
-      <div className="p-4 rounded-2xl bg-[#16171b] border border-[#26282f] flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Campo de Busca */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -220,7 +220,7 @@ export function FilesDeliverablesView() {
             placeholder="Buscar por título do vídeo, prato, restaurante ou briefing..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+            className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           />
         </div>
 
@@ -230,22 +230,22 @@ export function FilesDeliverablesView() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
           >
             <option value="all">Todos os Status</option>
-            <option value="captado_raw">📥 Bruto RAW</option>
-            <option value="em_edicao">✂️ Em Edição</option>
-            <option value="aguardando_aprovacao">⏳ Aguardando Aprovação</option>
-            <option value="ajustes_solicitados">⚠️ Ajustes Solicitados</option>
-            <option value="aprovado">✅ Aprovado</option>
-            <option value="publicado">🚀 Publicado</option>
+            <option value="captado_raw">Bruto RAW</option>
+            <option value="em_edicao">Em Edição</option>
+            <option value="aguardando_aprovacao">Aguardando Aprovação</option>
+            <option value="ajustes_solicitados">Ajustes Solicitados</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="publicado">Publicado</option>
           </select>
 
           {/* Restaurante */}
           <select
             value={selectedClientId}
             onChange={(e) => setSelectedClientId(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
           >
             <option value="all">Todos os Restaurantes</option>
             {clients.map((c) => (
@@ -259,7 +259,7 @@ export function FilesDeliverablesView() {
           <select
             value={selectedFormat}
             onChange={(e) => setSelectedFormat(e.target.value)}
-            className="text-xs bg-[#1f2026] text-zinc-200 border border-[#2b2d35] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
+            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
           >
             <option value="all">Todos os Formatos</option>
             <option value="reels_9_16">Reels (9:16)</option>
@@ -277,7 +277,7 @@ export function FilesDeliverablesView() {
             className={`px-3 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
               onlyMissingDrive
                 ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
-                : 'bg-[#1f2026] text-zinc-400 border-[#2b2d35] hover:text-white'
+                : 'bg-[var(--ui-raised)] text-zinc-400 border-[var(--ui-border)] hover:text-foreground'
             }`}
             title="Exibe arquivos sem link de Drive cadastrado"
           >
@@ -297,14 +297,14 @@ export function FilesDeliverablesView() {
               return (
                 <div
                   key={col.id}
-                  className="flex-1 flex flex-col gap-3 p-3.5 rounded-3xl bg-[#141519] border border-[#26282f] min-w-[220px]"
+                  className="flex-1 flex flex-col gap-3 p-3.5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] min-w-[220px]"
                 >
                   {/* Cabeçalho da Coluna */}
-                  <div className="flex items-center justify-between pb-2 border-b border-[#26282f]">
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--ui-border)]">
                     <span className={`text-xs font-bold uppercase tracking-wider ${col.color}`}>
                       {col.title}
                     </span>
-                    <span className="text-[11px] font-mono font-bold bg-[#1e2026] text-zinc-300 px-2 py-0.5 rounded-full border border-[#2b2d35]">
+                    <span className="text-[11px] font-mono font-bold bg-[var(--ui-raised)] text-zinc-300 px-2 py-0.5 rounded-full border border-[var(--ui-border)]">
                       {colItems.length}
                     </span>
                   </div>
@@ -321,10 +321,10 @@ export function FilesDeliverablesView() {
                         return (
                           <div
                             key={item.id}
-                            className="p-3.5 rounded-2xl bg-[#1a1b20] border border-[#2b2d35] hover:border-[#FF5A3C]/40 transition-all flex flex-col gap-2.5 shadow-sm group"
+                            className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] hover:border-[var(--ui-accent)]/40 transition-all flex flex-col gap-2.5 shadow-sm group"
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <span className="text-[10px] font-bold text-[#FF5A3C] uppercase truncate flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-[var(--ui-accent)] uppercase truncate flex items-center gap-1">
                                 <Building className="w-3 h-3" />
                                 {client?.nome}
                               </span>
@@ -333,7 +333,7 @@ export function FilesDeliverablesView() {
                               </span>
                             </div>
 
-                            <h4 className="text-xs font-bold text-white line-clamp-2">
+                            <h4 className="text-xs font-bold text-foreground line-clamp-2">
                               {item.titulo}
                             </h4>
 
@@ -344,14 +344,14 @@ export function FilesDeliverablesView() {
                             )}
 
                             {/* Links e Ações Rápidas */}
-                            <div className="pt-2 border-t border-[#26282f] flex items-center justify-between gap-1">
+                            <div className="pt-2 border-t border-[var(--ui-border)] flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1">
                                 {item.drive_url && (
                                   <a
                                     href={item.drive_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1 rounded-lg bg-[#26282f] text-[#38bdf8] hover:bg-[#32353e] transition-colors"
+                                    className="p-1 rounded-lg bg-[var(--ui-border)] text-[#38bdf8] hover:bg-[var(--ui-border)] transition-colors"
                                     title="Abrir Vídeo no Drive"
                                   >
                                     <ExternalLink className="w-3 h-3" />
@@ -362,7 +362,7 @@ export function FilesDeliverablesView() {
                                     href={item.pasta_drive_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-1 rounded-lg bg-[#26282f] text-amber-400 hover:bg-[#32353e] transition-colors"
+                                    className="p-1 rounded-lg bg-[var(--ui-border)] text-amber-400 hover:bg-[var(--ui-border)] transition-colors"
                                     title="Pasta de Brutos RAW"
                                   >
                                     <FolderOpen className="w-3 h-3" />
@@ -374,7 +374,7 @@ export function FilesDeliverablesView() {
                                 <button
                                   type="button"
                                   onClick={() => setApprovalDeliverable(item)}
-                                  className="p-1 rounded-lg text-purple-400 hover:text-white hover:bg-purple-500/20 transition-colors cursor-pointer"
+                                  className="p-1 rounded-lg text-purple-400 hover:text-foreground hover:bg-purple-500/20 transition-colors cursor-pointer"
                                   title="Visualizar Prévia do Cliente / Aprovação"
                                 >
                                   <Eye className="w-3 h-3" />
@@ -382,7 +382,7 @@ export function FilesDeliverablesView() {
                                 <button
                                   type="button"
                                   onClick={() => openEditDeliverableModal(item)}
-                                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#26282f] transition-colors cursor-pointer"
+                                  className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
                                   title="Editar Arquivo / Versão"
                                 >
                                   <Edit className="w-3 h-3" />
@@ -391,7 +391,7 @@ export function FilesDeliverablesView() {
                                   <button
                                     type="button"
                                     onClick={() => updateDeliverableStatus(item.id, 'aprovado')}
-                                    className="px-2 py-0.5 rounded-lg bg-emerald-500 text-white font-bold text-[10px] cursor-pointer"
+                                    className="px-2 py-0.5 rounded-lg bg-emerald-500 text-foreground font-bold text-[10px] cursor-pointer"
                                     title="Aprovar vídeo"
                                   >
                                     Aprovar ✓
@@ -401,10 +401,10 @@ export function FilesDeliverablesView() {
                                   <button
                                     type="button"
                                     onClick={() => updateDeliverableStatus(item.id, 'publicado')}
-                                    className="px-2 py-0.5 rounded-lg bg-sky-500 text-white font-bold text-[10px] cursor-pointer"
+                                    className="px-2 py-0.5 rounded-lg bg-sky-500 text-foreground font-bold text-[10px] cursor-pointer"
                                     title="Marcar como publicado"
                                   >
-                                    Postar 🚀
+                                    Postar
                                   </button>
                                 )}
                               </div>
@@ -425,7 +425,7 @@ export function FilesDeliverablesView() {
       {viewMode === 'grid' && (
         <>
           {filteredDeliverables.length === 0 ? (
-            <div className="py-16 text-center rounded-3xl bg-[#16171b] border border-[#26282f] p-8 flex flex-col items-center gap-3">
+            <div className="py-16 text-center rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] p-8 flex flex-col items-center gap-3">
               <FolderOpen className="w-12 h-12 text-zinc-500 animate-pulse" />
               <h4 className="text-base font-bold text-zinc-200">Nenhum arquivo ou vídeo encontrado</h4>
               <p className="text-xs text-zinc-400 max-w-md">
@@ -434,7 +434,7 @@ export function FilesDeliverablesView() {
               <button
                 type="button"
                 onClick={() => openDeliverableModal()}
-                className="mt-2 px-4 py-2 rounded-xl bg-[#FF5A3C] text-white text-xs font-bold shadow-md cursor-pointer"
+                className="mt-2 px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] text-foreground text-xs font-bold shadow-md cursor-pointer"
               >
                 Cadastrar primeiro arquivo
               </button>
@@ -451,10 +451,10 @@ export function FilesDeliverablesView() {
                 return (
                   <div
                     key={deliv.id}
-                    className="bg-[#16171b] rounded-3xl border border-[#26282f] overflow-hidden shadow-sm hover:border-[#FF5A3C]/40 transition-all flex flex-col justify-between"
+                    className="bg-[var(--ui-surface)] rounded-3xl border border-[var(--ui-border)] overflow-hidden shadow-sm hover:border-[var(--ui-accent)]/40 transition-all flex flex-col justify-between"
                   >
                     {/* Thumbnail / Header */}
-                    <div className="relative h-44 bg-[#121316] overflow-hidden group">
+                    <div className="relative h-44 bg-[var(--ui-surface)] overflow-hidden group">
                       {deliv.thumbnail_url ? (
                         <img
                           src={deliv.thumbnail_url}
@@ -473,7 +473,7 @@ export function FilesDeliverablesView() {
 
                       {/* Badges superiores */}
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-white border border-white/10 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-foreground border border-[var(--ui-border)] uppercase tracking-wider">
                           {getFormatLabel(deliv.formato)}
                         </span>
 
@@ -485,9 +485,9 @@ export function FilesDeliverablesView() {
                       </div>
 
                       {/* Versão e Restaurante inferiores na imagem */}
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-foreground">
                         <span className="font-bold text-xs flex items-center gap-1.5 drop-shadow">
-                          <Building className="w-3.5 h-3.5 text-[#FF5A3C]" />
+                          <Building className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                           <span>{client?.nome}</span>
                         </span>
                         <span className="text-[10px] font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
@@ -500,13 +500,13 @@ export function FilesDeliverablesView() {
                     <div className="p-4 flex flex-col gap-3 flex-1 justify-between">
                       <div>
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-sm text-white line-clamp-2">
+                          <h3 className="font-bold text-sm text-foreground line-clamp-2">
                             {deliv.titulo}
                           </h3>
                           <button
                             type="button"
                             onClick={() => openEditDeliverableModal(deliv)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer shrink-0"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer shrink-0"
                             title="Editar Arquivo / Informações"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -521,7 +521,7 @@ export function FilesDeliverablesView() {
                       </div>
 
                       {/* Dupla que gravou */}
-                      <div className="pt-2 border-t border-[#26282f] flex items-center justify-between">
+                      <div className="pt-2 border-t border-[var(--ui-border)] flex items-center justify-between">
                         <span className="text-[10px] text-zinc-400 font-semibold uppercase">
                           Equipe de Produção:
                         </span>
@@ -539,7 +539,7 @@ export function FilesDeliverablesView() {
                       )}
 
                       {/* Links do Google Drive (Anti-Perda) */}
-                      <div className="pt-2 border-t border-[#26282f] flex flex-col gap-1.5">
+                      <div className="pt-2 border-t border-[var(--ui-border)] flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-xs">
                           {deliv.drive_url ? (
                             <div className="flex items-center gap-1.5">
@@ -547,7 +547,7 @@ export function FilesDeliverablesView() {
                                 href={deliv.drive_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-[#38bdf8] text-xs font-semibold border border-[#2b2d35] transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-[#38bdf8] text-xs font-semibold border border-[var(--ui-border)] transition-colors"
                               >
                                 <Video className="w-3.5 h-3.5" />
                                 <span>Vídeo Final</span>
@@ -556,7 +556,7 @@ export function FilesDeliverablesView() {
                               <button
                                 type="button"
                                 onClick={() => handleCopyLink(deliv.drive_url)}
-                                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1f2026] transition-colors cursor-pointer"
+                                className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                                 title="Copiar link do vídeo"
                               >
                                 <Copy className="w-3.5 h-3.5" />
@@ -574,7 +574,7 @@ export function FilesDeliverablesView() {
                               href={deliv.pasta_drive_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#1f2026] hover:bg-[#282a32] text-amber-400 text-xs font-semibold border border-[#2b2d35] transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-amber-400 text-xs font-semibold border border-[var(--ui-border)] transition-colors"
                               title="Pasta com todos os brutos da câmera"
                             >
                               <FolderOpen className="w-3.5 h-3.5" />
@@ -590,7 +590,7 @@ export function FilesDeliverablesView() {
                       </div>
 
                       {/* Ações de Status e Exclusão */}
-                      <div className="pt-2 border-t border-[#26282f] flex flex-wrap items-center justify-between gap-2">
+                      <div className="pt-2 border-t border-[var(--ui-border)] flex flex-wrap items-center justify-between gap-2">
                         {/* Botão de Prévia do Cliente */}
                         <button
                           type="button"
@@ -607,7 +607,7 @@ export function FilesDeliverablesView() {
                             <button
                               type="button"
                               onClick={() => updateDeliverableStatus(deliv.id, 'aprovado')}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-foreground text-xs font-bold transition-all shadow-sm cursor-pointer"
                               title="Aprovar vídeo"
                             >
                               Aprovar ✓
@@ -617,10 +617,10 @@ export function FilesDeliverablesView() {
                             <button
                               type="button"
                               onClick={() => updateDeliverableStatus(deliv.id, 'publicado')}
-                              className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-foreground text-xs font-bold transition-all shadow-sm cursor-pointer"
                               title="Marcar como publicado no Instagram"
                             >
-                              Publicar 🚀
+                              Publicar
                             </button>
                           )}
                           <button

@@ -1,4 +1,27 @@
 import { PontoRegistro } from '@/types/database';
+import { todayInSaoPaulo } from '@/lib/date-utils';
+
+const today = todayInSaoPaulo();
+
+function makePontoPhoto(initials: string, name: string, role: string, hue: number, time: string, loc: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="260" viewBox="0 0 320 260">
+    <defs>
+      <linearGradient id="bg_${hue}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1e293b"/>
+        <stop offset="100%" stop-color="#0f172a"/>
+      </linearGradient>
+    </defs>
+    <rect width="320" height="260" fill="url(#bg_${hue})"/>
+    <circle cx="160" cy="95" r="46" fill="hsl(${hue}, 70%, 45%)"/>
+    <text x="160" y="103" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${initials}</text>
+    <text x="160" y="162" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f8fafc" text-anchor="middle">${name}</text>
+    <text x="160" y="180" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">${role}</text>
+    <rect x="0" y="222" width="320" height="38" fill="rgba(0,0,0,0.65)"/>
+    <text x="16" y="246" font-family="monospace" font-size="10" font-weight="bold" fill="#10b981">${time}</text>
+    <text x="304" y="246" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="end">${loc}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 export const INITIAL_PONTOS: PontoRegistro[] = [
   // ==========================================
@@ -6,35 +29,37 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
   // ==========================================
   {
     id: 'ponto-1',
-    employee_id: 'usr-vitinho', // Vitinho (Filmmaker / Gerente)
-    client_id: 'cli-5', // Hamburgueria Artesanal Smash
+    employee_id: 'usr-vitinho',
+    client_id: 'cli-5',
     event_id: 'evt-5',
     tipo: 'entrada',
-    data_hora: '2026-10-14T09:48:15',
-    foto_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T09:48:15`,
+    foto_url: makePontoPhoto('VC', 'Victor Cordoba (Vitinho)', 'Filmmaker Líder', 178, '09:48:15', 'Smash Burger'),
     latitude: -23.5594,
     longitude: -46.6914,
     precisao_metros: 8,
-    distancia_metros: 28, // 28 metros do restaurante (No local!)
+    distancia_metros: 28,
     status_localizacao: 'no_local',
-    observacao: 'Cheguei com 12 min de antecedência. Câmera configurada e iluminação testada.',
-    created_at: '2026-10-14T09:48:15Z',
+    endereco: 'R. Harmonia, 342 - Vila Madalena, São Paulo',
+    observacao: 'Chegada no local com antecedência. Câmera configurada e iluminação testada.',
+    created_at: `${today}T09:48:15Z`,
   },
   {
     id: 'ponto-2',
-    employee_id: 'usr-mi', // Milena (Modelo / Apresentadora)
-    client_id: 'cli-5', // Hamburgueria Artesanal Smash
+    employee_id: 'usr-mi',
+    client_id: 'cli-5',
     event_id: 'evt-5',
     tipo: 'entrada',
-    data_hora: '2026-10-14T09:52:40',
-    foto_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T09:52:40`,
+    foto_url: makePontoPhoto('MS', 'Milena', 'Modelo / Apresentadora', 320, '09:52:40', 'Smash Burger'),
     latitude: -23.5593,
     longitude: -46.6911,
     precisao_metros: 12,
-    distancia_metros: 15, // 15 metros do restaurante (No local!)
+    distancia_metros: 15,
     status_localizacao: 'no_local',
-    observacao: 'Cheguei no local, alinhando com o chef os 2 burgers que vamos gravar primeiro.',
-    created_at: '2026-10-14T09:52:40Z',
+    endereco: 'R. Harmonia, 342 - Vila Madalena, São Paulo',
+    observacao: 'Chegada no local, alinhando com a equipe os 2 pratos da gravação.',
+    created_at: `${today}T09:52:40Z`,
   },
   {
     id: 'ponto-ext-saida-1',
@@ -42,15 +67,16 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
     client_id: 'cli-5',
     event_id: 'evt-5',
     tipo: 'saida',
-    data_hora: '2026-10-14T13:12:00',
-    foto_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T13:12:00`,
+    foto_url: makePontoPhoto('VC', 'Victor Cordoba (Vitinho)', 'Filmmaker Líder', 178, '13:12:00', 'Smash Burger'),
     latitude: -23.5594,
     longitude: -46.6914,
     precisao_metros: 9,
     distancia_metros: 25,
     status_localizacao: 'no_local',
-    observacao: 'Saída do Smash Burger. 45 takes gravados e relatório enviado.',
-    created_at: '2026-10-14T13:12:00Z',
+    endereco: 'R. Harmonia, 342 - Vila Madalena, São Paulo',
+    observacao: 'Saída da Hamburgueria Smash. Takes gravados e transferidos.',
+    created_at: `${today}T13:12:00Z`,
   },
   {
     id: 'ponto-ext-saida-2',
@@ -58,153 +84,123 @@ export const INITIAL_PONTOS: PontoRegistro[] = [
     client_id: 'cli-5',
     event_id: 'evt-5',
     tipo: 'saida',
-    data_hora: '2026-10-14T13:14:30',
-    foto_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T13:14:30`,
+    foto_url: makePontoPhoto('MS', 'Milena', 'Modelo / Apresentadora', 320, '13:14:30', 'Smash Burger'),
     latitude: -23.5593,
     longitude: -46.6911,
     precisao_metros: 11,
     distancia_metros: 18,
     status_localizacao: 'no_local',
-    observacao: 'Sessão concluída com sucesso. 3 Reels apresentados com ótima aceitação do cliente.',
-    created_at: '2026-10-14T13:14:30Z',
+    endereco: 'R. Harmonia, 342 - Vila Madalena, São Paulo',
+    observacao: 'Sessão concluída com sucesso. Conteúdo gravado conforme briefing.',
+    created_at: `${today}T13:14:30Z`,
   },
   {
     id: 'ponto-3',
-    employee_id: 'usr-victor', // Victor (Filmmaker)
-    client_id: 'cli-1', // Cantina Bella Massa
+    employee_id: 'usr-victor',
+    client_id: 'cli-1',
     event_id: 'evt-6',
     tipo: 'entrada',
-    data_hora: '2026-10-14T14:45:00',
-    foto_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T14:45:00`,
+    foto_url: makePontoPhoto('VR', 'Victor', 'Filmmaker', 178, '14:45:00', 'Bella Massa'),
     latitude: -23.5606,
     longitude: -46.5983,
     precisao_metros: 10,
     distancia_metros: 22,
     status_localizacao: 'no_local',
-    observacao: 'No restaurante com lente macro pronta para o Tiramisù.',
-    created_at: '2026-10-14T14:45:00Z',
+    endereco: 'Rua da Mooca, 1420 - Mooca, São Paulo',
+    observacao: 'No restaurante com lente macro pronta para o preparo das massas.',
+    created_at: `${today}T14:45:00Z`,
   },
   {
     id: 'ponto-4',
-    employee_id: 'usr-gi', // Giovana (Modelo / Apresentadora)
-    client_id: 'cli-1', // Cantina Bella Massa
+    employee_id: 'usr-gi',
+    client_id: 'cli-1',
     event_id: 'evt-6',
     tipo: 'entrada',
-    data_hora: '2026-10-14T14:50:20',
-    foto_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80',
+    data_hora: `${today}T14:50:20`,
+    foto_url: makePontoPhoto('GL', 'Giovana', 'Modelo / Apresentadora', 275, '14:50:20', 'Bella Massa'),
     latitude: -23.5608,
     longitude: -46.5986,
     precisao_metros: 15,
     distancia_metros: 35,
     status_localizacao: 'no_local',
-    observacao: 'Roteiro de apresentação revisado com o dono da cantina.',
-    created_at: '2026-10-14T14:50:20Z',
-  },
-  {
-    id: 'ponto-5',
-    employee_id: 'usr-gimenez', // Matheus Gimenez (Filmmaker)
-    client_id: 'cli-2', // Sushi Hoshi
-    event_id: 'evt-2',
-    tipo: 'entrada',
-    data_hora: '2026-10-12T13:50:00',
-    foto_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5415,
-    longitude: -46.5703,
-    precisao_metros: 14,
-    distancia_metros: 40,
-    status_localizacao: 'no_local',
-    observacao: 'Entrada confirmada. Equipamento de iluminação montado.',
-    created_at: '2026-10-12T13:50:00Z',
-  },
-  {
-    id: 'ponto-6',
-    employee_id: 'usr-gimenez',
-    client_id: 'cli-2',
-    event_id: 'evt-2',
-    tipo: 'saida',
-    data_hora: '2026-10-12T17:15:30',
-    foto_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5413,
-    longitude: -46.5702,
-    precisao_metros: 10,
-    distancia_metros: 18,
-    status_localizacao: 'no_local',
-    observacao: 'Gravação finalizada com sucesso! Todos os combinados gravados.',
-    created_at: '2026-10-12T17:15:30Z',
+    endereco: 'Rua da Mooca, 1420 - Mooca, São Paulo',
+    observacao: 'Roteiro de apresentação alinhado com a gerência do restaurante.',
+    created_at: `${today}T14:50:20Z`,
   },
 
   // ==========================================
-  // PONTO INTERNO CLT 2026/2027: 3 BATIDAS (Entrada, Almoço, Saída)
-  // Equipe: Guilherme, Matheus, Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto
+  // PONTO INTERNO: 3 BATIDAS (Entrada, Almoço, Saída)
   // ==========================================
   {
     id: 'ponto-int-1',
-    employee_id: 'usr-guilherme',
+    employee_id: 'usr-gui',
     tipo: 'entrada',
-    data_hora: '2026-10-14T08:58:12',
-    foto_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5505,
-    longitude: -46.6333,
+    data_hora: `${today}T08:58:12`,
+    foto_url: makePontoPhoto('GA', 'Guilherme', 'Editor de Vídeo CLT', 205, '08:58:12', 'Sede Navegando'),
+    latitude: -23.5615,
+    longitude: -46.6560,
     precisao_metros: 5,
     status_localizacao: 'no_local',
     endereco: 'Sede Agência Navegando MKT - Escritório Interno',
-    observacao: '1ª Batida CLT: Entrada da manhã (Jornada diária 8h48min)',
-    created_at: '2026-10-14T08:58:12Z',
+    observacao: '1ª Batida: Entrada da manhã (Jornada diária 8h48min)',
+    created_at: `${today}T08:58:12Z`,
   },
   {
     id: 'ponto-int-2',
-    employee_id: 'usr-guilherme',
+    employee_id: 'usr-gui',
     tipo: 'almoco',
-    data_hora: '2026-10-14T12:05:00',
-    foto_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5505,
-    longitude: -46.6333,
+    data_hora: `${today}T12:05:00`,
+    foto_url: makePontoPhoto('GA', 'Guilherme', 'Editor de Vídeo CLT', 205, '12:05:00', 'Sede Navegando'),
+    latitude: -23.5615,
+    longitude: -46.6560,
     precisao_metros: 6,
     status_localizacao: 'no_local',
     endereco: 'Sede Agência Navegando MKT - Escritório Interno',
-    observacao: '2ª Batida CLT: Início do intervalo de almoço intrajornada (1h)',
-    created_at: '2026-10-14T12:05:00Z',
+    observacao: '2ª Batida: Início do intervalo de almoço intrajornada (1h)',
+    created_at: `${today}T12:05:00Z`,
   },
   {
     id: 'ponto-int-3',
     employee_id: 'usr-carol',
     tipo: 'entrada',
-    data_hora: '2026-10-14T09:02:10',
-    foto_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5505,
-    longitude: -46.6333,
+    data_hora: `${today}T09:02:10`,
+    foto_url: makePontoPhoto('CS', 'Carol', 'Designer Gráfico CLT', 32, '09:02:10', 'Sede Navegando'),
+    latitude: -23.5615,
+    longitude: -46.6560,
     precisao_metros: 6,
     status_localizacao: 'no_local',
     endereco: 'Sede Agência Navegando MKT - Ilha de Edição',
-    observacao: '1ª Batida CLT: Entrada da manhã para pós-produção dos Reels da semana',
-    created_at: '2026-10-14T09:02:10Z',
+    observacao: '1ª Batida: Entrada da manhã para pós-produção dos Reels da semana',
+    created_at: `${today}T09:02:10Z`,
   },
   {
     id: 'ponto-int-4',
     employee_id: 'usr-bruna',
     tipo: 'entrada',
-    data_hora: '2026-10-14T09:00:44',
-    foto_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5505,
-    longitude: -46.6333,
+    data_hora: `${today}T09:00:44`,
+    foto_url: makePontoPhoto('BM', 'Bruna', 'Copywriter CLT', 95, '09:00:44', 'Sede Navegando'),
+    latitude: -23.5615,
+    longitude: -46.6560,
     precisao_metros: 5,
     status_localizacao: 'no_local',
     endereco: 'Sede Agência Navegando MKT - Social Media Desk',
-    observacao: '1ª Batida CLT: Entrada da manhã',
-    created_at: '2026-10-14T09:00:44Z',
+    observacao: '1ª Batida: Entrada da manhã',
+    created_at: `${today}T09:00:44Z`,
   },
   {
     id: 'ponto-int-5',
     employee_id: 'usr-lucas',
     tipo: 'entrada',
-    data_hora: '2026-10-14T09:05:30',
-    foto_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80',
-    latitude: -23.5505,
-    longitude: -46.6333,
+    data_hora: `${today}T09:05:30`,
+    foto_url: makePontoPhoto('LV', 'Lucas Verraz', 'Tráfego Pago CLT', 238, '09:05:30', 'Sede Navegando'),
+    latitude: -23.5615,
+    longitude: -46.6560,
     precisao_metros: 5,
     status_localizacao: 'no_local',
     endereco: 'Sede Agência Navegando MKT - Ilha de Edição',
-    observacao: '1ª Batida CLT: Entrada da manhã',
-    created_at: '2026-10-14T09:05:30Z',
+    observacao: '1ª Batida: Entrada da manhã',
+    created_at: `${today}T09:05:30Z`,
   },
 ];

@@ -11,6 +11,7 @@ import {
   User,
   Link,
   Save,
+  FileText,
 } from 'lucide-react';
 
 export function ClientModal() {
@@ -30,17 +31,18 @@ export function ClientModal() {
   const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [status, setStatus] = useState<'ativo' | 'onboarding' | 'pausado'>('ativo');
-  const [plano, setPlano] = useState('Gastro Pro (8 Reels + 4 Carrosséis)');
+  const [plano, setPlano] = useState('');
   const [metaReelsMensal, setMetaReelsMensal] = useState<number>(8);
   const [valorMensalidade, setValorMensalidade] = useState<number>(3800);
   const [cardapioLink, setCardapioLink] = useState('');
   const [briefing, setBriefing] = useState('');
-  const [latitude, setLatitude] = useState<number | null>(-23.5505);
-  const [longitude, setLongitude] = useState<number | null>(-46.6333);
+  const [latitude, setLatitude] = useState<string>('');
+  const [longitude, setLongitude] = useState<string>('');
 
   useEffect(() => {
     if (isClientModalOpen) {
       if (editingClient) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset a draft when the externally controlled client modal opens.
         setNome(editingClient.nome);
         setInstagramHandle(editingClient.instagram_handle || '');
         setEndereco(editingClient.endereco || '');
@@ -49,13 +51,13 @@ export function ClientModal() {
         setDriveFolderUrl(editingClient.drive_folder_url || '');
         setObservacoes(editingClient.observacoes || '');
         setStatus(editingClient.status || 'ativo');
-        setPlano(editingClient.plano || 'Gastro Pro (8 Reels + 4 Carrosséis)');
+        setPlano(editingClient.plano || '');
         setMetaReelsMensal(editingClient.meta_reels_mensal ?? 8);
-        setValorMensalidade(editingClient.valor_mensalidade ?? 3800);
+        setValorMensalidade(editingClient.valor_mensalidade ?? 0);
         setCardapioLink(editingClient.cardapio_link || '');
         setBriefing(editingClient.briefing || '');
-        setLatitude(editingClient.latitude || -23.5505);
-        setLongitude(editingClient.longitude || -46.6333);
+        setLatitude(editingClient.latitude==null ? '' : String(editingClient.latitude));
+        setLongitude(editingClient.longitude==null ? '' : String(editingClient.longitude));
       } else {
         setNome('');
         setInstagramHandle('');
@@ -65,13 +67,13 @@ export function ClientModal() {
         setDriveFolderUrl('');
         setObservacoes('');
         setStatus('ativo');
-        setPlano('Gastro Pro (8 Reels + 4 Carrosséis)');
+        setPlano('');
         setMetaReelsMensal(8);
-        setValorMensalidade(3800);
+        setValorMensalidade(0);
         setCardapioLink('');
         setBriefing('');
-        setLatitude(-23.5505);
-        setLongitude(-46.6333);
+        setLatitude('');
+        setLongitude('');
       }
     }
   }, [isClientModalOpen, editingClient]);
@@ -100,8 +102,8 @@ export function ClientModal() {
       valor_mensalidade: valorMensalidade || 0,
       cardapio_link: cardapioLink.trim() || undefined,
       briefing: briefing.trim() || undefined,
-      latitude,
-      longitude,
+      latitude:latitude.trim()==='' ? null : Number(latitude),
+      longitude:longitude.trim()==='' ? null : Number(longitude),
     };
 
     if (editingClient) {
@@ -119,20 +121,20 @@ export function ClientModal() {
       onClick={closeClientModal}
     >
       <div
-        className="relative w-full max-w-lg bg-[#16171b] border-t sm:border border-[#2b2d35] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[92vh] overflow-y-auto pb-safe sm:pb-7"
+        className="relative w-full max-w-lg bg-[var(--ui-surface)] border-t sm:border border-[var(--ui-border)] rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col gap-5 max-h-[92vh] overflow-y-auto pb-safe sm:pb-7"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
         <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
 
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between border-b border-[#26282f] pb-4">
+        <div className="flex items-start justify-between border-b border-[var(--ui-border)] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FF5A3C]/10 text-[#FF5A3C] border border-[#FF5A3C]/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center justify-center">
               <Building className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white font-heading">
+              <h3 className="text-lg font-bold text-foreground font-heading">
                 {editingClient ? 'Editar Restaurante' : 'Novo Restaurante Parceiro'}
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
@@ -144,7 +146,7 @@ export function ClientModal() {
           <button
             type="button"
             onClick={closeClientModal}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#26282f] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -164,7 +166,7 @@ export function ClientModal() {
                 placeholder="Ex: Le Bife Jardins"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
 
@@ -177,7 +179,7 @@ export function ClientModal() {
                 placeholder="@lebife.oficial"
                 value={instagramHandle}
                 onChange={(e) => setInstagramHandle(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
           </div>
@@ -192,12 +194,17 @@ export function ClientModal() {
               placeholder="Rua Oscar Freire, 1050 - Jardins, São Paulo - SP"
               value={endereco}
               onChange={(e) => setEndereco(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
 
           {/* Responsável e Telefone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="grid gap-1 text-xs text-zinc-300">Latitude real (opcional)<input type="number" step="any" min={-90} max={90} value={latitude} onChange={e=>setLatitude(e.target.value)} placeholder="Ex.: -23.5505" className="w-full border border-[var(--ui-border)] bg-[var(--ui-raised)] p-2 rounded-lg" /></label>
+              <label className="grid gap-1 text-xs text-zinc-300">Longitude real (opcional)<input type="number" step="any" min={-180} max={180} value={longitude} onChange={e=>setLongitude(e.target.value)} placeholder="Ex.: -46.6333" className="w-full border border-[var(--ui-border)] bg-[var(--ui-raised)] p-2 rounded-lg" /></label>
+              <p className="text-xs text-zinc-500 sm:col-span-2">Confirme o ponto exato do restaurante no mapa. Sem essas coordenadas, o sistema não validará o raio do ponto externo.</p>
+            </div>
             <div>
               <label className="block font-semibold text-zinc-300 mb-1">
                 Nome do Gerente / Responsável
@@ -207,7 +214,7 @@ export function ClientModal() {
                 placeholder="Ex: Carlos Oliveira (Sócio)"
                 value={responsavel}
                 onChange={(e) => setResponsavel(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
 
@@ -220,18 +227,19 @@ export function ClientModal() {
                 placeholder="(11) 98765-4321"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
-                className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
             </div>
           </div>
 
           {/* Dados do Contrato & CRM de Marketing */}
-          <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-3">
+          <div className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-white flex items-center gap-1.5 text-xs">
-                <span>📋 Contrato & Plano de Marketing</span>
+              <span className="font-bold text-foreground flex items-center gap-1.5 text-xs">
+                <FileText className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
+                <span>Contrato & Plano de Marketing</span>
               </span>
-              <div className="flex items-center gap-1 bg-[#141519] p-0.5 rounded-lg border border-[#2b2d35]">
+              <div className="flex items-center gap-1 bg-[var(--ui-surface)] p-0.5 rounded-lg border border-[var(--ui-border)]">
                 {(['ativo', 'onboarding', 'pausado'] as const).map((st) => (
                   <button
                     key={st}
@@ -244,7 +252,7 @@ export function ClientModal() {
                           : st === 'onboarding'
                           ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                           : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                        : 'text-zinc-400 hover:text-white'
+                        : 'text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     {st}
@@ -263,7 +271,7 @@ export function ClientModal() {
                   placeholder="Ex: Gastro Pro (8 Reels + 4 Carrosséis)"
                   value={plano}
                   onChange={(e) => setPlano(e.target.value)}
-                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
 
@@ -277,7 +285,7 @@ export function ClientModal() {
                   max={60}
                   value={metaReelsMensal}
                   onChange={(e) => setMetaReelsMensal(Number(e.target.value))}
-                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
             </div>
@@ -292,7 +300,7 @@ export function ClientModal() {
                   placeholder="3800"
                   value={valorMensalidade}
                   onChange={(e) => setValorMensalidade(Number(e.target.value))}
-                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
 
@@ -305,7 +313,7 @@ export function ClientModal() {
                   placeholder="https://restaurante.cardapio.digital"
                   value={cardapioLink}
                   onChange={(e) => setCardapioLink(e.target.value)}
-                  className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
             </div>
@@ -319,14 +327,14 @@ export function ClientModal() {
                 placeholder="Ex: Tons quentes, corte em slow motion, ASMR de crocância. Não usar trilhas lentas."
                 value={briefing}
                 onChange={(e) => setBriefing(e.target.value)}
-                className="w-full bg-[#141519] border border-[#2b2d35] rounded-xl px-3 py-2 text-white text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] resize-none"
+                className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground text-xs placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] resize-none"
               />
             </div>
           </div>
 
           {/* Pasta do Google Drive (Anti-Perda) */}
-          <div className="p-3.5 rounded-2xl bg-[#1c1d22] border border-[#2b2d35] flex flex-col gap-2">
-            <span className="font-bold text-white flex items-center gap-1.5 text-xs">
+          <div className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-2">
+            <span className="font-bold text-foreground flex items-center gap-1.5 text-xs">
               <Link className="w-3.5 h-3.5 text-[#38bdf8]" />
               Pasta de Arquivos no Google Drive
             </span>
@@ -335,7 +343,7 @@ export function ClientModal() {
               placeholder="https://drive.google.com/drive/folders/..."
               value={driveFolderUrl}
               onChange={(e) => setDriveFolderUrl(e.target.value)}
-              className="w-full bg-[#26282f] border border-[#32353e] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C]"
+              className="w-full bg-[var(--ui-border)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
             <span className="text-[10px] text-zinc-400">
               Esta pasta conterá todos os brutos de câmeras e vídeos finais gravados pela equipe para este restaurante.
@@ -352,22 +360,22 @@ export function ClientModal() {
               placeholder="Ex: Não gravar nas segundas; foco em vinhos finos e sobremesas da estação..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-[#1c1d22] border border-[#2b2d35] rounded-xl px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#FF5A3C] resize-none"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] resize-none"
             />
           </div>
 
           {/* Botões */}
-          <div className="flex items-center gap-3 pt-3 border-t border-[#26282f]">
+          <div className="flex items-center gap-3 pt-3 border-t border-[var(--ui-border)]">
             <button
               type="button"
               onClick={closeClientModal}
-              className="flex-1 py-2.5 rounded-xl border border-[#2b2d35] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="flex-1 py-2.5 rounded-xl border border-[var(--ui-border)] text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-[2] py-2.5 rounded-xl bg-[#FF5A3C] hover:bg-[#e04a2f] text-white font-bold transition-all shadow-lg shadow-[#FF5A3C]/25 cursor-pointer"
+              className="flex-[2] py-2.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold transition-all shadow-lg shadow-[var(--ui-accent)]/25 cursor-pointer"
             >
               {editingClient ? 'Atualizar Restaurante' : 'Cadastrar Restaurante'}
             </button>

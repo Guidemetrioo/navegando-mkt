@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+import { IS_DEMO } from '@/lib/app-mode';
+import { ProductionLogin } from '@/components/auth/ProductionLogin';
 import { AgendaProvider, useAgenda } from '@/context/AgendaContext';
 import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
 import { useRouter } from 'next/navigation';
 
 function LoginContent() {
-  const { isAuthenticated } = useAgenda();
+  const { isAuthenticated, syncStatus, syncMessage } = useAgenda();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -15,7 +17,7 @@ function LoginContent() {
     }
   }, [isAuthenticated, router]);
 
-  return <LoginCheckInView />;
+  return IS_DEMO ? <LoginCheckInView /> : <ProductionLogin loading={syncStatus==='loading'} feedback={syncMessage} />;
 }
 
 export default function LoginPage() {

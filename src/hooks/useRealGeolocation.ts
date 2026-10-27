@@ -26,7 +26,7 @@ export function useRealGeolocation() {
   // Verificar status de permissão inicial
   useEffect(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setPermissionState('unsupported');
+      queueMicrotask(()=>setPermissionState('unsupported'));
       return;
     }
 
@@ -79,7 +79,7 @@ export function useRealGeolocation() {
   const requestLocation = useCallback(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       setError('Geolocalização não é suportada neste navegador ou dispositivo.');
-      setPermissionState('unsupported');
+      queueMicrotask(()=>setPermissionState('unsupported'));
       return;
     }
 

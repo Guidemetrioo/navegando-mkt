@@ -46,7 +46,7 @@ export function DayDetailModal() {
       onClick={closeDayDetailModal}
     >
       <div
-        className="relative w-full max-w-lg bg-[#0e0f15]/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/10 shadow-2xl p-5 sm:p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto pb-safe sm:pb-6"
+        className="relative w-full max-w-lg bg-[var(--ui-page)]/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-[var(--ui-border)] shadow-2xl p-5 sm:p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto pb-safe sm:pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
@@ -55,11 +55,11 @@ export function DayDetailModal() {
         {/* Cabeçalho */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#FF6600] uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-[var(--ui-accent)] uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5" />
               <span>{dayName}</span>
             </div>
-            <h3 className="text-xl font-bold text-white font-heading mt-0.5">
+            <h3 className="text-xl font-bold text-foreground font-heading mt-0.5">
               {dayNum} de {monthName} de {year}
             </h3>
           </div>
@@ -67,14 +67,14 @@ export function DayDetailModal() {
           <button
             type="button"
             onClick={closeDayDetailModal}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Seção: Equipe Livre Neste Dia */}
-        <div className="p-3.5 rounded-2xl bg-[#14151c] border border-white/5">
+        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)]">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-2">
             <UserCheck className="w-4 h-4 text-emerald-400" />
             <span>Disponíveis neste dia ({freeEmployees.length}):</span>
@@ -130,7 +130,7 @@ export function DayDetailModal() {
                       closeDayDetailModal();
                       openEditEventModal(ev);
                     }}
-                    className={`relative p-3.5 rounded-2xl border bg-[#14151c] border-white/5 hover:border-[#FF6600]/50 transition-all cursor-pointer shadow-sm flex flex-col gap-2`}
+                    className={`relative p-3.5 rounded-2xl border bg-[var(--ui-surface)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]/50 transition-all cursor-pointer shadow-sm flex flex-col gap-2`}
                   >
                     <div className="flex items-center justify-between">
                       <span
@@ -141,7 +141,7 @@ export function DayDetailModal() {
                       </span>
 
                       <div className="flex items-center gap-1 text-xs font-semibold text-zinc-300">
-                        <Clock className="w-3.5 h-3.5 text-[#FF6600]" />
+                        <Clock className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                         <span>
                           {formatTimeClean(ev.hora_inicio)} - {formatTimeClean(ev.hora_fim)}
                         </span>
@@ -149,7 +149,7 @@ export function DayDetailModal() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-bold text-white">
+                      <h4 className="text-sm font-bold text-foreground">
                         {ev.client?.nome || 'Cliente'}
                       </h4>
                       {ev.local && (
@@ -168,7 +168,7 @@ export function DayDetailModal() {
                           Relatório OK: {ev.relatorio_filmmaker.takes_gravados_qtd || 0} takes
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/25 text-[10px] font-semibold">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/25 text-[10px] font-semibold">
                           <FileText className="w-3 h-3" />
                           Relatório Pendente (Clique p/ abrir)
                         </span>
@@ -176,7 +176,7 @@ export function DayDetailModal() {
                     </div>
 
                     {/* Chips dos funcionários atribuídos */}
-                    <div className="flex flex-wrap gap-1 pt-1 border-t border-white/5">
+                    <div className="flex flex-wrap gap-1 pt-1 border-t border-[var(--ui-border)]">
                       {(ev.employees || []).map((emp) => (
                         <EmployeeBadge key={emp.id} employee={emp} size="sm" />
                       ))}
@@ -196,7 +196,7 @@ export function DayDetailModal() {
               closeDayDetailModal();
               openNewEventModal(dayDetailDate);
             }}
-            className="gradient-cta flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white font-bold text-sm shadow-lg transition-all cursor-pointer mt-1"
+            className="gradient-cta flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-foreground font-bold text-sm shadow-lg transition-all cursor-pointer mt-1"
           >
             <Plus className="w-4 h-4" />
             <span>Nova gravação neste dia</span>
