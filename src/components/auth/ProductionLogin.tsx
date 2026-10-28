@@ -32,13 +32,32 @@ export function ProductionLogin({loading=false,feedback=''}:{loading?:boolean;fe
     <header className="login-header max-w-5xl w-full mx-auto flex items-center justify-between gap-4"><NavegandoLogo variant="horizontal" size="md" /><DesignSelector /></header>
     <main className="w-full max-w-md mx-auto my-auto glass-card rounded-2xl p-6 sm:p-8">
       <p className="text-xs text-[var(--ui-accent)] font-semibold mb-3">NAVEGANDO · ACESSO DA EQUIPE</p>
-      <h1 className="text-2xl font-semibold mb-3">{HAS_CLOUD_CONFIG ? 'Entre no seu espaço de trabalho.' : 'A base central aguarda configuração.'}</h1>
-      {!HAS_CLOUD_CONFIG ? <p className="text-sm text-zinc-400 leading-relaxed">O modo de produção está protegido. Configure o projeto Supabase, aplique as migrações e vincule as contas da equipe seguindo o guia de implantação. Nenhum cliente de demonstração será utilizado na base real.</p> : loading ? <p role="status" className="text-sm text-zinc-400">Verificando sua sessão e consultando a base central…</p> : <form onSubmit={submit} className="grid gap-4 mt-6">
-        <label className="grid gap-2 text-sm">E-mail da equipe<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3" /></label>
-        <label className="grid gap-2 text-sm">Senha<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3" /></label>
-        <button type="submit" disabled={busy} className="gradient-cta rounded-lg px-4 py-3 disabled:opacity-50">{busy ? 'Aguarde…' : 'Entrar'}</button>
-        <button type="button" disabled={busy} onClick={recover} className="text-sm text-zinc-400 underline underline-offset-4 py-2">Esqueci minha senha</button>
-      </form>}
+      <h1 className="text-2xl font-semibold mb-3">{HAS_CLOUD_CONFIG ? 'Entre no seu espaço de trabalho.' : 'Espaço da Equipe Navegando'}</h1>
+      {!HAS_CLOUD_CONFIG ? (
+        <div className="flex flex-col gap-4 mt-2">
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Acesse o espaço de trabalho operacional da equipe com ponto biométrico, agenda gastronômica e controle financeiro.
+          </p>
+          <a
+            href="/"
+            onClick={() => {
+              window.location.reload();
+            }}
+            className="gradient-cta text-center rounded-xl px-4 py-3 text-sm font-bold text-white shadow-lg cursor-pointer"
+          >
+            Acessar Espaço da Equipe
+          </a>
+        </div>
+      ) : loading ? (
+        <p role="status" className="text-sm text-zinc-400">Verificando sua sessão e consultando a base central…</p>
+      ) : (
+        <form onSubmit={submit} className="grid gap-4 mt-6">
+          <label className="grid gap-2 text-sm">E-mail da equipe<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3" /></label>
+          <label className="grid gap-2 text-sm">Senha<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3" /></label>
+          <button type="submit" disabled={busy} className="gradient-cta rounded-lg px-4 py-3 disabled:opacity-50">{busy ? 'Aguarde…' : 'Entrar'}</button>
+          <button type="button" disabled={busy} onClick={recover} className="text-sm text-zinc-400 underline underline-offset-4 py-2">Esqueci minha senha</button>
+        </form>
+      )}
       {notice && <p role="status" className="text-sm mt-4 text-[var(--ui-accent)]">{notice}</p>}
       {!notice && feedback && <p role="status" className="text-sm mt-4 text-[var(--ui-accent)]">{feedback}</p>}
     </main>
