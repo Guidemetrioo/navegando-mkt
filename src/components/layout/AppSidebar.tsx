@@ -27,6 +27,7 @@ import {
   LogOut,
   Home,
   FileText,
+  ClipboardList,
   DollarSign,
   Smartphone,
 } from 'lucide-react';
@@ -129,6 +130,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           label: 'Relatórios dos Vídeos',
           icon: FileText,
           badgeColor: 'bg-[#38bdf8]/15 text-[#38bdf8]',
+        },
+        {
+          id: 'briefing',
+          label: 'Briefing & Roteiros',
+          icon: ClipboardList,
+          badge: 'Diretrizes',
+          badgeColor: 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)]',
         },
       ],
     },

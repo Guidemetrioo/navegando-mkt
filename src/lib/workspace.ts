@@ -18,12 +18,12 @@ export interface Change { kind: Entity; id: string; expected: number; data: Reco
 export const emptyWorkspace = (): Workspace => ({ employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
 const modules: Record<TeamRole, readonly string[]> = {
-  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','relatorios','arquivos','metricas-reels'],
-  modelo: ['home','mes','semana','minha-agenda','ponto'],
-  criadora: ['home','mes','semana','minha-agenda','ponto'],
-  interno: ['home','mes','semana','minha-agenda','ponto','arquivos'],
+  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','metricas-reels'],
+  modelo: ['home','mes','semana','minha-agenda','ponto','briefing'],
+  criadora: ['home','mes','semana','minha-agenda','ponto','briefing'],
+  interno: ['home','mes','semana','minha-agenda','ponto','briefing','arquivos'],
 };
 export function mayAccess(role: TeamRole | undefined, view: string): boolean {
   return role !== undefined && (modules[role]?.includes(view) ?? false);

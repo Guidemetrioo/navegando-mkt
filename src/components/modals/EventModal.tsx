@@ -45,8 +45,8 @@ export function EventModal() {
     sendManualWhatsAppConfirmation,
   } = useAgenda();
 
-  // Aba ativa: 'agenda', 'relatorio' ou 'despesas'
-  const [activeTab, setActiveTab] = useState<'agenda' | 'relatorio' | 'despesas'>('agenda');
+  // Aba ativa: 'agenda', 'briefing', 'relatorio' ou 'despesas'
+  const [activeTab, setActiveTab] = useState<'agenda' | 'briefing' | 'relatorio' | 'despesas'>('agenda');
 
   // Estados do formulário de Despesas
   const [despCategoria, setDespCategoria] = useState<CategoriaDespesa>('transporte');
@@ -70,6 +70,7 @@ export function EventModal() {
   const [tipo, setTipo] = useState<EventTipo>('gravacao');
   const [local, setLocal] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [briefingGravacao, setBriefingGravacao] = useState('');
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [status, setStatus] = useState<EventStatus>('agendado');
 
@@ -94,6 +95,7 @@ export function EventModal() {
       setTipo(editingEvent.tipo || 'gravacao');
       setLocal(editingEvent.local || '');
       setObservacoes(editingEvent.observacoes || '');
+      setBriefingGravacao(editingEvent.briefing_gravacao || '');
       setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
       setStatus(editingEvent.status || 'agendado');
       setConflicts([]);
@@ -189,6 +191,7 @@ export function EventModal() {
       hora_fim: endTime,
       local: local || undefined,
       observacoes: observacoes || undefined,
+      briefing_gravacao: briefingGravacao.trim() || undefined,
       status,
       assigned_employee_ids: selectedEmpIds,
     };
@@ -296,7 +299,7 @@ export function EventModal() {
             <button
               type="button"
               onClick={() => setActiveTab('agenda')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'agenda'
                   ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
@@ -304,6 +307,19 @@ export function EventModal() {
             >
               <Video className="w-3.5 h-3.5" />
               <span>Agenda</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('briefing')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'briefing'
+                  ? 'bg-purple-500 text-white shadow-sm font-black'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Briefing</span>
             </button>
 
             <button
@@ -800,6 +816,52 @@ export function EventModal() {
                 <span>{editingEvent.relatorio_filmmaker.preenchido_em ? new Date(editingEvent.relatorio_filmmaker.preenchido_em).toLocaleDateString('pt-BR') : 'Hoje'}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ==========================================
+            ABA BRIEFING: DIRETRIZES DO CLIENTE & ROTEIRO DA SESSÃO
+            ========================================== */}
+        {activeTab === 'briefing' && (
+          <div className="flex flex-col gap-4 animate-in fade-in">
+            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Briefing Fixo do Restaurante ({currentClient?.nome || 'Cliente'})
+                </span>
+              </div>
+              <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-line">
+                {currentClient?.briefing ||
+                  'Nenhuma diretriz fixa cadastrada na ficha deste restaurante ainda. Você pode cadastrar na aba "Briefing & Roteiros" do menu lateral.'}
+              </p>
+              {currentClient?.briefing_pratos_foco && (
+                <div className="pt-2 border-t border-purple-500/20 text-xs text-zinc-300">
+                  <strong className="text-purple-300">Pratos / Produtos Foco:</strong> {currentClient.briefing_pratos_foco}
+                </div>
+              )}
+              {currentClient?.briefing_restricoes && (
+                <div className="text-xs text-rose-300">
+                  <strong>Restrições / O que evitar:</strong> {currentClient.briefing_restricoes}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-foreground">
+                Roteiro & Briefing Específico desta Gravação
+              </label>
+              <p className="text-[11px] text-zinc-400">
+                Liste os Reels que serão gravados nesta diária, ganchos (hooks) iniciais para a modelo falar, pratos que a cozinha deve preparar e referências de câmera.
+              </p>
+              <textarea
+                rows={6}
+                placeholder="Ex:&#10;Reel 1 (ASMR): Finalização do Fettuccine na roda de queijo Grana Padano (close-up 60fps).&#10;Reel 2 (Apresentadora): Gancho 'Descobrimos o almoço executivo mais completo de Pinheiros...'&#10;Reel 3 (Drink): Preparo do Negroni defumado no balcão."
+                value={briefingGravacao}
+                onChange={(e) => setBriefingGravacao(e.target.value)}
+                className="w-full rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] p-3.5 text-xs text-foreground focus:outline-none focus:border-purple-500 leading-relaxed"
+              />
+            </div>
           </div>
         )}
 

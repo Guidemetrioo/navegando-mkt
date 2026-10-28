@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AgendaView, useAgenda } from '@/context/AgendaContext';
+import { VisualExamplePreview } from './VisualExamplePreview';
 import {
   BookOpen,
   Sparkles,
@@ -596,6 +597,68 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
     ],
     ctaLabel: '+ Agendar Gravação para Gerar Relatório',
     ctaAction: 'event',
+  },
+
+  briefing: {
+    view: 'briefing',
+    title: 'Central de Briefings & Roteiros Criativos',
+    subtitle: 'Diretrizes estéticas, posicionamento, pratos carros-chefe, restrições e roteiros de cada restaurante',
+    category: 'Criativo & Produção',
+    purpose:
+      'A Central de Briefings organiza em 7 categorias todas as instruções criativas e técnicas de cada restaurante parceiro, além dos roteiros específicos de cada diária de gravação. Assim, Filmmakers, Modelos e Editores têm acesso imediato ao tom de voz, iluminação, pratos obrigatórios e ganchos (hooks) antes de gravar ou editar.',
+    installedFunctions: [
+      'Dossiê criativo estruturado em 7 categorias: Conceito Geral, Público-Alvo, Tom de Voz/Trilha, Pratos Carros-Chefe, Iluminação/Estética, Restrições e Banco de Ganchos (Hooks)',
+      'Edição rápida por restaurante com salvamento instantâneo para toda a equipe',
+      'Lista integrada de Roteiros por Diária de Gravação (sincronizada com a aba Briefing dentro da Agenda)',
+      'Acesso liberado para toda a equipe (Donos, Gerentes, Filmmakers, Modelos e Editores Internos)',
+    ],
+    agencyBenefits: [
+      'Garante que nenhum filmmaker ou modelo chegue no restaurante sem saber o que gravar ou o que o cliente não gosta',
+      'Alinha os editores (Carol e Lucas) sobre o estilo de corte, música e legendas que cada restaurante aprova de primeira',
+      'Reduz drasticamente pedidos de refação e ajustes em vídeos',
+    ],
+    howToFeedSteps: [
+      {
+        stepTitle: '1. Selecione o Restaurante na lista à esquerda',
+        description:
+          'Caso ainda não tenha restaurantes cadastrados, clique em "+ Novo Restaurante" no topo da página.',
+      },
+      {
+        stepTitle: '2. Clique em "Preencher / Editar Categorias"',
+        description:
+          'Preencha as 7 categorias do Briefing (Conceito, Público-Alvo, Tom de Voz, Pratos Foco, Estética, Restrições e Ganchos/Roteiros) e clique em Salvar.',
+      },
+      {
+        stepTitle: '3. Detalhe o Roteiro de cada Gravação',
+        description:
+          'Na parte inferior da página (ou clicando na aba "Briefing" dentro de qualquer gravação na Agenda), descreva os Reels específicos que serão gravados naquela visita.',
+      },
+    ],
+    exampleTitle: 'Exemplo Visual de Briefing & Roteiro Preenchido',
+    exampleSubtitle: 'Veja na imagem e nos campos abaixo como o Briefing de um restaurante fica estruturado:',
+    exampleBadge: 'EXEMPLO COM IMAGEM & CAMPOS PREENCHIDOS',
+    exampleFields: [
+      {
+        label: '1. Conceito Geral & Público-Alvo',
+        value: 'Trattoria Italiana artesanal em Pinheiros • Público: Casais 25-45 anos e famílias no almoço de fim de semana.',
+        highlight: true,
+      },
+      {
+        label: '2. Pratos Carros-Chefe & Estética de Vídeo',
+        value: 'Fettuccine na roda de Grana Padano, Burrata ao Pesto e Negroni defumado • Luz quente 3200K + closes macro 60fps.',
+      },
+      {
+        label: '3. Restrições do Cliente (O que NÃO fazer)',
+        value: 'Não filmar a pia de lavagem da cozinha; não usar músicas com palavrão; chef prefere não gravar locução falada.',
+        highlight: true,
+      },
+      {
+        label: '4. Banco de Ganchos (Hooks) Aprovados',
+        value: '"Descobrimos a massa preparada dentro do queijo mais cremosa de São Paulo..."',
+      },
+    ],
+    ctaLabel: '+ Cadastrar Restaurante para Briefing',
+    ctaAction: 'client',
   },
 
   arquivos: {
@@ -1245,7 +1308,10 @@ export function PageTutorialModal() {
                     </span>
                   </div>
 
-                  {/* Card Visual de Exemplo Preenchido */}
+                  {/* IMAGEM ILUSTRADA + SIMULAÇÃO VISUAL DOS CAMPOS QUANDO PREENCHIDOS */}
+                  <VisualExamplePreview view={currentView} />
+
+                  {/* Card Detalhado de Exemplo Preenchido */}
                   <div className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-raised)] border-2 border-dashed border-[var(--ui-border)] space-y-3">
                     {tutorial.exampleFields.map((field, idx) => (
                       <div

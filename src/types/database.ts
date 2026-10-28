@@ -34,6 +34,12 @@ export interface Client {
   valor_mensalidade?: number; // Valor mensal do contrato
   cardapio_link?: string; // Link direto do cardápio digital
   briefing?: string; // Diretrizes estéticas, cores, estilo dos vídeos
+  briefing_publico_alvo?: string; // Público-alvo e perfil do cliente ideal do restaurante
+  briefing_tom_voz?: string; // Tom de voz, estilo de locução, trilha sonora e ritmo de edição
+  briefing_pratos_foco?: string; // Pratos carros-chefe, drinks e produtos foco da gravação
+  briefing_iluminacao_estetica?: string; // Iluminação, ângulos, estética de cor e enquadramento
+  briefing_restricoes?: string; // O que evitar / restrições do restaurante
+  briefing_roteiros_modelos?: string; // Ideias de ganchos (hooks) e roteiros base
   created_at?: string;
 }
 
@@ -90,6 +96,7 @@ export interface EventItem {
   hora_fim: string; // HH:mm or HH:mm:ss
   local?: string | null;
   observacoes?: string | null;
+  briefing_gravacao?: string | null; // Roteiro específico, ganchos e lista de cenas da diária
   status: EventStatus;
   relatorio_filmmaker?: RelatorioFilmmaker;
   despesas?: DespesaGravacao[];
