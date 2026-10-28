@@ -121,6 +121,10 @@ interface AgendaContextType {
   setSelectedRestaurantId: (id: string | null) => void;
   toggleMentionReposted: (mentionId: string) => void;
   simulateNewMention: () => void;
+  addReel: (reel: Omit<ReelMetric, 'id'>) => ReelMetric;
+  deleteReel: (id: string) => void;
+  addMention: (mention: Omit<ClientMention, 'id'>) => ClientMention;
+  deleteMention: (id: string) => void;
 
   // Navegação
   currentDate: Date;
@@ -195,6 +199,8 @@ interface AgendaContextType {
   deleteTransacao: (id: string) => void;
   addDespesaGravacao: (despesa: Omit<DespesaGravacao, 'id' | 'created_at'>) => DespesaGravacao;
   updateDespesaStatus: (id: string, status: StatusDespesa, obs?: string) => void;
+  updateSalario: (employeeId: string, patch: Partial<FuncionarioSalario>) => void;
+  markSalarioPago: (employeeId: string) => void;
 
   // WhatsApp & Automação de Confirmação
   whatsappConfig: WhatsAppConfig;
@@ -315,40 +321,54 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     if(!IS_DEMO) return;
     queueMicrotask(()=>{
     try {
-      const snapshot=localStorage.getItem('navegando_mkt_workspace_v3');
+      // Limpa chaves legadas de demonstração que continham dados hipotéticos ou auto-login
+      localStorage.removeItem('navegando_mkt_workspace_v3');
+      localStorage.removeItem('navegando_mkt_auth_session');
+      for(const key of Object.values(STORAGE_KEYS)) localStorage.removeItem(key);
+
+      const ensureOfficial = (list: Employee[]): Employee[] => {
+        const byId = new Map((list || []).map((e) => [e.id, e]));
+        return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
+      };
+
+      const snapshot=localStorage.getItem('navegando_mkt_workspace_real_v1');
       if(snapshot) {
         const saved=JSON.parse(snapshot) as Workspace;
         for(const key of ['employees','clients','events','pontos','deliverables','reels','mentions'] as const) if(!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
         const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
           (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        const ensureOfficial = (list: Employee[]): Employee[] => {
-          const byId = new Map((list || []).map((e) => [e.id, e]));
-          return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
-        };
         setEmployees(ensureOfficial(saved.employees));setClients(saved.clients);setEvents(saved.events);setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
-      } else {
-        const restore=<T,>(key:string,setter:(value:T[])=>void)=>{
-          const raw=localStorage.getItem(key);if(raw!==null) {const value=JSON.parse(raw);if(!Array.isArray(value)) throw new Error('Dados locais inválidos.');setter(value);}
-        };
-        const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
-          (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        const ensureOfficial = (list: Employee[]): Employee[] => {
-          const byId = new Map((list || []).map((e) => [e.id, e]));
-          return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
-        };
-        restore<Employee>(STORAGE_KEYS.EMPLOYEES,(emps)=>setEmployees(ensureOfficial(emps)));restore<Client>(STORAGE_KEYS.CLIENTS,setClients);restore<EventItem>(STORAGE_KEYS.EVENTS,setEvents);restore<PontoRegistro>(STORAGE_KEYS.PONTOS,(p)=>setPontos(sanitizePontos(p)));restore<MediaDeliverable>(STORAGE_KEYS.DELIVERABLES,setDeliverables);restore<ReelMetric>(STORAGE_KEYS.REELS,setReels);restore<ClientMention>(STORAGE_KEYS.MENTIONS,setMentions);
       }
-      const savedAuth=loadFromStorage<{isAuth:boolean;employeeId:string;lastPonto:PontoRegistro|null}>('navegando_mkt_auth_session',{isAuth:false,employeeId:'usr-felipe',lastPonto:null});
-      if(savedAuth.isAuth && INITIAL_EMPLOYEES.some(e=>e.id===savedAuth.employeeId)) {setIsAuthenticated(true);setLoggedEmployeeId(savedAuth.employeeId);setLastLoginPonto(savedAuth.lastPonto);}
+
+      const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
+      if (savedFin) {
+        const parsedFin = JSON.parse(savedFin);
+        if (Array.isArray(parsedFin.transacoes)) setTransacoes(parsedFin.transacoes);
+        if (Array.isArray(parsedFin.salarios)) {
+          const salById = new Map((parsedFin.salarios as FuncionarioSalario[]).map((s) => [s.employee_id, s]));
+          setSalarios(INITIAL_SALARIOS.map((def) => (salById.has(def.employee_id) ? { ...def, ...salById.get(def.employee_id)! } : def)));
+        }
+        if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(parsedFin.extraDespesas);
+      }
+
+      const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');
+      if (savedWpp) {
+        const parsedWpp = JSON.parse(savedWpp);
+        if (parsedWpp.config) setWhatsappConfig(parsedWpp.config);
+        if (Array.isArray(parsedWpp.logs)) setWhatsappLogs(parsedWpp.logs);
+      }
+
       setLocalHydrated(true);
     } catch {setIsDataSaved(false);toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.','error');}
     });
   },[toast]);
   useEffect(()=>{
     if(!IS_DEMO || !localHydrated) return;
-    const saved=saveToStorage('navegando_mkt_workspace_v3',localWorkspace);
+    const saved=saveToStorage('navegando_mkt_workspace_real_v1',localWorkspace);
+    saveToStorage('navegando_mkt_financial_real_v1',{transacoes,salarios,extraDespesas});
+    saveToStorage('navegando_mkt_whatsapp_real_v1',{config:whatsappConfig,logs:whatsappLogs});
     queueMicrotask(()=>setIsDataSaved(saved));
-  },[localWorkspace,localHydrated]);
+  },[localWorkspace,transacoes,salarios,extraDespesas,whatsappConfig,whatsappLogs,localHydrated]);
 
   const openPontoModal = useCallback(
     (preselectedClientId?: string, preselectedEventId?: string, tipo: PontoTipo = 'entrada') => {
@@ -649,18 +669,26 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   const resetToInitialData = () => {
     if(!IS_DEMO || !canManage) {toast('Reinicialização indisponível na base central.','error');return;}
-    if (confirm('Tem certeza de que deseja restaurar os dados de fábrica? Isso recarregará os restaurantes e escalas padrão.')) {
+    if (confirm('Tem certeza de que deseja limpar todos os cadastros? Isso deixará o sistema zerado (mantendo apenas os 20 membros da equipe).')) {
       setEmployees(INITIAL_EMPLOYEES);
-      setClients(INITIAL_CLIENTS);
-      setEvents(INITIAL_EVENTS);
-      setPontos(INITIAL_PONTOS);
-      setDeliverables(INITIAL_DELIVERABLES);
-      setReels(INITIAL_REELS);
-      setMentions(INITIAL_MENTIONS);
+      setClients([]);
+      setEvents([]);
+      setPontos([]);
+      setDeliverables([]);
+      setReels([]);
+      setMentions([]);
+      setTransacoes([]);
+      setSalarios(INITIAL_SALARIOS);
+      setExtraDespesas([]);
+      setWhatsappLogs([]);
       if (typeof window !== 'undefined') {
         for(const key of Object.values(STORAGE_KEYS)) localStorage.removeItem(key);
         localStorage.removeItem('navegando_mkt_workspace_v3');
+        localStorage.removeItem('navegando_mkt_workspace_real_v1');
+        localStorage.removeItem('navegando_mkt_financial_real_v1');
+        localStorage.removeItem('navegando_mkt_whatsapp_real_v1');
       }
+      toast('Sistema limpo com sucesso! Pronto para receber novos cadastros.', 'info');
     }
   };
 
@@ -761,32 +789,98 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  // Simular recebimento de nova menção em tempo real (Webhook simulation)
+  // Adicionar e remover Reels reais
+  const addReel = useCallback(
+    (reelData: Omit<ReelMetric, 'id'>): ReelMetric => {
+      const item: ReelMetric = {
+        ...reelData,
+        id: `reel-${crypto.randomUUID()}`,
+      };
+      setReels((prev) => [item, ...prev]);
+      toast('Métrica de Reel registrada com sucesso!', 'success');
+      return item;
+    },
+    [toast]
+  );
+
+  const deleteReel = useCallback(
+    (id: string) => {
+      setReels((prev) => prev.filter((r) => r.id !== id));
+      toast('Métrica de Reel removida.', 'info');
+    },
+    [toast]
+  );
+
+  // Adicionar e remover Menções / UGC reais
+  const addMention = useCallback(
+    (mentionData: Omit<ClientMention, 'id'>): ClientMention => {
+      const item: ClientMention = {
+        ...mentionData,
+        id: `men-${crypto.randomUUID()}`,
+      };
+      setMentions((prev) => [item, ...prev]);
+      toast(`Marcação de @${item.author_username} registrada com sucesso!`, 'success');
+      return item;
+    },
+    [toast]
+  );
+
+  const deleteMention = useCallback(
+    (id: string) => {
+      setMentions((prev) => prev.filter((m) => m.id !== id));
+      toast('Marcação removida do mural.', 'info');
+    },
+    [toast]
+  );
+
+  // Atualizar salário da equipe e marcar pagamento mensal
+  const updateSalario = useCallback(
+    (employeeId: string, patch: Partial<FuncionarioSalario>) => {
+      setSalarios((prev) =>
+        prev.map((s) => (s.employee_id === employeeId ? { ...s, ...patch } : s))
+      );
+      toast('Dados salariais atualizados com sucesso!', 'success');
+    },
+    [toast]
+  );
+
+  const markSalarioPago = useCallback(
+    (employeeId: string) => {
+      const sal = salarios.find((s) => s.employee_id === employeeId);
+      if (!sal) return;
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setSalarios((prev) =>
+        prev.map((s) =>
+          s.employee_id === employeeId
+            ? { ...s, status_mes_atual: 'pago', data_ultimo_pagamento: todayIso }
+            : s
+        )
+      );
+      if (sal.valor_base > 0) {
+        const novoLancamento: TransacaoFinanceira = {
+          id: `tr-sal-${Date.now()}`,
+          tipo: 'despesa',
+          categoria: 'salario_equipe',
+          descricao: `Pagamento de Folha / Contrato: ${sal.nome} (${sal.cargo})`,
+          valor: sal.valor_base,
+          data_vencimento: todayIso,
+          data_pagamento: todayIso,
+          status: 'pago',
+          employee_id: sal.employee_id,
+          employee_nome: sal.nome,
+          forma_pagamento: 'pix',
+          created_at: new Date().toISOString(),
+        };
+        setTransacoes((prev) => [novoLancamento, ...prev]);
+      }
+      toast(`Pagamento de ${sal.nome} registrado!`, 'success');
+    },
+    [salarios, toast]
+  );
+
   const simulateNewMention = useCallback(() => {
-    if(!IS_DEMO || !clients.length || !canManage) return;
-    const randomInfluencer = Math.random() > 0.4;
-    const client = clients[Math.floor(Math.random() * clients.length)] || clients[0];
-    const handles = ['foodie.sp', 'dicasgastronomicas', 'paulistando.restaurantes', 'reviews_gastronomia', 'brunagourmet'];
-    const chosenHandle = handles[Math.floor(Math.random() * handles.length)] + Math.floor(Math.random() * 99);
-
-    const newMention: ClientMention = {
-      id: `men-${Date.now()}`,
-      client_id: client.id,
-      author_username: chosenHandle,
-      author_name: chosenHandle.replace('.', ' ').toUpperCase(),
-      author_followers: randomInfluencer ? Math.floor(Math.random() * 80000 + 15000) : Math.floor(Math.random() * 3000 + 500),
-      is_influencer: randomInfluencer,
-      mention_type: Math.random() > 0.5 ? 'STORY_MENTION' : 'POST_TAG',
-      media_url: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80',
-      caption: `Experiência incrível hoje na ${client.nome}! Tudo impecável.`,
-      sentiment: randomInfluencer ? 'destaque_gourmet' : 'positivo',
-      reposted: false,
-      posted_at: new Date().toISOString(),
-      client,
-    };
-
-    setMentions((prev) => [newMention, ...prev]);
-  }, [clients]);
+    toast('Para registrar uma nova marcação real, use o botão "+ Registrar Marcação" no topo da página.', 'info');
+  }, [toast]);
 
   // Modais
   const openNewEventModal = useCallback((defaultDate?: string) => {
@@ -1163,7 +1257,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         event_id: event.id,
         client_id: client?.id,
         cliente_nome: client?.nome || 'Restaurante',
-        numero_destino: client?.telefone || '(11) 99999-0000',
+        numero_destino: client?.telefone || client?.contato || 'Telefone não cadastrado',
         tipo: 'envio_confirmacao',
         mensagem: msg,
         status: 'enviada',
@@ -1199,8 +1293,13 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       const event = events.find((e) => e.id === eventId);
       if (!event) return false;
       const client = clients.find((c) => c.id === event.client_id);
-      dispatchConfirmationMessage(event, client);
-      toast(`Mensagem de confirmação enviada para ${client?.nome || 'o cliente'} via WhatsApp!`, 'success');
+      const msg = dispatchConfirmationMessage(event, client);
+      const rawPhone = (client?.telefone || client?.contato || '').replace(/\D/g, '');
+      if (rawPhone.length >= 10 && typeof window !== 'undefined') {
+        const phoneWithCountry = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
+        window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+      }
+      toast(`Mensagem de confirmação gerada para ${client?.nome || 'o cliente'} via WhatsApp!`, 'success');
       return true;
     },
     [events, clients, dispatchConfirmationMessage, toast]
@@ -1393,6 +1492,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         setSelectedRestaurantId,
         toggleMentionReposted,
         simulateNewMention,
+        addReel: guarded(canManage, addReel),
+        deleteReel: guarded(canManage, deleteReel),
+        addMention: guarded(canManage, addMention),
+        deleteMention: guarded(canManage, deleteMention),
         currentDate,
         currentView:canUserAccessView(memberRole,currentView) ? currentView : 'home',
         setCurrentView:(view)=>{if(canUserAccessView(memberRole,view)) setCurrentView(view);else toast('Módulo não permitido para seu perfil.','error');},
@@ -1438,6 +1541,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         deleteTransacao: guarded(canManage, deleteTransacao),
         addDespesaGravacao,
         updateDespesaStatus: guarded(canManage, updateDespesaStatus),
+        updateSalario: guarded(canManage, updateSalario),
+        markSalarioPago: guarded(canManage, markSalarioPago),
         // WhatsApp Bot & Automação de Confirmação
         whatsappConfig,
         whatsappLogs,

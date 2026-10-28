@@ -47,11 +47,12 @@ export function LoginCheckInView() {
   // Etapa atual: 'credenciais' -> 'bater_ponto'
   const [step, setStep] = useState<'credenciais' | 'bater_ponto'>('credenciais');
 
-  // Credenciais
-  const [loginInput, setLoginInput] = useState<string>('felipe');
-  const [passwordInput, setPasswordInput] = useState<string>('felipe123');
+  // Credenciais (sempre vazias ao abrir para exigir digitação de login e senha)
+  const [loginInput, setLoginInput] = useState<string>('');
+  const [passwordInput, setPasswordInput] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
   // Usuário autenticado aguardando batida de ponto
   const [activeUser, setActiveUser] = useState<UserAccount | null>(null);
@@ -104,11 +105,12 @@ export function LoginCheckInView() {
     return () => clearInterval(interval);
   }, []);
 
-  // Preencher rápido pelas credenciais dos botões
+  // Selecionar colaborador na lista preenche apenas o usuário; a senha deve ser digitada
   const handleSelectQuickUser = (user: UserAccount) => {
     setLoginInput(user.username);
-    setPasswordInput(`${user.username}123`);
+    setPasswordInput('');
     setLoginError(null);
+    setTimeout(() => passwordInputRef.current?.focus(), 50);
   };
 
   // Iniciar Câmera
@@ -350,8 +352,9 @@ export function LoginCheckInView() {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3 pointer-events-none" />
                     <input
+                      ref={passwordInputRef}
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Ex: felipe123, vitinho123..."
+                      placeholder="Digite sua senha de acesso..."
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
                       className="w-full pl-10 pr-10 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"
@@ -477,7 +480,7 @@ export function LoginCheckInView() {
                         </span>
                       </div>
                       <span className="text-[9px] font-mono px-2 py-1 rounded-lg bg-black/60 text-[var(--ui-accent)] shrink-0 border border-[var(--ui-border)] font-bold">
-                        {user.username}123
+                        @{user.username}
                       </span>
                     </button>
                   );

@@ -46,9 +46,17 @@ export function FinancialControlView() {
     updateTransacaoStatus,
     deleteTransacao,
     updateDespesaStatus,
+    updateSalario,
+    markSalarioPago,
     clients,
     employees,
   } = useAgenda();
+
+  const [editingSalId, setEditingSalId] = useState<string | null>(null);
+  const [editSalValor, setEditSalValor] = useState<string>('');
+  const [editSalDia, setEditSalDia] = useState<string>('5');
+  const [editSalPix, setEditSalPix] = useState<string>('');
+  const [editSalContrato, setEditSalContrato] = useState<'clt' | 'pj' | 'freelancer_diaria'>('clt');
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transacoes' | 'salarios' | 'despesas_gravacao'>('dashboard');
   const [transacaoFilter, setTransacaoFilter] = useState<'todas' | 'receita' | 'despesa' | 'pendente'>('todas');
@@ -630,6 +638,7 @@ export function FinancialControlView() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {salarios.map((s) => {
               const isPaid = s.status_mes_atual === 'pago';
+              const isEditingThis = editingSalId === s.employee_id;
 
               return (
                 <div
@@ -654,28 +663,138 @@ export function FinancialControlView() {
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-[var(--ui-border)] flex flex-col gap-1 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400 text-[11px]">Salário / Diária Base:</span>
-                      <span className="font-mono font-bold text-foreground text-sm">
-                        R$ {s.valor_base.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+                  {isEditingThis ? (
+                    <div className="pt-2 border-t border-[var(--ui-border)] flex flex-col gap-2 text-xs">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-zinc-400 block mb-0.5">Valor Base (R$)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editSalValor}
+                            onChange={(e) => setEditSalValor(e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg bg-[var(--ui-surface)] border border-[var(--ui-border)] text-foreground text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-zinc-400 block mb-0.5">Dia Pagto.</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={editSalDia}
+                            onChange={(e) => setEditSalDia(e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg bg-[var(--ui-surface)] border border-[var(--ui-border)] text-foreground text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-zinc-400 block mb-0.5">Contrato</label>
+                          <select
+                            value={editSalContrato}
+                            onChange={(e) => setEditSalContrato(e.target.value as 'clt' | 'pj' | 'freelancer_diaria')}
+                            className="w-full px-2 py-1.5 rounded-lg bg-[var(--ui-surface)] border border-[var(--ui-border)] text-foreground text-xs"
+                          >
+                            <option value="clt">CLT</option>
+                            <option value="pj">PJ</option>
+                            <option value="freelancer_diaria">Diária</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-zinc-400 block mb-0.5">Chave PIX</label>
+                          <input
+                            type="text"
+                            placeholder="CPF, E-mail, Celular..."
+                            value={editSalPix}
+                            onChange={(e) => setEditSalPix(e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg bg-[var(--ui-surface)] border border-[var(--ui-border)] text-foreground text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingSalId(null)}
+                          className="px-2.5 py-1 rounded-lg bg-[var(--ui-surface)] text-zinc-400 text-[11px] cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateSalario(s.employee_id, {
+                              valor_base: Math.max(0, Number(editSalValor) || 0),
+                              dia_pagamento: Math.min(31, Math.max(1, Number(editSalDia) || 5)),
+                              tipo_contrato: editSalContrato,
+                              chave_pix: editSalPix.trim(),
+                            });
+                            setEditingSalId(null);
+                          }}
+                          className="px-2.5 py-1 rounded-lg brand-solid bg-[var(--ui-accent)] text-foreground font-bold text-[11px] cursor-pointer"
+                        >
+                          Salvar
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                      <span>Dia do Pagamento:</span>
-                      <span className="font-mono text-zinc-200">Todo dia {s.dia_pagamento}</span>
-                    </div>
-
-                    {s.chave_pix && (
-                      <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                        <span>Chave PIX:</span>
-                        <span className="font-mono text-emerald-400 truncate max-w-[170px]" title={s.chave_pix}>
-                          {s.chave_pix}
+                  ) : (
+                    <div className="pt-2 border-t border-[var(--ui-border)] flex flex-col gap-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-400 text-[11px]">Salário / Diária Base:</span>
+                        <span className="font-mono font-bold text-foreground text-sm">
+                          R$ {s.valor_base.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
-                    )}
-                  </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                        <span>Dia do Pagamento:</span>
+                        <span className="font-mono text-zinc-200">Todo dia {s.dia_pagamento}</span>
+                      </div>
+
+                      {s.chave_pix && (
+                        <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                          <span>Chave PIX:</span>
+                          <span className="font-mono text-emerald-400 truncate max-w-[170px]" title={s.chave_pix}>
+                            {s.chave_pix}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 pt-1.5 border-t border-[var(--ui-border)]/60">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSalId(s.employee_id);
+                            setEditSalValor(String(s.valor_base || ''));
+                            setEditSalDia(String(s.dia_pagamento || 5));
+                            setEditSalContrato(s.tipo_contrato);
+                            setEditSalPix(s.chave_pix || '');
+                          }}
+                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-[var(--ui-surface)] hover:bg-[var(--ui-hover)] border border-[var(--ui-border)] text-zinc-200 font-semibold text-[11px] cursor-pointer"
+                        >
+                          Configurar Valor / PIX
+                        </button>
+                        {!isPaid ? (
+                          <button
+                            type="button"
+                            onClick={() => markSalarioPago(s.employee_id)}
+                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 font-bold text-[11px] cursor-pointer"
+                          >
+                            Marcar Pago
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => updateSalario(s.employee_id, { status_mes_atual: 'pendente' })}
+                            className="py-1.5 px-2.5 rounded-lg bg-[var(--ui-surface)] text-zinc-400 hover:text-zinc-200 text-[11px] cursor-pointer"
+                          >
+                            Reabrir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

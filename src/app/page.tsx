@@ -32,6 +32,7 @@ import { PontoModal } from '@/components/modals/PontoModal';
 import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
+import { PageTutorialModal } from '@/components/tutorial/PageTutorialModal';
 import {
   CheckCircle2,
   Calendar,
@@ -134,6 +135,8 @@ function AgendaMainContent() {
               {currentView === 'clientes' && 'Restaurantes'}
               {currentView === 'metricas-reels' && 'Métricas Instagram'}
               {currentView === 'mural-ugc' && 'Mural UGC'}
+              {currentView === 'financeiro' && 'Controle Financeiro'}
+              {currentView === 'whatsapp' && 'Automação WhatsApp D-1'}
               {currentView === 'backups' && 'Segurança & Backup'}
             </span>
           </div>
@@ -255,6 +258,9 @@ function AgendaMainContent() {
         <WorkspaceStatus />
         {/* Conteúdo Central */}
         <main className="crm-workspace p-3 sm:p-6 md:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
+          {/* Guia de Uso Interativo & Pop-up de Primeira Visita / Exemplo Preenchido */}
+          <PageTutorialModal />
+
           {/* Sub-header de Navegação de Datas se estiver nas abas de agenda */}
           {isCalendarView && (
             <div className="flex flex-col gap-3">

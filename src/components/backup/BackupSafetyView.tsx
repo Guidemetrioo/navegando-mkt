@@ -214,14 +214,14 @@ export function BackupSafetyView() {
         </div>
       )}
 
-      {/* 4. ZONA DE PERIGO / RESTAURAR PADRÕES */}
+      {/* 4. ZONA DE PERIGO / LIMPAR DADOS */}
       <div className="p-5 rounded-3xl bg-zinc-900/40 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-            Restaurar Configuração Inicial de Fábrica
+            Zerar Base de Dados Local
           </h4>
           <p className="text-[11px] text-zinc-500 mt-0.5">
-            Limpa o armazenamento local do navegador e recarrega os 6 restaurantes parceiros e escalas padrão da Navegando MKT.
+            Limpa todos os clientes, gravações, pontos, entregáveis e lançamentos financeiros cadastrados neste navegador, mantendo apenas os 20 colaboradores oficiais da agência.
           </p>
         </div>
 
@@ -230,7 +230,7 @@ export function BackupSafetyView() {
           onClick={resetToInitialData}
           className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-rose-950 text-zinc-400 hover:text-rose-400 border border-zinc-700 hover:border-rose-800 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap self-start sm:self-auto"
         >
-          Restaurar Dados Iniciais
+          Limpar Dados Cadastrados
         </button>
       </div>
     </div>

@@ -17,29 +17,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-const THUMBNAIL_PRESETS = [
-  {
-    label: 'Prato Principal',
-    url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'Hambúrguer Artesanal',
-    url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'Massa / Italiana',
-    url: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'Drinks / Bar',
-    url: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'Sobremesa',
-    url: 'https://images.unsplash.com/photo-1579372786545-d24232daf58c?w=600&auto=format&fit=crop&q=80',
-  },
-];
-
 export function DeliverableModal() {
   const {
     isDeliverableModalOpen,
@@ -61,17 +38,17 @@ export function DeliverableModal() {
   const [driveUrl, setDriveUrl] = useState('');
   const [pastaDriveUrl, setPastaDriveUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [filmmakerId, setFilmmakerId] = useState('emp-1');
-  const [criadoraId, setCriadoraId] = useState('emp-5');
+  const [filmmakerId, setFilmmakerId] = useState('usr-victor');
+  const [criadoraId, setCriadoraId] = useState('usr-isa');
   const [dataGravacao, setDataGravacao] = useState(todayInSaoPaulo());
-  const [dataPublicacao, setDataPublicacao] = useState('2026-10-18');
+  const [dataPublicacao, setDataPublicacao] = useState(todayInSaoPaulo());
   const [observacoesAjuste, setObservacoesAjuste] = useState('');
 
   useEffect(() => {
     if (isDeliverableModalOpen) {
       if (editingDeliverable) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset a draft when the externally controlled deliverable changes.
-      setClientId(editingDeliverable.client_id);
+        setClientId(editingDeliverable.client_id);
         setTitulo(editingDeliverable.titulo);
         setDescricao(editingDeliverable.descricao || '');
         setFormato(editingDeliverable.formato);
@@ -79,14 +56,11 @@ export function DeliverableModal() {
         setVersao(editingDeliverable.versao || 1);
         setDriveUrl(editingDeliverable.drive_url || '');
         setPastaDriveUrl(editingDeliverable.pasta_drive_url || '');
-        setThumbnailUrl(
-          editingDeliverable.thumbnail_url ||
-            'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80'
-        );
-        setFilmmakerId(editingDeliverable.filmmaker_id || employees[0]?.id || 'emp-1');
-        setCriadoraId(editingDeliverable.criadora_id || employees[1]?.id || 'emp-5');
+        setThumbnailUrl(editingDeliverable.thumbnail_url || '');
+        setFilmmakerId(editingDeliverable.filmmaker_id || employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
+        setCriadoraId(editingDeliverable.criadora_id || employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
         setDataGravacao(editingDeliverable.data_gravacao || todayInSaoPaulo());
-        setDataPublicacao(editingDeliverable.data_publicacao_prevista || '2026-10-18');
+        setDataPublicacao(editingDeliverable.data_publicacao_prevista || todayInSaoPaulo());
         setObservacoesAjuste(editingDeliverable.observacoes_ajuste || '');
       } else {
         const defaultClient = deliverableModalClientId || clients[0]?.id || '';
@@ -98,13 +72,11 @@ export function DeliverableModal() {
         setVersao(1);
         setDriveUrl('');
         setPastaDriveUrl('');
-        setThumbnailUrl(
-          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80'
-        );
-        setFilmmakerId(employees.find((e) => e.funcao === 'filmmaker')?.id || 'emp-1');
-        setCriadoraId(employees.find((e) => e.funcao === 'criadora')?.id || 'emp-5');
+        setThumbnailUrl('');
+        setFilmmakerId(employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
+        setCriadoraId(employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
         setDataGravacao(todayInSaoPaulo());
-        setDataPublicacao('2026-10-18');
+        setDataPublicacao(todayInSaoPaulo());
         setObservacoesAjuste('');
       }
     }
@@ -410,30 +382,14 @@ export function DeliverableModal() {
             </div>
           )}
 
-          {/* Miniatura / Thumbnail Presets */}
+          {/* Miniatura / Capa */}
           <div>
             <label className="block font-semibold text-zinc-300 mb-1">
-              Miniatura / Capa (selecione rápida ou insira URL)
+              URL da Miniatura / Capa do Vídeo (Opcional, HTTPS)
             </label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {THUMBNAIL_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => setThumbnailUrl(preset.url)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-colors cursor-pointer ${
-                    thumbnailUrl === preset.url
-                      ? 'brand-solid bg-[var(--ui-accent)] text-foreground border-[var(--ui-accent)]'
-                      : 'bg-[var(--ui-raised)] text-zinc-300 border-[var(--ui-border)] hover:border-zinc-500'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
             <input
               type="url"
-              placeholder="https://images.unsplash.com/..."
+              placeholder="https://..."
               value={thumbnailUrl}
               onChange={(e) => setThumbnailUrl(e.target.value)}
               className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
