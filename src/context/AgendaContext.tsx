@@ -321,14 +321,22 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         for(const key of ['employees','clients','events','pontos','deliverables','reels','mentions'] as const) if(!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
         const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
           (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        setEmployees(saved.employees);setClients(saved.clients);setEvents(saved.events);setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
+        const ensureOfficial = (list: Employee[]): Employee[] => {
+          const byId = new Map((list || []).map((e) => [e.id, e]));
+          return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
+        };
+        setEmployees(ensureOfficial(saved.employees));setClients(saved.clients);setEvents(saved.events);setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
       } else {
         const restore=<T,>(key:string,setter:(value:T[])=>void)=>{
           const raw=localStorage.getItem(key);if(raw!==null) {const value=JSON.parse(raw);if(!Array.isArray(value)) throw new Error('Dados locais inválidos.');setter(value);}
         };
         const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
           (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        restore<Employee>(STORAGE_KEYS.EMPLOYEES,setEmployees);restore<Client>(STORAGE_KEYS.CLIENTS,setClients);restore<EventItem>(STORAGE_KEYS.EVENTS,setEvents);restore<PontoRegistro>(STORAGE_KEYS.PONTOS,(p)=>setPontos(sanitizePontos(p)));restore<MediaDeliverable>(STORAGE_KEYS.DELIVERABLES,setDeliverables);restore<ReelMetric>(STORAGE_KEYS.REELS,setReels);restore<ClientMention>(STORAGE_KEYS.MENTIONS,setMentions);
+        const ensureOfficial = (list: Employee[]): Employee[] => {
+          const byId = new Map((list || []).map((e) => [e.id, e]));
+          return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
+        };
+        restore<Employee>(STORAGE_KEYS.EMPLOYEES,(emps)=>setEmployees(ensureOfficial(emps)));restore<Client>(STORAGE_KEYS.CLIENTS,setClients);restore<EventItem>(STORAGE_KEYS.EVENTS,setEvents);restore<PontoRegistro>(STORAGE_KEYS.PONTOS,(p)=>setPontos(sanitizePontos(p)));restore<MediaDeliverable>(STORAGE_KEYS.DELIVERABLES,setDeliverables);restore<ReelMetric>(STORAGE_KEYS.REELS,setReels);restore<ClientMention>(STORAGE_KEYS.MENTIONS,setMentions);
       }
       const savedAuth=loadFromStorage<{isAuth:boolean;employeeId:string;lastPonto:PontoRegistro|null}>('navegando_mkt_auth_session',{isAuth:false,employeeId:'usr-felipe',lastPonto:null});
       if(savedAuth.isAuth && INITIAL_EMPLOYEES.some(e=>e.id===savedAuth.employeeId)) {setIsAuthenticated(true);setLoggedEmployeeId(savedAuth.employeeId);setLastLoginPonto(savedAuth.lastPonto);}
@@ -1407,7 +1415,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         userRole,
         setUserRole:()=>{toast('As permissões são definidas pelo cargo do membro.','info');},
         loggedEmployeeId,
-        setLoggedEmployeeId:(id)=>{if(IS_DEMO) setLoggedEmployeeId(id);},
+        setLoggedEmployeeId:(id)=>{if(IS_DEMO) {setLoggedEmployeeId(id);saveToStorage('navegando_mkt_auth_session',{isAuth:true,employeeId:id,lastPonto:lastLoginPonto});}},
         isSupabaseConnected:!IS_DEMO && isAuthenticated && cloud.status==='saved',
         theme,
         setTheme,
