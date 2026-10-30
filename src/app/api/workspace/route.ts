@@ -1,3 +1,4 @@
+import { reverseStreet } from '@/lib/server/geocoding';
 import { createHash } from 'node:crypto';
 import { ApiError, apiFailure, checkOrigin, privateHeaders, readJson, requireMember, signEvidence } from '@/lib/server/workspace-api';
 import { validateChanges } from '@/lib/workspace';
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
       if (upload.error && !/already exists|duplicate/i.test(upload.error.message)) throw new ApiError(503,'A foto não foi armazenada. O ponto ainda não foi confirmado.');
       row.data.foto_url = `private:ponto-evidencias/${path}`;
       row.data.photo_storage_path = path;
+      const address = await reverseStreet(Number(row.data.latitude),Number(row.data.longitude));
+      delete row.data.rua; delete row.data.endereco; delete row.data.endereco_fonte;
+      if(address) {row.data.rua=address.street;row.data.endereco=address.address;row.data.endereco_fonte=address.provider;}
       row.data.evidence_sha256 = createHash('sha256').update(bytes).digest('hex');
     }
     const result = await supabase.rpc('agency_commit',{p_changes:body.changes,p_request:body.requestId});

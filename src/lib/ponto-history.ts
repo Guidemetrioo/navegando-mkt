@@ -12,8 +12,17 @@ export interface PontoHistoryFilters {
 /** Start from the roster so employees without attendance are never omitted. */
 export function teamPontoHistory(employees: Employee[], filteredPontos: PontoRegistro[], employeeId = 'all') {
   return employees.filter(e => employeeId === 'all' || e.id === employeeId)
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-    .map(employee => ({ employee, registros: filteredPontos.filter(p => p.employee_id === employee.id) }));
+    .map(employee => ({ employee, registros: filteredPontos.filter(p => p.employee_id === employee.id)
+      .sort((a,b) => Date.parse(a.data_hora) - Date.parse(b.data_hora) || a.id.localeCompare(b.id)) }))
+    .sort((a,b) => {
+      if (!a.registros.length || !b.registros.length) {
+        if (a.registros.length) return -1;
+        if (b.registros.length) return 1;
+        return a.employee.nome.localeCompare(b.employee.nome, 'pt-BR');
+      }
+      return Date.parse(a.registros[0].data_hora) - Date.parse(b.registros[0].data_hora)
+        || a.employee.nome.localeCompare(b.employee.nome, 'pt-BR');
+    });
 }
 
 /** Apply visibility before filters; date bounds include the whole agency business day. */

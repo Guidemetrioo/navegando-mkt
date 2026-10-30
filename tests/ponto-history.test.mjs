@@ -17,7 +17,7 @@ test('roster includes every employee and leaves missing attendance empty', () =>
   const result = teamPontoHistory(employees, filterPontoHistory(points, 'gerente', 'manager', filters));
   assert.equal(result.length, 3);
   assert.deepEqual(result.find(row => row.employee.id === 'no-punch').registros, []);
-  assert.equal(result.find(row => row.employee.id === 'film').registros[0].id, 'start');
+  assert.equal(result.find(row => row.employee.id === 'film').registros[0].id, 'external');
   assert.equal(teamPontoHistory(employees, [], 'office').length, 1);
   assert.equal(teamPontoHistory(employees, []).length, 3);
 });
@@ -49,4 +49,12 @@ test('open date bounds work and inverted ranges return no records', () => {
   assert.equal(filterPontoHistory(points, 'gerente', 'manager', { ...filters, startDate: '2026-10-30' }).length, 1);
   assert.equal(filterPontoHistory(points, 'gerente', 'manager', { ...filters, endDate: '2026-10-28' }).length, 1);
   assert.deepEqual(filterPontoHistory(points, 'gerente', 'manager', { ...filters, startDate: '2026-10-30', endDate: '2026-10-28' }), []);
+});
+
+test('attendance comes first in arrival order, without later punches moving the employee', () => {
+  const employees=[{id:'office',nome:'Ana'},{id:'film',nome:'Victor'},{id:'none',nome:'AAA'}];
+  const result=teamPontoHistory(employees,[...points].reverse());
+  assert.deepEqual(result.map(r=>r.employee.id),['film','office','none']);
+  assert.equal(result[0].registros[0].id,'external');
+  assert.equal(result[1].registros[0].id,'internal');
 });

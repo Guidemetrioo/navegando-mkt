@@ -37,6 +37,7 @@ export function PontoModal() {
     closePontoModal,
     addPonto,
     pontos,
+    syncStatus,
     employees,
     clients,
     events,
@@ -73,6 +74,8 @@ export function PontoModal() {
   const [submittedPontoDraft, setSubmittedPonto] = useState<PontoRegistro | null>(null);
 
   const submittedPonto=submittedPontoDraft ? pontos.find(p=>p.id===submittedPontoDraft.id) || submittedPontoDraft : null;
+
+  const isConfirmed=Boolean(!IS_DEMO && submittedPonto?.photo_storage_path && syncStatus==='saved');
 
   // Relógio em tempo real
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -255,7 +258,7 @@ export function PontoModal() {
     setAccuracy(5);
     setPermissionState('granted');
     setGeoError(null);
-    setRealAddress(selectedClient?.endereco || 'Sede Agência Navegando MKT - Escritório Central');
+    setRealAddress('');
   };
 
   // Obter geolocalização real do navegador solicitando permissão ao dispositivo
@@ -390,21 +393,14 @@ export function PontoModal() {
 
     const finalPhoto = photoDataUrl;
 
-    let finalLat = latitude;
-    let finalLng = longitude;
-    let finalDist = distanceMeters ?? 0;
-    let finalStatus = statusLocalizacao;
-
-    if (finalLat === null || finalLng === null) {
-      const coords =
-        (selectedClient?.latitude && selectedClient?.longitude
-          ? { lat: selectedClient.latitude, lng: selectedClient.longitude }
-          : DEFAULT_CLIENT_COORDINATES[selectedClient?.id || 'cli-sede']) || { lat: -23.5615, lng: -46.6560 };
-      finalLat = coords.lat;
-      finalLng = coords.lng;
-      finalDist = 15;
-      finalStatus = 'no_local';
+    if (latitude === null || longitude === null || !accuracy || permissionState !== 'granted') {
+      alert('Permita o GPS e aguarde uma localização real antes de registrar o ponto.');
+      return;
     }
+    const finalLat = latitude;
+    const finalLng = longitude;
+    const finalDist = distanceMeters ?? undefined;
+    const finalStatus = statusLocalizacao;
 
     const now = new Date();
     const exactIso = now.toISOString();
@@ -421,11 +417,11 @@ export function PontoModal() {
       precisao_metros: accuracy ?? 5,
       distancia_metros: finalDist,
       status_localizacao: finalStatus,
-      endereco: realAddress || selectedClient?.endereco || 'Sede Agência Navegando MKT',
+      endereco: realAddress || undefined,
       observacao: observacao.trim() || undefined,
     });
 
-    setSubmittedPonto(novoPonto);
+    if(novoPonto) setSubmittedPonto(novoPonto);
   };
 
   return (
@@ -456,7 +452,7 @@ export function PontoModal() {
                 </span>
               </div>
               <p className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-500 mt-0.5">
-                Comprovação digital em tempo real com fé pública corporativa.
+                Foto e localização registradas no momento da batida.
               </p>
             </div>
           </div>
@@ -479,10 +475,10 @@ export function PontoModal() {
 
             <div>
               <h4 className="text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
-                Ponto de {submittedPonto.tipo === 'entrada' ? 'Entrada' : submittedPonto.tipo === 'almoco' ? 'Almoço (Intervalo)' : 'Saída'} Confirmado!
+                Ponto de {submittedPonto.tipo === 'entrada' ? 'Entrada' : submittedPonto.tipo === 'almoco' ? 'Almoço (Intervalo)' : 'Saída'} {IS_DEMO ? 'salvo neste navegador' : isConfirmed ? 'confirmado na base central' : 'aguardando confirmação central'}
               </h4>
               <p className="text-xs text-zinc-400 mt-1">
-                Comprovante oficial emitido às <strong className="text-emerald-400 font-mono">{new Date(submittedPonto.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</strong>. Registro com fé pública arquivado com fidelidade temporal exata.
+                Horário informado: <strong className="text-emerald-400 font-mono">{new Date(submittedPonto.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</strong>. Aguarde o status de sincronização da base central.
               </p>
             </div>
 

@@ -13,7 +13,7 @@ export function WorkspaceStatus() {
         </div>
       );
     }
-    return null;
+    return <div role="status" className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-400">Modo local: dados somente neste navegador. Não sincroniza com celular ou outros computadores. Exporte uma cópia antes de ativar a base central.</div>;
   }
   
   if (syncStatus === 'saved') return null;

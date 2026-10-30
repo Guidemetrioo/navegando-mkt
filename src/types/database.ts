@@ -64,6 +64,9 @@ export interface PontoRegistro {
   distancia_metros?: number; // Distância em metros calculada até o restaurante
   status_localizacao: PontoStatus; // 'no_local' (<300m), 'fora_do_raio', etc.
   endereco?: string; // Endereço real detectado via GPS / reverse geocoding
+  photo_storage_path?: string;
+  rua?: string;
+  endereco_fonte?: string;
   observacao?: string;
   created_at: string;
   // Relacionamentos populados

@@ -35,18 +35,7 @@ export function ProductionLogin({loading=false,feedback=''}:{loading?:boolean;fe
       <h1 className="text-2xl font-semibold mb-3">{HAS_CLOUD_CONFIG ? 'Entre no seu espaço de trabalho.' : 'Espaço da Equipe Navegando'}</h1>
       {!HAS_CLOUD_CONFIG ? (
         <div className="flex flex-col gap-4 mt-2">
-          <p className="text-sm text-zinc-400 leading-relaxed">
-            Acesse o espaço de trabalho operacional da equipe com ponto biométrico, agenda gastronômica e controle financeiro.
-          </p>
-          <a
-            href="/"
-            onClick={() => {
-              window.location.reload();
-            }}
-            className="gradient-cta text-center rounded-xl px-4 py-3 text-sm font-bold text-white shadow-lg cursor-pointer"
-          >
-            Acessar Espaço da Equipe
-          </a>
+          <p className="text-sm text-zinc-400 leading-relaxed">A base central precisa ser configurada. Defina a URL e a chave pública do Supabase e execute as migrações. Os dados locais anteriores permanecem neste navegador; exporte-os antes da migração.</p>
         </div>
       ) : loading ? (
         <p role="status" className="text-sm text-zinc-400">Verificando sua sessão e consultando a base central…</p>

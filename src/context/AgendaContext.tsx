@@ -306,10 +306,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
 
   const [localHydrated,setLocalHydrated] = useState(false);
-  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions}),[employees,clients,events,pontos,deliverables,reels,mentions]);
+  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions,despesas:extraDespesas,transacoes,salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
     setEmployees(data.employees);setClients(data.clients);setEvents(data.events);setPontos(data.pontos);
     setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
+    setExtraDespesas(data.despesas);setTransacoes(data.transacoes);setSalarios(data.salarios);
     setIsAuthenticated(Boolean(member));
     if(member) {setLoggedEmployeeId(member.employee_id);}
   },[]);
@@ -400,7 +401,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         minute: '2-digit',
         second: '2-digit',
       });
-      toast(`Ponto (${registro.tipo.toUpperCase()}) registrado com sucesso às ${exactTimeStr}!`, 'success');
+      toast(IS_DEMO ? `Ponto salvo neste navegador às ${exactTimeStr}.` : 'Ponto enviado. Aguarde a confirmação da base central.', IS_DEMO ? 'info' : 'success');
       return registro;
     },
     [toast]
@@ -436,9 +437,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     const tipo = pontoData.tipo || 'entrada';
     const isInterno = emp?.regime === 'interno' || emp?.funcao === 'interno';
 
-    const defaultAddress = isInterno
-      ? 'Sede Agência Navegando MKT - Escritório Interno'
-      : (pontoData.address || 'Localização confirmada via GPS');
+    const defaultAddress = pontoData.address || '';
 
     const defaultObs = pontoData.observacao || (
       isInterno
@@ -642,7 +641,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         pontos,
         deliverables,
         reels,
-        mentions,
+        mentions, despesas:extraDespesas, transacoes, salarios:salarios.map(s=>({...s,id:s.employee_id})),
       },
     });
     if(exported) toast('Dados operacionais exportados. Esta exportação não substitui o backup do banco e dos arquivos privados.','info');
@@ -660,6 +659,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         if (Array.isArray(backup.data.deliverables)) setDeliverables(backup.data.deliverables);
         if (Array.isArray(backup.data.reels)) setReels(backup.data.reels);
         if (Array.isArray(backup.data.mentions)) setMentions(backup.data.mentions);
+        setExtraDespesas(backup.data.despesas);setTransacoes(backup.data.transacoes);setSalarios(backup.data.salarios);
         toast('Backup restaurado com sucesso! Todos os dados e arquivos foram recarregados.', 'success');
         return true;
       } catch (e) {
@@ -1083,8 +1083,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
 
-      // Salva no evento correspondente
-      setEvents((prev) =>
+      // No modo central cada reembolso tem seu próprio registro e permissão.
+      if (IS_DEMO) setEvents((prev) =>
         prev.map((ev) =>
           ev.id === item.event_id
             ? {
@@ -1118,7 +1118,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         employee_nome: item.employee_nome,
       });
 
-      toast(`Despesa de R$ ${item.valor.toFixed(2)} cadastrada para aprovação da gerência.`, 'success');
+      toast(IS_DEMO ? 'Reembolso salvo apenas neste navegador.' : 'Reembolso enviado. Aguarde a confirmação da base central.', 'info');
       return item;
     },
     [events, clients, addTransacao, toast]
@@ -1126,7 +1126,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   const updateDespesaStatus = useCallback(
     (id: string, status: StatusDespesa, obs?: string) => {
-      setEvents((prev) =>
+      if (IS_DEMO) setEvents((prev) =>
         prev.map((ev) => ({
           ...ev,
           despesas: (ev.despesas || []).map((d) =>
@@ -1537,11 +1537,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         // Gestão Financeira
         transacoes,
         salarios,
-        allDespesasGravacao,
+        allDespesasGravacao:canManage ? allDespesasGravacao : allDespesasGravacao.filter(d=>d.employee_id===loggedEmployeeId),
         addTransacao: guarded(canManage, addTransacao),
         updateTransacaoStatus: guarded(canManage, updateTransacaoStatus),
         deleteTransacao: guarded(canManage, deleteTransacao),
-        addDespesaGravacao,
+        addDespesaGravacao:(d)=>guarded(d.employee_id===loggedEmployeeId && d.status==='pendente',addDespesaGravacao)(d),
         updateDespesaStatus: guarded(canManage, updateDespesaStatus),
         updateSalario: guarded(canManage, updateSalario),
         markSalarioPago: guarded(canManage, markSalarioPago),

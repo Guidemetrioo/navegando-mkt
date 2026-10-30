@@ -124,12 +124,13 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
     });
     const online=()=>{ if (!paused.current) void load(); };
     window.addEventListener('online',online);
-    const poll=setInterval(()=>{if (base.current && !diffWorkspace(base.current,latest.current).length && !pending.current) void load();},15000);
+    window.addEventListener('focus',online);
+    const poll=setInterval(()=>{if (base.current && !diffWorkspace(base.current,latest.current).length && !pending.current) void load();},3000);
     const beforeUnload=(event:BeforeUnloadEvent)=>{
       if (pending.current || recovery.current || base.current && diffWorkspace(base.current,latest.current).length) {event.preventDefault();saveDraft();}
     };
     window.addEventListener('beforeunload',beforeUnload);
-    return ()=>{subscription.unsubscribe();clearInterval(poll);window.removeEventListener('online',online);window.removeEventListener('beforeunload',beforeUnload);};
+    return ()=>{subscription.unsubscribe();clearInterval(poll);window.removeEventListener('online',online);window.removeEventListener('focus',online);window.removeEventListener('beforeunload',beforeUnload);};
   },[apply,load,saveDraft]);
   useEffect(()=>{
     if (IS_DEMO || !base.current || paused.current) return;

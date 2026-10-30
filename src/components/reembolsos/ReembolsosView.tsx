@@ -61,8 +61,9 @@ export function ReembolsosView() {
 
   const handleFileSelect = (file: File | undefined) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setFormError('O arquivo do comprovante deve ter no máximo 5MB.');
+    if (!['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) {setFormError('Use JPG, PNG, WebP ou PDF.');return;}
+    if (file.size > 1024 * 1024) {
+      setFormError('O arquivo do comprovante deve ter no máximo 1MB.');
       return;
     }
     setFormError(null);
@@ -103,7 +104,7 @@ export function ReembolsosView() {
       return;
     }
 
-    addDespesaGravacao({
+    const submitted=addDespesaGravacao({
       event_id: 'reembolso-direto',
       employee_id: currentMember?.id || loggedEmployeeId,
       employee_nome: currentMember?.nome || 'Colaborador',
@@ -115,6 +116,8 @@ export function ReembolsosView() {
       comprovante_nome: comprovanteNome || 'comprovante.jpg',
       status: 'pendente',
     });
+
+    if(!submitted) return;
 
     // Limpa os 3 campos após enviar
     setValorInput('');
@@ -330,7 +333,7 @@ export function ReembolsosView() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
               onChange={(e) => handleFileSelect(e.target.files?.[0])}
               className="hidden"
             />

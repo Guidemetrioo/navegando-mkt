@@ -11,6 +11,8 @@ export async function requireMember() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) throw new ApiError(401, 'Entre novamente para continuar.');
+  const version=await supabase.rpc('agency_workspace_version');
+  if(version.error || version.data!==2) throw new ApiError(503,'Execute a migração 006 da base central antes de usar o sistema.');
   const result = await supabase.rpc('agency_snapshot');
   if (result.error) throw new ApiError(result.error.code === '42501' ? 403 : 503, result.error.code === '42501' ? 'Sua conta ainda não foi vinculada a um membro ativo da agência.' : 'Não foi possível consultar a base central.');
   return { supabase, user, snapshot: result.data as CloudSnapshot };

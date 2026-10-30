@@ -26,6 +26,10 @@ export function validateBackup(value:unknown):SystemBackupPayload {
       ids.add(row.id);
     }
   }
+  for(const kind of ['despesas','transacoes','salarios'] as const) {
+    if(backup.data[kind]===undefined) (backup.data[kind] as unknown[])=[];
+    if(!Array.isArray(backup.data[kind])) throw new Error(`Lista ${kind} inválida.`);
+  }
   const clients=new Set(backup.data.clients.map(c=>c.id));
   const employees=new Set(backup.data.employees.map(e=>e.id));
   for(const event of backup.data.events) if(!clients.has(event.client_id) || !Array.isArray(event.assigned_employee_ids) || event.assigned_employee_ids.some(id=>!employees.has(id))) throw new Error('A agenda referencia registros inexistentes.');

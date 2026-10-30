@@ -1,4 +1,4 @@
-import type { Employee, Client, EventItem, PontoRegistro, MediaDeliverable, ReelMetric, ClientMention, TeamRole } from '../types/database';
+import type { Employee, Client, EventItem, PontoRegistro, MediaDeliverable, ReelMetric, ClientMention, TeamRole, DespesaGravacao, TransacaoFinanceira, FuncionarioSalario } from '../types/database';
 
 export interface Workspace {
   employees: Employee[];
@@ -8,14 +8,17 @@ export interface Workspace {
   deliverables: MediaDeliverable[];
   reels: ReelMetric[];
   mentions: ClientMention[];
+  despesas: DespesaGravacao[];
+  transacoes: TransacaoFinanceira[];
+  salarios: (FuncionarioSalario & {id:string})[];
 }
-export const ENTITY_KEYS = ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions'] as const;
+export const ENTITY_KEYS = ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions', 'despesas', 'transacoes', 'salarios'] as const;
 export type Entity = typeof ENTITY_KEYS[number];
 export interface Member { employee_id: string; role: TeamRole; user_id: string; }
 export interface CloudRecord { kind: Entity; id: string; data: Record<string, unknown>; revision: number; }
 export interface CloudSnapshot { member: Member; records: CloudRecord[]; }
 export interface Change { kind: Entity; id: string; expected: number; data: Record<string, unknown> | null; }
-export const emptyWorkspace = (): Workspace => ({ employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [] });
+export const emptyWorkspace = (): Workspace => ({ employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [], despesas: [], transacoes: [], salarios: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
 const modules: Record<TeamRole, readonly string[]> = {
   dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
@@ -109,6 +112,11 @@ export function validateChanges(value: unknown): asserts value is Change[] {
       const d = row.data;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.data)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_inicio)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_fim)) || String(d.hora_fim) <= String(d.hora_inicio)) throw new Error('Data ou intervalo da gravação inválido.');
       if (!['gravacao','foto','edicao','reuniao'].includes(String(d.tipo)) || !['agendado','realizado','cancelado'].includes(String(d.status)) || !Array.isArray(d.assigned_employee_ids)) throw new Error('Dados da gravação inválidos.');
+    }
+    if (row.kind === 'despesas') {
+      const d = row.data;
+      if (typeof d.valor !== 'number' || !Number.isFinite(d.valor) || d.valor <= 0 || !String(d.descricao || '').trim() || !['pendente','aprovado','reembolsado','recusado'].includes(String(d.status))) throw new Error('Reembolso inválido.');
+      if (typeof d.comprovante_arquivo !== 'string' || !/^data:(image\/(jpeg|png|webp)|application\/pdf);base64,[a-zA-Z0-9+/=]+$/.test(d.comprovante_arquivo)) throw new Error('Anexe um comprovante válido (imagem ou PDF).');
     }
     if (row.kind === 'pontos') {
       const d = row.data;

@@ -7,6 +7,7 @@ import { filterPontoHistory } from '@/lib/ponto-history';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { formatDistance, MAX_GEOFENCE_RADIUS_METERS } from '@/lib/geo-utils';
 import { LiveLocationRadar } from './LiveLocationRadar';
+import { PontoStreet } from './PontoStreet';
 import { TeamPontoOverview } from './TeamPontoOverview';
 import {
   Camera,
@@ -409,20 +410,12 @@ export function PontoView() {
                       </div>
 
                       <h4 className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900 truncate mt-1.5" title={p.client?.nome || 'Sede Agência'}>
-                        {p.client?.nome || 'Sede Navegando MKT'}
+                        {p.client?.nome || 'Local do ponto'}
                       </h4>
 
-                      {p.endereco ? (
-                        <div className="text-[11px] text-zinc-400 truncate flex items-center gap-1 mt-1" title={p.endereco}>
-                          <MapPin className="w-3 h-3 text-[var(--ui-accent)] shrink-0" />
-                          <span className="truncate">{p.endereco}</span>
-                        </div>
-                      ) : p.client?.endereco ? (
-                        <div className="text-[11px] text-zinc-400 truncate flex items-center gap-1 mt-1" title={p.client.endereco}>
-                          <MapPin className="w-3 h-3 text-zinc-500 shrink-0" />
-                          <span className="truncate">{p.client.endereco}</span>
-                        </div>
-                      ) : null}
+                      <div className="text-[11px] text-zinc-400 flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3 shrink-0" /><PontoStreet ponto={p} />
+                      </div>
                     </div>
 
                     {/* Badge de Validação de Geolocalização */}
@@ -464,7 +457,7 @@ export function PontoView() {
 
                 {/* Rodapé: Link Mapa e Hash de Segurança */}
                 <div className="px-4 py-2.5 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-                  <span className="truncate">GPS: {p.latitude.toFixed(4)}, {p.longitude.toFixed(4)}</span>
+                  <span className="truncate"><PontoStreet ponto={p} /></span>
                   <a
                     href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
                     target="_blank"
@@ -556,10 +549,10 @@ export function PontoView() {
                       </td>
                       <td className="py-2.5 px-4">
                         <div className="font-bold text-foreground truncate max-w-[180px]">
-                          {p.client?.nome || 'Sede Navegando MKT'}
+                          {p.client?.nome || 'Local do ponto'}
                         </div>
                         <div className="text-[10px] text-zinc-400 truncate max-w-[180px]">
-                          {p.endereco || p.client?.endereco || 'Localização registrada por GPS'}
+                          <PontoStreet ponto={p} />
                         </div>
                       </td>
                       <td className="py-2.5 px-4">
@@ -589,7 +582,7 @@ export function PontoView() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#38bdf8] hover:underline"
                         >
-                          <span>{p.latitude.toFixed(5)}, {p.longitude.toFixed(5)}</span>
+                          <PontoStreet ponto={p} />
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </td>

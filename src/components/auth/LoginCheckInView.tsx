@@ -171,22 +171,20 @@ export function LoginCheckInView() {
     setGpsError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setLatitude(lat);
         setLongitude(lng);
         setAccuracy(Math.round(pos.coords.accuracy));
-        setAddress(`Posição GPS Detectada: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        setAddress('');
+        try {const r=await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);const d=await r.json();if(d.address)setAddress(d.address);} catch { /* GPS remains valid when the address provider is unavailable. */ }
         setIsLocating(false);
       },
       () => {
         setIsLocating(false);
-        // Fallback para coordenadas padrão de São Paulo
-        setLatitude(-23.5505);
-        setLongitude(-46.6333);
-        setAccuracy(10);
-        setAddress('São Paulo - SP (Sede Agência)');
+        setLatitude(null);setLongitude(null);setAccuracy(null);setAddress('');
+        setGpsError('Não foi possível obter o GPS. Permita o acesso e tente novamente.');
       },
       { timeout: 8000 }
     );
@@ -253,7 +251,7 @@ export function LoginCheckInView() {
       lng: longitude,
       accuracy: accuracy,
       distancia_metros: distanceToRestaurant ?? undefined,
-      address: isInterno ? 'Sede Agência Navegando MKT - Escritório Interno' : address,
+      address,
       clientId: !isInterno ? selectedClientId : undefined,
       status_localizacao: statusLoc,
       tipo: pontoTipo,

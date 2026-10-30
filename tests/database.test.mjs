@@ -65,6 +65,24 @@ test('database migrations, authorization and atomic commits',async(t)=>{
     await commit([change('pontos','internal-out',evidence)]);
     await assert.rejects(commit([change('pontos','duplicate-out',evidence)]),/registrado hoje/);
   });
+  await t.test('reimbursement and its finance entry are centrally visible with staff isolation',async()=>{
+    await as('model');
+    const receipt={employee_id:'usr-isa',employee_nome:'Forged',event_id:'reembolso-direto',tipo:'outros',categoria:'outros',descricao:'Transporte de teste',valor:49.9,data:'2026-10-29',comprovante_arquivo:'data:image/png;base64,aGVsbG8=',status:'pendente'};
+    await commit([change('despesas','expense-own',receipt),change('transacoes','transaction-own',{employee_id:'usr-isa',tipo:'despesa',categoria:'custo_gravacao',descricao:'Reembolso de teste',valor:49.9,status:'pendente',despesa_gravacao_id:'expense-own'})]);
+    const own=(await snapshot()).records.find(r=>r.id==='expense-own');assert.equal(own.data.employee_nome,'Isa');
+    await assert.rejects(commit([change('despesas','forged-owner',{...receipt,employee_id:'usr-carol'})]),/pessoal/);
+    await assert.rejects(commit([change('despesas',own.id,{...own.data,status:'reembolsado'},own.revision)]),/gestão/);
+    await as('film');assert(!(await snapshot()).records.some(r=>r.id==='expense-own'||r.id==='transaction-own'));
+    await as('manager');const e=(await snapshot()).records.find(r=>r.id==='expense-own');assert(e.data.comprovante_arquivo);
+    await commit([change('despesas',e.id,{...e.data,status:'aprovado'},e.revision)]);
+    await assert.rejects(commit([change('despesas',e.id,{...e.data,status:'recusado'},e.revision)]),/alterado/);
+    await as('model');assert.equal((await snapshot()).records.find(r=>r.id==='expense-own').data.status,'aprovado');
+  });
+  await t.test('payroll is visible only to management',async()=>{
+    await as('owner');await commit([change('salarios','usr-carol',{employee_id:'usr-carol',valor_base:1000})]);
+    await as('internal');assert(!(await snapshot()).records.some(r=>r.kind==='salarios'));
+    await assert.rejects(commit([change('salarios','usr-victor',{employee_id:'usr-victor',valor_base:999})]),/gestão/);
+  });
   await t.test('direct RPC cannot omit mandatory event fields',async()=>{await as('owner');await assert.rejects(commit([change('events','missing',{client_id:'c-real',hora_inicio:'09:00',hora_fim:'12:00',assigned_employee_ids:[]})]),/obrigatórios/);});
   await t.test('deactivating an account revokes access even with an existing session',async()=>{await db.exec('reset role');await db.query('update public.agency_members set active=false where employee_id=$1',['usr-isa']);await as('model');await assert.rejects(snapshot,/vinculada/);});
   await t.test('every successful business mutation has a protected audit record',async()=>{await db.exec('reset role');const {rows}=await db.query('select count(*)::integer as count from public.agency_audit');assert(rows[0].count>=6);await as('film');await assert.rejects(db.query('select * from public.agency_audit'),/permission denied/);});

@@ -5,5 +5,5 @@ export const HAS_CLOUD_CONFIG = Boolean(
   !/your-anon|placeholder|SUA-CHAVE/i.test(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '')
 );
 
-/** Operational workspace is active whenever Supabase cloud is not configured or when explicitly requested */
-export const IS_DEMO = !HAS_CLOUD_CONFIG || process.env.NEXT_PUBLIC_APP_MODE !== 'production';
+/** Local demonstration must be explicit. Missing configuration never becomes a local company database. */
+export const IS_DEMO = process.env.NEXT_PUBLIC_APP_MODE === 'demo';
