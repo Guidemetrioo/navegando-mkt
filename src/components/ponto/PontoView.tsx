@@ -290,8 +290,6 @@ export function PontoView() {
         <span className="block mt-1">{isManagerOrOwner ? 'Pontos de toda a equipe' : 'Seus pontos'} · Mais recentes primeiro · Horário de Brasília (São Paulo)</span>
       </div>
 
-      {isManagerOrOwner && <TeamPontoOverview employees={employees} pontos={filteredPontos} employeeId={selectedFilterEmpId} onPhoto={setZoomPhoto} />}
-
       <h3 className="text-base font-semibold text-foreground">Histórico de batidas</h3>
       {/* 3. CONTEÚDO PRINCIPAL (Cards ou Tabela) */}
       {filteredPontos.length === 0 ? (
@@ -594,6 +592,8 @@ export function PontoView() {
           </div>
         </div>
       )}
+
+      {isManagerOrOwner && <TeamPontoOverview employees={employees} pontos={filteredPontos} employeeId={selectedFilterEmpId} onPhoto={setZoomPhoto} />}
 
       {/* 4. MODAL DE ZOOM DE FOTO */}
       {zoomPhoto && (
