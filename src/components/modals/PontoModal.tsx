@@ -358,7 +358,7 @@ export function PontoModal() {
 
   // Calcular distância até o restaurante
   let distanceMeters: number | null = null;
-  let statusLocalizacao: PontoStatus = 'fora_do_raio';
+  let statusLocalizacao: PontoStatus = 'no_local';
 
   if (latitude !== null && longitude !== null && selectedClient) {
     const clientCoords =
@@ -686,18 +686,20 @@ export function PontoModal() {
               </span>
             </div>
 
-            {/* 2. Restaurante Cliente */}
+            {/* 2. Restaurante Cliente (Opcional) */}
             <div>
               <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Restaurante / Local da Gravação
+                Restaurante / Local da Gravação (Opcional)
               </label>
               <div className="relative">
                 <select
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 text-foreground dark:text-foreground text-zinc-900 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-                  required
                 >
+                  <option value="" className="bg-[var(--ui-raised)] text-zinc-400">
+                    Sem restaurante selecionado (Usar localização GPS atual / Sede)
+                  </option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id} className="bg-[var(--ui-raised)] text-foreground">
                       {c.nome} {c.endereco ? `— ${c.endereco}` : ''}

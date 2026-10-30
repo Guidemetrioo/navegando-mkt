@@ -726,16 +726,19 @@ export function LoginCheckInView() {
                   </button>
                 </div>
 
-                {/* Seleção do Restaurante Parceiro */}
+                {/* Seleção do Restaurante Parceiro (Opcional) */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    Restaurante / Local da Gravação *
+                    Restaurante / Local da Gravação (Opcional)
                   </label>
                   <select
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
                     className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#38bdf8] cursor-pointer"
                   >
+                    <option value="">
+                      Sem restaurante selecionado (Usar localização GPS atual)
+                    </option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nome} {c.endereco ? `(${c.endereco})` : ''}
