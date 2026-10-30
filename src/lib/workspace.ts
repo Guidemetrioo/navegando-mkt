@@ -18,12 +18,12 @@ export interface Change { kind: Entity; id: string; expected: number; data: Reco
 export const emptyWorkspace = (): Workspace => ({ employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
 const modules: Record<TeamRole, readonly string[]> = {
-  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','arquivos','metricas-reels'],
-  modelo: ['home','mes','semana','minha-agenda','ponto','briefing'],
-  criadora: ['home','mes','semana','minha-agenda','ponto','briefing'],
-  interno: ['home','mes','semana','minha-agenda','ponto','briefing','arquivos'],
+  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','relatorios','briefing','reembolsos','arquivos','metricas-reels'],
+  modelo: ['home','mes','semana','minha-agenda','ponto','briefing','reembolsos'],
+  criadora: ['home','mes','semana','minha-agenda','ponto','briefing','reembolsos'],
+  interno: ['home','mes','semana','minha-agenda','ponto','briefing','reembolsos','arquivos'],
 };
 export function mayAccess(role: TeamRole | undefined, view: string): boolean {
   return role !== undefined && (modules[role]?.includes(view) ?? false);

@@ -286,6 +286,8 @@ export interface DespesaGravacao {
   valor: number;
   data: string; // YYYY-MM-DD
   comprovante_url?: string;
+  comprovante_arquivo?: string; // Data URL (Base64) da imagem ou PDF do comprovante anexado
+  comprovante_nome?: string; // Nome original do arquivo enviado
   status: StatusDespesa;
   observacao_gestor?: string;
   created_at: string;

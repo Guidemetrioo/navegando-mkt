@@ -661,6 +661,66 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
     ctaAction: 'client',
   },
 
+  reembolsos: {
+    view: 'reembolsos',
+    title: 'Central de Reembolsos de Gravação (3 Campos)',
+    subtitle: 'Envio rápido de despesas do dia de gravação com upload de comprovante e controle por hierarquia',
+    category: 'Produção & Financeiro',
+    purpose:
+      'Criada para que os colaboradores lancem rapidamente gastos do dia de gravação (Uber, estacionamento, alimentação, insumos) usando apenas 3 campos simples: Valor do Reembolso, Razão e Upload do Comprovante. O acesso segue privacidade rigorosa: cada funcionário visualiza apenas os seus próprios reembolsos, enquanto Donos e Gerentes visualizam e aprovam os reembolsos de toda a equipe.',
+    installedFunctions: [
+      'Formulário direto e intuitivo com apenas 3 campos: 1) Valor do Reembolso, 2) Razão da Despesa e 3) Upload do Comprovante (Foto ou PDF)',
+      'Privacidade por perfil: Funcionários enxergam somente os seus próprios pedidos e status; Gestores enxergam todos os reembolsos de todos os colaboradores',
+      'Visualizador de comprovante integrado (abre a foto do recibo/print do Uber na tela sem precisar sair do sistema)',
+      'Sincronização automática com o Controle Financeiro Executivo quando o gestor aprova ou marca como reembolsado',
+    ],
+    agencyBenefits: [
+      'Elimina envio de comprovantes de Uber perdidos no WhatsApp',
+      'Garante que nenhum funcionário tenha acesso aos valores ou reembolsos de outros colegas',
+      'Dá aos gestores controle centralizado para aprovar e pagar reembolsos com 1 clique',
+    ],
+    howToFeedSteps: [
+      {
+        stepTitle: '1. Digite o Valor do Reembolso (R$)',
+        description:
+          'Informe o valor exato gasto no dia da gravação (ex: 48,90).',
+      },
+      {
+        stepTitle: '2. Escreva a Razão da Despesa',
+        description:
+          'Descreva de forma direta o motivo (ex: "Uber ida e volta gravação Trattoria Bella Napoli" ou "Estacionamento").',
+      },
+      {
+        stepTitle: '3. Faça o Upload do Comprovante e clique em Enviar',
+        description:
+          'Clique na caixa de upload (ou arraste a imagem/PDF do recibo) e envie. O gestor receberá na hora para aprovar e reembolsar via PIX!',
+      },
+    ],
+    exampleTitle: 'Exemplo Visual de Pedido de Reembolso Preenchido',
+    exampleSubtitle: 'Veja na imagem e nos 3 campos abaixo como solicitar um reembolso de gravação:',
+    exampleBadge: 'EXEMPLO COM IMAGEM & 3 CAMPOS PREENCHIDOS',
+    exampleFields: [
+      {
+        label: '1. Valor do Reembolso (R$)',
+        value: 'R$ 48,90',
+        highlight: true,
+      },
+      {
+        label: '2. Razão da Despesa',
+        value: 'Uber ida e volta gravação Trattoria Bella Napoli (com tripé e iluminação)',
+      },
+      {
+        label: '3. Upload do Comprovante Anexado',
+        value: 'recibo_uber_29_10.jpg (Imagem verificada disponível para visualização)',
+        highlight: true,
+      },
+      {
+        label: 'Regra de Visibilidade Ativa',
+        value: 'Funcionário vê apenas seus próprios reembolsos • Gestores veem e aprovam os de toda a equipe',
+      },
+    ],
+  },
+
   arquivos: {
     view: 'arquivos',
     title: 'Central de Arquivos & Entregáveis (DAM)',

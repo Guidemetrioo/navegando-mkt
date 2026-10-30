@@ -333,7 +333,7 @@ export function LoginCheckInView() {
                     <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3 pointer-events-none" />
                     <input
                       type="text"
-                      placeholder="Ex: felipe, alexandre, vitinho, isa, guilherme..."
+                      placeholder="Ex: felipe, alexandre, vitinho, isa, carol..."
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
                       className="w-full pl-10 pr-3 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"

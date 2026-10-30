@@ -28,6 +28,7 @@ import {
   Home,
   FileText,
   ClipboardList,
+  Receipt,
   DollarSign,
   Smartphone,
 } from 'lucide-react';
@@ -137,6 +138,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           icon: ClipboardList,
           badge: 'Diretrizes',
           badgeColor: 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)]',
+        },
+        {
+          id: 'reembolsos',
+          label: 'Reembolsos',
+          icon: Receipt,
+          badge: '3 Campos',
+          badgeColor: 'bg-emerald-500/20 text-emerald-400',
         },
       ],
     },

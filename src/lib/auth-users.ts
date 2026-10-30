@@ -20,7 +20,7 @@ export interface UserAccount {
  * - Gerentes: Alexandre, Victor Cordoba (Vitinho), Matheus e Larissa (Acesso Total + Ponto + Métricas)
  * - Filmmakers: Victor, Matheus Gimenez, Henry (Agenda + DAM + Relatórios + Métricas Insta)
  * - Modelos: Isa, Gi, Mi, Ju (Apenas Agenda + Ponto)
- * - Interno: Guilherme, Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto (Regime CLT 2026/2027 - 3 batidas)
+ * - Interno: Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto (Regime CLT 2026/2027 - 3 batidas)
  */
 export const USERS_DATABASE: UserAccount[] = [
   // ==========================================
@@ -175,16 +175,6 @@ export const USERS_DATABASE: UserAccount[] = [
   // 5. EQUIPE INTERNA (Escritório - Segunda a Sexta)
   // Regime CLT 2026/2027: 3 batidas de ponto (Entrada, Almoço, Saída)
   // ==========================================
-  {
-    employeeId: 'usr-guilherme',
-    nome: 'Guilherme',
-    username: 'guilherme',
-    aliases: ['gui', 'guilherme'],
-    funcao: 'interno',
-    regime: 'interno',
-    cargo: 'Estrategista & Operações Internas',
-    cor: 195,
-  },
   {
     employeeId: 'usr-carol',
     nome: 'Carol',

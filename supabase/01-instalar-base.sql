@@ -494,7 +494,6 @@ INSERT INTO public.agency_members(employee_id,role,employee) VALUES
 ('usr-gi','modelo','{"id": "usr-gi", "nome": "Gi", "username": "gi", "funcao": "modelo", "regime": "externo", "cargo_detalhado": "Apresentadora & Modelo Gastronômica", "cor": 320, "ativo": true}'::jsonb),
 ('usr-mi','modelo','{"id": "usr-mi", "nome": "Mi", "username": "mi", "funcao": "modelo", "regime": "externo", "cargo_detalhado": "Apresentadora & Modelo Gastronômica", "cor": 8, "ativo": true}'::jsonb),
 ('usr-ju','modelo','{"id": "usr-ju", "nome": "Ju", "username": "ju", "funcao": "modelo", "regime": "externo", "cargo_detalhado": "Apresentadora & Modelo Gastronômica", "cor": 38, "ativo": true}'::jsonb),
-('usr-guilherme','interno','{"id": "usr-guilherme", "nome": "Guilherme", "username": "guilherme", "funcao": "interno", "regime": "interno", "cargo_detalhado": "Estrategista & Operações Internas", "cor": 195, "ativo": true}'::jsonb),
 ('usr-carol','interno','{"id": "usr-carol", "nome": "Carol", "username": "carol", "funcao": "interno", "regime": "interno", "cargo_detalhado": "Editora de Vídeo & Pós-Produção", "cor": 310, "ativo": true}'::jsonb),
 ('usr-bruna','interno','{"id": "usr-bruna", "nome": "Bruna", "username": "bruna", "funcao": "interno", "regime": "interno", "cargo_detalhado": "Social Media & Copywriter", "cor": 25, "ativo": true}'::jsonb),
 ('usr-lucas','interno','{"id": "usr-lucas", "nome": "Lucas Verraz", "username": "lucas", "funcao": "interno", "regime": "interno", "cargo_detalhado": "Editor de Vídeo & Colorista", "cor": 180, "ativo": true}'::jsonb),

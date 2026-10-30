@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { todayInSaoPaulo } from '@/lib/date-utils';
 import { useAgenda } from '@/context/AgendaContext';
-import { PontoRegistro } from '@/types/database';
+import { filterPontoHistory } from '@/lib/ponto-history';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { formatDistance, MAX_GEOFENCE_RADIUS_METERS } from '@/lib/geo-utils';
 import { LiveLocationRadar } from './LiveLocationRadar';
+import { TeamPontoOverview } from './TeamPontoOverview';
 import {
   Camera,
   MapPin,
@@ -14,15 +15,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   Plus,
-  Building,
   Calendar,
   ExternalLink,
   ShieldCheck,
-  Search,
   LayoutGrid,
   List,
   X,
-  UserCheck,
   Scale,
 } from 'lucide-react';
 
@@ -33,31 +31,56 @@ export function PontoView() {
     clients,
     openPontoModal,
     loggedEmployeeId,
-    userRole,
   } = useAgenda();
 
   const currentMember = employees.find((e) => e.id === loggedEmployeeId);
-  const isModelo = currentMember?.funcao === 'modelo';
   const isManagerOrOwner = currentMember?.funcao === 'dono' || currentMember?.funcao === 'gerente';
 
   const [selectedFilterEmpId, setSelectedFilterEmpId] = useState<string>('all');
   const [selectedFilterClientId, setSelectedFilterClientId] = useState<string>('all');
   const [selectedFilterTipo, setSelectedFilterTipo] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'cards' | 'tabela'>('cards');
+  const [activeTab, setActiveTab] = useState<'cards' | 'tabela'>(isManagerOrOwner ? 'tabela' : 'cards');
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; nome: string; dataHora: string } | null>(null);
 
-  // Escopo de visibilidade: modelos só visualizam o seu próprio ponto
-  const basePontos = !isManagerOrOwner
-    ? pontos.filter((p) => p.employee_id === currentMember?.id)
-    : pontos;
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  useEffect(() => {
+    queueMicrotask(() => {
+      const today = todayInSaoPaulo();
+      setStartDate(today); setEndDate(today);
+    });
+  }, []);
+  const closePhotoRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!zoomPhoto) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closePhotoRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setZoomPhoto(null);
+      if (event.key === 'Tab') {
+        const buttons = closePhotoRef.current?.closest('[role="dialog"]')?.querySelectorAll<HTMLButtonElement>('button');
+        const first = buttons?.[0];
+        const last = buttons?.[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); previous?.focus(); };
+  }, [zoomPhoto]);
 
-  // Filtragem dos pontos
-  const filteredPontos = basePontos.filter((p) => {
-    if (selectedFilterEmpId !== 'all' && p.employee_id !== selectedFilterEmpId) return false;
-    if (selectedFilterClientId !== 'all' && p.client_id !== selectedFilterClientId) return false;
-    if (selectedFilterTipo !== 'all' && p.tipo !== selectedFilterTipo) return false;
-    return true;
+  const basePontos = !isManagerOrOwner
+    ? pontos.filter(p => p.employee_id === loggedEmployeeId)
+    : pontos;
+  const invalidPeriod = Boolean(startDate && endDate && startDate > endDate);
+  const filteredPontos = filterPontoHistory(pontos, currentMember?.funcao, loggedEmployeeId, {
+    employeeId: isManagerOrOwner ? selectedFilterEmpId : 'all',
+    clientId: selectedFilterClientId, tipo: selectedFilterTipo, startDate, endDate,
   });
+  const clearFilters = () => {
+    setSelectedFilterEmpId('all'); setSelectedFilterClientId('all');
+    setSelectedFilterTipo('all'); setStartDate(''); setEndDate('');
+  };
 
   // KPIs
   const totalPontos = basePontos.length;
@@ -69,8 +92,12 @@ export function PontoView() {
 
   return (
     <div className="w-full flex flex-col gap-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground">{isManagerOrOwner ? 'Pontos da equipe' : 'Meus pontos'}</h2>
+        <p className="mt-1 text-sm text-zinc-400">Consulte as batidas, a foto e a localização registradas em cada ponto.</p>
+      </div>
       {/* 0. Radar de Localização Real com Permissão do Dispositivo & Mapa */}
-      <LiveLocationRadar />
+      {!isManagerOrOwner && <LiveLocationRadar />}
 
       {/* 0.1 Banner de Normas configurada pela agência & Cargas Horárias */}
       <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -118,7 +145,7 @@ export function PontoView() {
           <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {totalPontos}
           </div>
-          <span className="text-[11px] text-zinc-500">Histórico da equipe na rua</span>
+          <span className="text-[11px] text-zinc-500">{isManagerOrOwner ? 'Histórico de toda a equipe' : 'Seu histórico de pontos'}</span>
         </div>
 
         {/* KPI 2 */}
@@ -142,7 +169,7 @@ export function PontoView() {
           <div className="text-2xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading mt-1">
             {pontosHoje}
           </div>
-          <span className="text-[11px] text-zinc-500">Filmmakers & Criadoras</span>
+          <span className="text-[11px] text-zinc-500">Equipe interna e externa</span>
         </div>
 
         {/* KPI 4 */}
@@ -161,40 +188,43 @@ export function PontoView() {
       {/* 2. Barra de Controle: Filtros e Botão de Ação */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Filtro por Membro */}
-          <select
-            value={selectedFilterEmpId}
-            onChange={(e) => setSelectedFilterEmpId(e.target.value)}
-            className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-          >
-            <option value="all">Toda a equipe ({employees.length})</option>
-            <optgroup label="Filmmakers">
-              {employees
-                .filter((e) => e.funcao === 'filmmaker')
-                .map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nome} (Filmmaker)
-                  </option>
+          {isManagerOrOwner && (
+            <label className="flex flex-col gap-1 text-xs text-zinc-400">
+              Funcionário
+              <select aria-label="Funcionário" value={selectedFilterEmpId} onChange={e => setSelectedFilterEmpId(e.target.value)}
+                className="max-w-full text-xs bg-[var(--ui-raised)] text-foreground border border-[var(--ui-border)] rounded-xl px-3 py-2">
+                <option value="all">Toda a equipe ({employees.length})</option>
+                {[...employees].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.nome}</option>
                 ))}
-            </optgroup>
-            <optgroup label="Modelos & Criadoras">
-              {employees
-                .filter((e) => e.funcao === 'criadora' || e.funcao === 'modelo')
-                .map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nome} (Modelo)
-                  </option>
-                ))}
-            </optgroup>
-          </select>
+              </select>
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-xs text-zinc-400">
+            Data inicial
+            <input type="date" aria-label="Data inicial" value={startDate} max={endDate || undefined}
+              onChange={e => setStartDate(e.target.value)}
+              className="min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] px-3 py-2 text-foreground" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-400">
+            Data final
+            <input type="date" aria-label="Data final" value={endDate} min={startDate || undefined}
+              onChange={e => setEndDate(e.target.value)}
+              className="min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] px-3 py-2 text-foreground" />
+          </label>
+          <button type="button" onClick={() => {const today = todayInSaoPaulo(); setStartDate(today); setEndDate(today);}}
+            className="text-xs text-[var(--ui-accent)] px-2 py-2">Hoje</button>
+          <button type="button" onClick={clearFilters} className="text-xs text-zinc-400 px-2 py-2 underline">Limpar filtros</button>
 
           {/* Filtro por Restaurante */}
           <select
+            aria-label="Local"
             value={selectedFilterClientId}
             onChange={(e) => setSelectedFilterClientId(e.target.value)}
             className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
-            <option value="all">Todos os Restaurantes ({clients.length})</option>
+            <option value="all">Todos os locais</option>
+            <option value="internal">Sede / ponto interno</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -204,12 +234,14 @@ export function PontoView() {
 
           {/* Filtro por Tipo */}
           <select
+            aria-label="Tipo de batida"
             value={selectedFilterTipo}
             onChange={(e) => setSelectedFilterTipo(e.target.value)}
             className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
           >
-            <option value="all">Entradas & Saídas</option>
+            <option value="all">Todas as batidas</option>
             <option value="entrada">Apenas Entradas</option>
+            <option value="almoco">Apenas Almoço</option>
             <option value="saida">Apenas Saídas</option>
           </select>
         </div>
@@ -252,13 +284,21 @@ export function PontoView() {
         </div>
       </div>
 
+      <div className="text-xs text-zinc-400" role="status" aria-live="polite">
+        {invalidPeriod ? 'A data final deve ser igual ou posterior à data inicial.' : `${filteredPontos.length} registro(s) encontrado(s)`}
+        <span className="block mt-1">{isManagerOrOwner ? 'Pontos de toda a equipe' : 'Seus pontos'} · Mais recentes primeiro · Horário de Brasília (São Paulo)</span>
+      </div>
+
+      {isManagerOrOwner && <TeamPontoOverview employees={employees} pontos={filteredPontos} employeeId={selectedFilterEmpId} onPhoto={setZoomPhoto} />}
+
+      <h3 className="text-base font-semibold text-foreground">Histórico de batidas</h3>
       {/* 3. CONTEÚDO PRINCIPAL (Cards ou Tabela) */}
       {filteredPontos.length === 0 ? (
         <div className="py-16 text-center rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] p-8 flex flex-col items-center gap-3">
           <Camera className="w-10 h-10 text-zinc-500 animate-pulse" />
           <h4 className="text-base font-bold text-zinc-200">Nenhum registro de ponto encontrado</h4>
           <p className="text-xs text-zinc-500 max-w-sm">
-            Nenhum ponto registrado para os filtros selecionados. Clique em &quot;Bater Ponto Agora&quot; para registrar uma nova entrada com foto e GPS.
+            Nenhum ponto registrado para os filtros selecionados. Ajuste o funcionário ou o período para consultar o histórico.
           </p>
           <button
             type="button"
@@ -272,17 +312,19 @@ export function PontoView() {
         /* VISUALIZAÇÃO EM CARDS / COMPROVANTES SIMÉTRICOS */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
           {filteredPontos.map((p) => {
-            const isEntry = p.tipo === 'entrada';
             const isInside = p.status_localizacao === 'no_local';
             const dateObj = new Date(p.data_hora);
             const dateFormatted = dateObj.toLocaleDateString('pt-BR', {
               day: '2-digit',
               month: 'short',
+              year: 'numeric',
+              timeZone: 'America/Sao_Paulo',
             });
             const timeFormatted = dateObj.toLocaleTimeString('pt-BR', {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
+              timeZone: 'America/Sao_Paulo',
             });
 
             return (
@@ -293,7 +335,7 @@ export function PontoView() {
                 {/* Header do Cartão */}
                 <div className="p-4 pb-3 flex items-start justify-between border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100 min-h-[56px]">
                   <div className="flex items-center gap-2.5">
-                    {p.employee && <EmployeeBadge employee={p.employee} size="md" showRole />}
+                    {p.employee ? <EmployeeBadge employee={p.employee} size="md" showRole /> : <span>{p.employee_id}</span>}
                   </div>
 
                   {p.tipo === 'entrada' && (
@@ -320,7 +362,9 @@ export function PontoView() {
                 <div className="p-4 flex gap-3.5 items-start">
                   {/* Foto / Selfie clicável OU Espaço para foto da pessoa */}
                   {p.foto_url ? (
-                    <div
+                    <button
+                      type="button"
+                      aria-label={`Ampliar foto de ${p.employee?.nome || p.employee_id}`}
                       className="relative w-24 h-28 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-[var(--ui-border)] group shadow-sm"
                       onClick={() =>
                         setZoomPhoto({
@@ -339,17 +383,17 @@ export function PontoView() {
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-foreground text-[10px] font-bold">
                         Ampliar Foto
                       </div>
-                    </div>
+                    </button>
                   ) : (
                     <div
                       className="relative w-24 h-28 rounded-xl border-2 border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)]/60 flex flex-col items-center justify-center text-center p-2 shrink-0 group hover:border-[var(--ui-accent)]/50 transition-colors"
-                      title="Espaço para foto do colaborador"
+                      title="Foto não disponível"
                     >
                       <div className="w-8 h-8 rounded-full bg-[var(--ui-surface)] border border-[var(--ui-border)] flex items-center justify-center text-zinc-400 group-hover:text-[var(--ui-accent)] transition-colors mb-1 shadow-sm">
                         <Camera className="w-4 h-4" />
                       </div>
                       <span className="text-[9px] font-medium text-zinc-400 leading-tight">
-                        Espaço para foto
+                        Foto não disponível
                       </span>
                     </div>
                   )}
@@ -398,7 +442,7 @@ export function PontoView() {
                         <span>
                           {isInside
                             ? `No local (${formatDistance(p.distancia_metros)})`
-                            : `Fora do raio (${formatDistance(p.distancia_metros)})`}
+                            : p.status_localizacao === 'manual' ? 'Sem validação de raio' : `Fora do raio (${formatDistance(p.distancia_metros)})`}
                         </span>
                       </span>
                     </div>
@@ -453,19 +497,16 @@ export function PontoView() {
               </thead>
               <tbody className="divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-100">
                 {filteredPontos.map((p) => {
-                  const isEntry = p.tipo === 'entrada';
                   const isInside = p.status_localizacao === 'no_local';
                   const dateObj = new Date(p.data_hora);
-                  const dateStr = dateObj.toLocaleDateString('pt-BR');
-                  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  const dateStr = dateObj.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Sao_Paulo' });
 
                   return (
                     <tr key={p.id} className="hover:bg-[var(--ui-raised)] transition-colors">
                       <td className="py-2.5 px-4">
                         {p.foto_url ? (
-                          <img
-                            src={p.foto_url}
-                            alt="Foto do colaborador"
+                          <button type="button" aria-label={`Ampliar foto de ${p.employee?.nome || p.employee_id}`}
                             onClick={() =>
                               setZoomPhoto({
                                 url: p.foto_url,
@@ -473,19 +514,21 @@ export function PontoView() {
                                 dataHora: `${dateStr} às ${timeStr}`,
                               })
                             }
-                            className="w-10 h-10 rounded-xl object-cover border border-[var(--ui-border)] cursor-pointer hover:scale-110 transition-transform shadow"
-                          />
+                            className="rounded-xl cursor-pointer">
+                            <img src={p.foto_url} alt={`Foto do ponto de ${p.employee?.nome || p.employee_id}`}
+                              className="w-14 h-14 rounded-xl object-cover border border-[var(--ui-border)]" />
+                          </button>
                         ) : (
                           <div
                             className="w-10 h-10 rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)] flex items-center justify-center text-zinc-400"
-                            title="Espaço para foto do colaborador"
+                            title="Foto não disponível"
                           >
                             <Camera className="w-4 h-4 text-zinc-400" />
                           </div>
                         )}
                       </td>
                       <td className="py-2.5 px-4 font-semibold text-foreground">
-                        {p.employee && <EmployeeBadge employee={p.employee} size="sm" showRole />}
+                        {p.employee ? <EmployeeBadge employee={p.employee} size="sm" showRole /> : <span>{p.employee_id}</span>}
                       </td>
                       <td className="py-2.5 px-4">
                         {p.tipo === 'entrada' && (
@@ -513,10 +556,10 @@ export function PontoView() {
                       </td>
                       <td className="py-2.5 px-4">
                         <div className="font-bold text-foreground truncate max-w-[180px]">
-                          {p.client?.nome || 'Restaurante'}
+                          {p.client?.nome || 'Sede Navegando MKT'}
                         </div>
                         <div className="text-[10px] text-zinc-400 truncate max-w-[180px]">
-                          {p.client?.endereco || ''}
+                          {p.endereco || p.client?.endereco || 'Localização registrada por GPS'}
                         </div>
                       </td>
                       <td className="py-2.5 px-4">
@@ -535,7 +578,7 @@ export function PontoView() {
                           <span>
                             {isInside
                               ? `No local (${formatDistance(p.distancia_metros)})`
-                              : `Fora do raio (${formatDistance(p.distancia_metros)})`}
+                              : p.status_localizacao === 'manual' ? 'Sem validação de raio' : `Fora do raio (${formatDistance(p.distancia_metros)})`}
                           </span>
                         </span>
                       </td>
@@ -546,7 +589,7 @@ export function PontoView() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#38bdf8] hover:underline"
                         >
-                          <span>Ver</span>
+                          <span>{p.latitude.toFixed(5)}, {p.longitude.toFixed(5)}</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </td>
@@ -562,6 +605,7 @@ export function PontoView() {
       {/* 4. MODAL DE ZOOM DE FOTO */}
       {zoomPhoto && (
         <div
+          role="dialog" aria-modal="true" aria-labelledby="ponto-photo-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in"
           onClick={() => setZoomPhoto(null)}
         >
@@ -571,11 +615,13 @@ export function PontoView() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-base font-bold text-foreground font-heading">{zoomPhoto.nome}</h4>
+                <h4 id="ponto-photo-title" className="text-base font-bold text-foreground font-heading">{zoomPhoto.nome}</h4>
                 <p className="text-xs text-zinc-400">{zoomPhoto.dataHora}</p>
               </div>
               <button
                 type="button"
+                ref={closePhotoRef}
+                aria-label="Fechar foto"
                 onClick={() => setZoomPhoto(null)}
                 className="p-1 rounded-xl text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
               >
@@ -594,7 +640,7 @@ export function PontoView() {
             <div className="flex items-center justify-between text-xs text-zinc-400 pt-1">
               <span className="flex items-center gap-1 text-emerald-400 font-semibold">
                 <ShieldCheck className="w-4 h-4" />
-                Comprovação facial original
+                Foto registrada no ponto
               </span>
               <button
                 type="button"

@@ -13,6 +13,7 @@ import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
 import { FilesDeliverablesView } from '@/components/files/FilesDeliverablesView';
 import { ProductionReportsView } from '@/components/reports/ProductionReportsView';
 import { BriefingView } from '@/components/briefing/BriefingView';
+import { ReembolsosView } from '@/components/reembolsos/ReembolsosView';
 import { ClientsView } from '@/components/clients/ClientsView';
 import { BackupSafetyView } from '@/components/backup/BackupSafetyView';
 import { MonthView } from '@/components/agenda/MonthView';
@@ -133,6 +134,7 @@ function AgendaMainContent() {
               {currentView === 'ponto' && 'Ponto & GPS'}
               {currentView === 'relatorios' && 'Relatórios de Produção'}
               {currentView === 'briefing' && 'Briefing & Roteiros'}
+              {currentView === 'reembolsos' && 'Reembolsos'}
               {currentView === 'arquivos' && 'Central DAM'}
               {currentView === 'clientes' && 'Restaurantes'}
               {currentView === 'metricas-reels' && 'Métricas Instagram'}
@@ -341,6 +343,7 @@ function AgendaMainContent() {
             {currentView === 'ponto' && <PontoView />}
             {currentView === 'relatorios' && <ProductionReportsView />}
             {currentView === 'briefing' && <BriefingView />}
+            {currentView === 'reembolsos' && <ReembolsosView />}
             {currentView === 'arquivos' && <FilesDeliverablesView />}
             {currentView === 'clientes' && <ClientsView />}
             {currentView === 'metricas-reels' && <InstagramMetricsView />}

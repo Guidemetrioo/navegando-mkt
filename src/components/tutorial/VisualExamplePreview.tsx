@@ -321,6 +321,70 @@ export function VisualExamplePreview({ view }: VisualExamplePreviewProps) {
     );
   }
 
+  // 2.5 REEMBOLSOS DE GRAVAÇÃO — Simulação visual dos 3 campos preenchidos
+  if (view === 'reembolsos') {
+    const reimbSvg = makeIllustratedSvgDataUrl(
+      'Comprovante de Despesa Anexado',
+      'Recibo Uber / Estacionamento • Pronto para Reembolso PIX',
+      '#10b981',
+      '3 CAMPOS'
+    );
+    return (
+      <div className="rounded-2xl bg-[var(--ui-page)] border border-[var(--ui-border)] overflow-hidden shadow-lg">
+        <div className="px-4 py-2.5 bg-[var(--ui-raised)] border-b border-[var(--ui-border)] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-foreground">
+              Imagem & Simulação dos 3 Campos: &ldquo;Solicitar Novo Reembolso&rdquo;
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+            3 Passos Simples
+          </span>
+        </div>
+
+        <div className="p-4 space-y-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-emerald-300 mb-1">
+                1. Valor do Reembolso (R$) *
+              </label>
+              <input
+                type="text"
+                readOnly
+                value="R$ 48,90"
+                className="w-full px-3 py-2.5 rounded-xl bg-[var(--ui-surface)] border border-emerald-500/50 text-xs font-black font-mono text-emerald-300"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-[var(--ui-accent)] mb-1">
+                2. Razão da Despesa *
+              </label>
+              <input
+                type="text"
+                readOnly
+                value="Uber ida e volta gravação Trattoria Bella Napoli"
+                className="w-full px-3 py-2.5 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-accent)]/50 text-xs font-bold text-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase text-sky-300 mb-1">
+              3. Upload do Comprovante (Imagem / PDF Anexado) *
+            </label>
+            <img
+              src={reimbSvg}
+              alt="Exemplo visual do comprovante anexado no campo de upload"
+              className="w-full h-36 object-cover rounded-xl border border-emerald-500/40"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 3. PONTO ELETRÔNICO & GPS — Simulação da câmera + foto + mapa GPS
   if (view === 'ponto') {
     const selfieSvg = makeIllustratedSvgDataUrl(

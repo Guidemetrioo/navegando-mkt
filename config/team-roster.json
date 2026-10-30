@@ -117,15 +117,6 @@
     "cor": 38
   },
   {
-    "employeeId": "usr-guilherme",
-    "nome": "Guilherme",
-    "username": "guilherme",
-    "funcao": "interno",
-    "regime": "interno",
-    "cargo": "Estrategista & Operações Internas",
-    "cor": 195
-  },
-  {
     "employeeId": "usr-carol",
     "nome": "Carol",
     "username": "carol",

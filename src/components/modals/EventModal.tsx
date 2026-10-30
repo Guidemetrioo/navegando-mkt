@@ -48,12 +48,11 @@ export function EventModal() {
   // Aba ativa: 'agenda', 'briefing', 'relatorio' ou 'despesas'
   const [activeTab, setActiveTab] = useState<'agenda' | 'briefing' | 'relatorio' | 'despesas'>('agenda');
 
-  // Estados do formulário de Despesas
-  const [despCategoria, setDespCategoria] = useState<CategoriaDespesa>('transporte');
+  // Estados do formulário de Reembolso (3 campos simples: Valor, Razão e Upload de Comprovante)
   const [despDescricao, setDespDescricao] = useState('');
   const [despValor, setDespValor] = useState('');
-  const [despEmployeeId, setDespEmployeeId] = useState(loggedEmployeeId);
-  const [despComprovanteUrl, setDespComprovanteUrl] = useState('');
+  const [despComprovanteArquivo, setDespComprovanteArquivo] = useState('');
+  const [despComprovanteNome, setDespComprovanteNome] = useState('');
 
   // Estados do formulário de Agenda
   const [clientId, setClientId] = useState('');
@@ -222,41 +221,62 @@ export function EventModal() {
   };
 
   const currentEventExpenses = useMemo(() => {
-    return editingEvent?.despesas || [];
-  }, [editingEvent?.despesas]);
+    const list = editingEvent?.despesas || [];
+    if (userRole === 'admin') return list;
+    return list.filter((d) => d.employee_id === loggedEmployeeId);
+  }, [editingEvent?.despesas, userRole, loggedEmployeeId]);
 
   const totalEventExpenses = useMemo(() => {
     return currentEventExpenses.reduce((sum, d) => sum + d.valor, 0);
   }, [currentEventExpenses]);
 
+  const handleDespFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setDespComprovanteArquivo(reader.result);
+        setDespComprovanteNome(file.name);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateDespesa = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(despValor.replace(',', '.'));
+    const val = parseFloat(despValor.replace(/\./g, '').replace(',', '.'));
     if (!val || val <= 0) {
-      alert('Informe um valor numérico válido para a despesa.');
+      alert('Informe um valor numérico válido para o reembolso.');
       return;
     }
     if (!despDescricao.trim()) {
-      alert('Descreva a despesa (ex: Uber ida e volta, Almoço da equipe, etc).');
+      alert('Informe a razão do reembolso (ex: Uber ida e volta, Estacionamento, Alimentação).');
       return;
     }
-    const emp = employees.find((e) => e.id === despEmployeeId) || employees[0];
+    if (!despComprovanteArquivo) {
+      alert('Anexe o comprovante da despesa.');
+      return;
+    }
+    const emp = employees.find((e) => e.id === loggedEmployeeId) || employees[0];
 
     addDespesaGravacao({
       event_id: editingEvent.id,
       employee_id: emp.id,
       employee_nome: emp.nome,
-      categoria: despCategoria,
+      categoria: 'outros',
       descricao: despDescricao.trim(),
       valor: val,
       data: date || new Date().toISOString().slice(0, 10),
-      comprovante_url: despComprovanteUrl.trim() || undefined,
+      comprovante_arquivo: despComprovanteArquivo,
+      comprovante_nome: despComprovanteNome || 'comprovante.jpg',
       status: 'pendente',
     });
 
     setDespDescricao('');
     setDespValor('');
-    setDespComprovanteUrl('');
+    setDespComprovanteArquivo('');
+    setDespComprovanteNome('');
   };
 
   const currentClient = clients.find((c) => c.id === clientId) || editingEvent.client;
@@ -891,158 +911,132 @@ export function EventModal() {
               </div>
             </div>
 
-            {/* Formulário para adicionar nova despesa */}
+            {/* Formulário de 3 campos para solicitar reembolso */}
             <form onSubmit={handleCreateDespesa} className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-3">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Receipt className="w-4 h-4 text-[var(--ui-accent)]" />
-                Lançar Despesa da Sessão
+                Solicitar Reembolso desta Gravação (3 Campos)
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {/* Categoria */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Campo 1: Valor */}
                 <div>
                   <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                    Categoria *
-                  </label>
-                  <select
-                    value={despCategoria}
-                    onChange={(e) => setDespCategoria(e.target.value as CategoriaDespesa)}
-                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-                  >
-                    <option value="transporte">Transporte (Uber / Combustível)</option>
-                    <option value="alimentacao">Alimentação / Refeição</option>
-                    <option value="estacionamento">Estacionamento</option>
-                    <option value="insumos">Insumos / Pilhas / Produção</option>
-                    <option value="outros">Outros Gastos</option>
-                  </select>
-                </div>
-
-                {/* Valor */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                    Valor (R$) *
+                    1. Valor do Reembolso (R$) *
                   </label>
                   <input
                     type="text"
                     placeholder="Ex: 48,50"
                     value={despValor}
                     onChange={(e) => setDespValor(e.target.value)}
-                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-mono"
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-mono font-bold"
                     required
                   />
                 </div>
 
-                {/* Colaborador solicitante */}
+                {/* Campo 2: Razão */}
                 <div>
                   <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                    Colaborador *
+                    2. Razão do Reembolso *
                   </label>
-                  <select
-                    value={despEmployeeId}
-                    onChange={(e) => setDespEmployeeId(e.target.value)}
-                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-                  >
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.nome}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    placeholder="Ex: Uber ida e volta gravação, Estacionamento..."
+                    value={despDescricao}
+                    onChange={(e) => setDespDescricao(e.target.value)}
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                    required
+                  />
                 </div>
               </div>
 
-              {/* Descrição */}
+              {/* Campo 3: Upload do Comprovante */}
               <div>
                 <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                  Descrição do Gasto *
+                  3. Upload do Comprovante (Foto ou PDF) *
                 </label>
                 <input
-                  type="text"
-                  placeholder="Ex: Uber ida e volta da agência até o restaurante com iluminação"
-                  value={despDescricao}
-                  onChange={(e) => setDespDescricao(e.target.value)}
-                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-                  required
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleDespFileChange}
+                  className="w-full bg-[var(--ui-surface)] border border-dashed border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-zinc-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[var(--ui-accent)] file:text-foreground cursor-pointer"
                 />
-              </div>
-
-              {/* Link / URL Comprovante */}
-              <div>
-                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                  Link do Comprovante / Cupom Fiscal (Opcional)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/... ou link do comprovante"
-                  value={despComprovanteUrl}
-                  onChange={(e) => setDespComprovanteUrl(e.target.value)}
-                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] font-mono"
-                />
+                {despComprovanteNome && (
+                  <span className="text-[10px] text-emerald-400 font-semibold mt-1 block">
+                    ✓ Comprovante anexado: {despComprovanteNome}
+                  </span>
+                )}
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                className="w-full py-2.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 mt-1"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Adicionar Despesa da Gravação
+                Enviar Pedido de Reembolso
               </button>
             </form>
 
             {/* Lista de Despesas Lançadas */}
             <div className="flex flex-col gap-2">
               <span className="text-xs font-bold text-zinc-300">
-                Despesas Registradas ({currentEventExpenses.length})
+                {userRole === 'admin'
+                  ? `Todos os Reembolsos desta Gravação (${currentEventExpenses.length})`
+                  : `Meus Reembolsos nesta Gravação (${currentEventExpenses.length})`}
               </span>
 
               {currentEventExpenses.length === 0 ? (
                 <div className="p-6 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] text-center text-xs text-zinc-400">
-                  Nenhuma despesa lançada para esta gravação ainda.
+                  Nenhum reembolso registrado ainda.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {currentEventExpenses.map((d) => (
-                    <div
-                      key={d.id}
-                      className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-foreground">{d.descricao}</span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              d.status === 'reembolsado'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : d.status === 'aprovado'
-                                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            }`}
-                          >
-                            {d.status === 'reembolsado' ? 'Reembolsado' : d.status === 'aprovado' ? 'Aprovado' : 'Pendente'}
+                  {currentEventExpenses.map((d) => {
+                    const receiptSrc = d.comprovante_arquivo || d.comprovante_url;
+                    return (
+                      <div
+                        key={d.id}
+                        className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground">{d.descricao}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                d.status === 'reembolsado'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : d.status === 'aprovado'
+                                  ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}
+                            >
+                              {d.status === 'reembolsado' ? 'Reembolsado' : d.status === 'aprovado' ? 'Aprovado' : 'Pendente'}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-zinc-400">
+                            {d.employee_nome} • {new Date(d.data).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
-                        <span className="text-[11px] text-zinc-400">
-                          {d.employee_nome} • {d.categoria.toUpperCase()} • {new Date(d.data).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-mono font-bold text-foreground text-sm block">
-                          R$ {d.valor.toFixed(2)}
-                        </span>
-                        {d.comprovante_url && (
-                          <a
-                            href={d.comprovante_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-[#38bdf8] hover:underline"
-                          >
-                            Ver Comprovante
-                          </a>
-                        )}
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-bold text-foreground text-sm block">
+                            R$ {d.valor.toFixed(2)}
+                          </span>
+                          {receiptSrc && (
+                            <a
+                              href={receiptSrc}
+                              download={d.comprovante_nome || 'comprovante'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-[#38bdf8] hover:underline"
+                            >
+                              Ver Comprovante
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

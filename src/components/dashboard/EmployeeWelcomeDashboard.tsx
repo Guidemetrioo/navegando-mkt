@@ -179,12 +179,6 @@ export function EmployeeWelcomeDashboard() {
           { title: 'Agendamento das Gravações', desc: 'Confirmar escala de videomakers e cardápios para a próxima semana', priority: 'Alta' },
           { title: 'Suporte no WhatsApp VIP', desc: 'Responder dúvidas e solicitações de alterações dos donos de restaurantes', priority: 'Média' },
         ];
-      case 'usr-guilherme':
-        return [
-          { title: 'Supervisão Geral de Marketing', desc: 'Monitorar entregas do time interno e alinhamento com a estratégia', priority: 'Alta' },
-          { title: 'Análise de Performance de Retenção', desc: 'Garantir que a meta de 150k de alcance por cliente seja atingida', priority: 'Média' },
-          { title: 'Alinhamento com Diretoria', desc: 'Reunião de alinhamento com Felipe Assis e Gabriela Lorente', priority: 'Alta' },
-        ];
       default:
         return [
           { title: 'Supervisão de Prazos e Entregas', desc: 'Acompanhar o fluxo de trabalho do estúdio e pós-produção', priority: 'Alta' },

@@ -29,7 +29,7 @@ test('database migrations, authorization and atomic commits',async(t)=>{
   const change=(kind,id,data,expected=0)=>({kind,id,data:data ? {...data,id}:null,expected});
   const client=change('clients','c-real',{nome:'Restaurante de teste',latitude:-23.55,longitude:-46.63,valor_mensalidade:4500,contato:'Restrito'});
   const event=change('events','e-real',{client_id:'c-real',tipo:'gravacao',status:'agendado',data:'2026-11-05',hora_inicio:'09:00',hora_fim:'12:00',assigned_employee_ids:['usr-victor','usr-isa']});
-  await t.test('roster has 20 people and the production workspace has no fake clients',async()=>{await as('owner');const s=await snapshot();assert.equal(s.records.filter(r=>r.kind==='employees').length,20);assert.equal(s.records.filter(r=>r.kind==='clients').length,0);});
+  await t.test('roster has 19 people and the production workspace has no fake clients',async()=>{await as('owner');const s=await snapshot();assert.equal(s.records.filter(r=>r.kind==='employees').length,19);assert.equal(s.records.filter(r=>r.kind==='clients').length,0);});
   await t.test('anonymous cannot query the RPC',async()=>{await as('anon');await assert.rejects(snapshot,/permission denied/);});
   await t.test('authenticated cannot read raw tables',async()=>{await as('owner');await assert.rejects(db.query('select * from public.agency_records'),/permission denied/);});
   await t.test('manager can create customer and schedule in a transaction',async()=>{await as('manager');const s=await commit([client,event]);assert(s.records.some(r=>r.id==='e-real'));});
