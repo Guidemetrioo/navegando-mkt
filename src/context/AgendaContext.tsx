@@ -212,6 +212,7 @@ interface AgendaContextType {
   sendManualWhatsAppConfirmation: (eventId: string) => boolean;
   processClientWhatsAppReply: (eventId: string, replyText: string) => { status: 'confirmado' | 'remarcar' | 'outro'; message: string };
   connectWhatsApp: () => Promise<void>;
+  requestWhatsAppPairingCode: (phoneNumber: string) => Promise<{ success: boolean; code?: string; error?: string }>;
   disconnectWhatsApp: () => void;
 }
 
@@ -1223,7 +1224,42 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     }, 600);
   }, [toast]);
 
+  const requestWhatsAppPairingCode = useCallback(
+    async (phoneNumber: string): Promise<{ success: boolean; code?: string; error?: string }> => {
+      try {
+        const res = await fetch('http://localhost:3001/api/request-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber }),
+        }).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.pairingCode) {
+            setWhatsappConfig((prev) => ({
+              ...prev,
+              pairing_code: data.pairingCode,
+              status: 'gerando_qrcode',
+            }));
+            toast(`Código de pareamento gerado: ${data.pairingCode}`, 'success');
+            return { success: true, code: data.pairingCode };
+          }
+        } else if (res) {
+          const errData = await res.json().catch(() => ({}));
+          return { success: false, error: errData.error || 'Erro ao solicitar código ao robô.' };
+        }
+      } catch {
+        // Fallback
+      }
+      return {
+        success: false,
+        error: 'Inicie o robô do WhatsApp na pasta "whatsapp a2" (npm start) para gerar o código real no seu celular.',
+      };
+    },
+    [toast]
+  );
+
   const disconnectWhatsApp = useCallback(() => {
+    fetch('http://localhost:3001/api/logout', { method: 'POST' }).catch(() => null);
     setWhatsappConfig((prev) => ({
       ...prev,
       conectado: false,
@@ -1284,6 +1320,34 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
             : ev
         )
       );
+
+      const rawPhone = (client?.telefone || client?.contato || '').replace(/\D/g, '');
+      if (rawPhone.length >= 10) {
+        const phoneWithCountry = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
+        const jid = `${phoneWithCountry}@c.us`;
+        fetch('http://localhost:3001/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phoneWithCountry, jid, message: msg }),
+        }).catch(() => null);
+        try {
+          const sb = createClient();
+          if (sb) {
+            sb.from('whatsapp_messages')
+              .insert({
+                chat_jid: jid,
+                contact_name: client?.nome || 'Restaurante',
+                body: msg,
+                from_me: true,
+                status: 'pending',
+                created_at: new Date().toISOString(),
+              })
+              .then(() => null, () => null);
+          }
+        } catch {
+          // Ignora se tabela outbox não existir
+        }
+      }
 
       return msg;
     },
@@ -1425,6 +1489,47 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [events, clients, toast]
   );
 
+  // Agendador automático: envia mensagem de confirmação no tempo escolhido para cada horário marcado
+  useEffect(() => {
+    if (!whatsappConfig.auto_confirmacao_d1) return;
+
+    const checkScheduledDispatches = () => {
+      const now = new Date();
+      events.forEach((ev) => {
+        if (ev.status !== 'agendado' || ev.confirmacao_whatsapp?.enviado) return;
+        const antecedenciaMin =
+          ev.tempo_antecedencia_minutos !== undefined && ev.tempo_antecedencia_minutos !== null
+            ? ev.tempo_antecedencia_minutos
+            : whatsappConfig.tempo_antecedencia_minutos ?? 1440;
+        if (antecedenciaMin < 0) return;
+
+        const client = clients.find((c) => c.id === ev.client_id);
+        if (antecedenciaMin === 0) {
+          dispatchConfirmationMessage(ev, client);
+          toast(`Confirmação enviada automaticamente via WhatsApp para ${client?.nome || 'o cliente'}!`, 'success');
+          return;
+        }
+
+        const timePart = (ev.hora_inicio || '09:00').slice(0, 5);
+        const eventStart = new Date(`${ev.data}T${timePart}:00`);
+        if (Number.isNaN(eventStart.getTime())) return;
+
+        const diffMinutes = (eventStart.getTime() - now.getTime()) / 60000;
+        if (diffMinutes <= antecedenciaMin && diffMinutes >= -60) {
+          dispatchConfirmationMessage(ev, client);
+          toast(
+            `Confirmação automática (${antecedenciaMin >= 60 ? `${Math.round(antecedenciaMin / 60)}h` : `${antecedenciaMin}min`} antes) enviada para ${client?.nome || 'o cliente'}!`,
+            'success'
+          );
+        }
+      });
+    };
+
+    checkScheduledDispatches();
+    const timer = setInterval(checkScheduledDispatches, 15000);
+    return () => clearInterval(timer);
+  }, [events, clients, whatsappConfig.auto_confirmacao_d1, whatsappConfig.tempo_antecedencia_minutos, dispatchConfirmationMessage, toast]);
+
   // Enriquecer entregáveis com relacionamentos
   const enrichedDeliverables = useMemo(() => {
     return deliverables.map((d) => ({
@@ -1553,6 +1658,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         sendManualWhatsAppConfirmation: guarded(canManage, sendManualWhatsAppConfirmation),
         processClientWhatsAppReply: guarded(canManage, processClientWhatsAppReply),
         connectWhatsApp: guarded(canManage, connectWhatsApp),
+        requestWhatsAppPairingCode: guarded(canManage, requestWhatsAppPairingCode),
         disconnectWhatsApp: guarded(canManage, disconnectWhatsApp),
       }}
     >

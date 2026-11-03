@@ -100,6 +100,7 @@ export interface EventItem {
   local?: string | null;
   observacoes?: string | null;
   briefing_gravacao?: string | null; // Roteiro específico, ganchos e lista de cenas da diária
+  tempo_antecedencia_minutos?: number | null; // Ex: 0 = imediato ao agendar, 60 = 1h antes, 1440 = 24h antes, -1 = desativado
   status: EventStatus;
   relatorio_filmmaker?: RelatorioFilmmaker;
   despesas?: DespesaGravacao[];
@@ -373,6 +374,7 @@ export interface WhatsAppConfig {
   qr_code?: string;
   auto_confirmacao_d1: boolean;
   horario_envio_padrao: string;
+  tempo_antecedencia_minutos?: number; // Padrão global em minutos antes da gravação (ex: 1440 = 24h, 120 = 2h, 0 = imediato)
   template_mensagem: string;
   tentativas_webhook: number;
   ultima_verificacao?: string;

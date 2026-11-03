@@ -31,6 +31,7 @@ export function WhatsAppAutomationView() {
     whatsappLogs,
     updateWhatsAppConfig,
     connectWhatsApp,
+    requestWhatsAppPairingCode,
     disconnectWhatsApp,
     checkAndSendD1Reminders,
     processClientWhatsAppReply,
@@ -47,6 +48,12 @@ export function WhatsAppAutomationView() {
   const [searchLog, setSearchLog] = useState('');
   const [logFilter, setLogFilter] = useState<'todos' | 'enviada' | 'respondida'>('todos');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [phoneForPairing, setPhoneForPairing] = useState('');
+  const [pairingError, setPairingError] = useState('');
+  const [isRequestingCode, setIsRequestingCode] = useState(false);
+  const [customMinutesInput, setCustomMinutesInput] = useState<string>(
+    String(whatsappConfig.tempo_antecedencia_minutos ?? 1440)
+  );
 
   // Eventos agendados elegíveis para teste ou confirmação
   const eligibleEvents = useMemo(() => {
@@ -57,8 +64,23 @@ export function WhatsAppAutomationView() {
 
   const handleConnect = async () => {
     setIsConnecting(true);
+    setPairingError('');
     await connectWhatsApp();
     setIsConnecting(false);
+  };
+
+  const handleRequestPairingCode = async () => {
+    if (!phoneForPairing.trim()) {
+      setPairingError('Digite o número do seu WhatsApp com DDD (ex: 11999998888).');
+      return;
+    }
+    setIsRequestingCode(true);
+    setPairingError('');
+    const res = await requestWhatsAppPairingCode(phoneForPairing.trim());
+    if (!res.success && res.error) {
+      setPairingError(res.error);
+    }
+    setIsRequestingCode(false);
   };
 
   const handleSimulateReply = (replyText: string) => {
@@ -265,21 +287,27 @@ export function WhatsAppAutomationView() {
 
             {/* Visualizador QR Code / Pairing Code */}
             <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
-              <div className="relative w-40 h-40 rounded-2xl bg-white p-2.5 shadow-inner flex items-center justify-center shrink-0">
+              <div className="relative w-44 h-44 rounded-2xl bg-white p-2.5 shadow-inner flex items-center justify-center shrink-0">
                 {whatsappConfig.conectado ? (
                   <div className="flex flex-col items-center justify-center text-center gap-2">
                     <CheckCircle2 className="w-12 h-12 text-emerald-500" />
                     <span className="text-[11px] font-bold text-zinc-800">Sessão Ativa</span>
                   </div>
+                ) : whatsappConfig.qr_code && whatsappConfig.qr_code.length > 15 ? (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappConfig.qr_code)}`}
+                    alt="QR Code Oficial WhatsApp"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center gap-1.5">
                     <QrCode className="w-24 h-24 text-zinc-800" />
-                    <span className="text-[10px] text-zinc-600 font-mono">Escaneie no WhatsApp</span>
+                    <span className="text-[10px] text-zinc-600 font-mono">Clique em Conectar</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2.5 flex-1 min-w-0 text-left">
+              <div className="flex flex-col gap-2.5 flex-1 min-w-0 text-left w-full">
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold">Instância Oficial</span>
                   <div className="text-xs font-bold text-foreground">
@@ -288,11 +316,40 @@ export function WhatsAppAutomationView() {
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">Código de Pareamento</span>
-                  <div className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 w-fit">
-                    {whatsappConfig.pairing_code || 'NW89-4KT2'}
+                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">Código de Pareamento (8 dígitos)</span>
+                  <div className="font-mono text-sm font-extrabold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 w-fit tracking-widest">
+                    {whatsappConfig.pairing_code || 'Aguardando...'}
                   </div>
                 </div>
+
+                {/* Conectar por Número de Telefone */}
+                {!whatsappConfig.conectado && (
+                  <div className="pt-1 flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-zinc-300 uppercase">
+                      Ou conecte digitando seu número (com DDD):
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        placeholder="Ex: 11999998888"
+                        value={phoneForPairing}
+                        onChange={(e) => setPhoneForPairing(e.target.value)}
+                        className="flex-1 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRequestPairingCode}
+                        disabled={isRequestingCode}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer shrink-0"
+                      >
+                        {isRequestingCode ? 'Gerando...' : 'Gerar Código'}
+                      </button>
+                    </div>
+                    {pairingError && (
+                      <span className="text-[11px] text-amber-400 leading-snug">{pairingError}</span>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 pt-2">
                   {whatsappConfig.conectado ? (
@@ -311,11 +368,91 @@ export function WhatsAppAutomationView() {
                       className="px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isConnecting ? 'animate-spin' : ''}`} />
-                      <span>{isConnecting ? 'Conectando...' : 'Conectar Instância'}</span>
+                      <span>{isConnecting ? 'Buscando QR Code...' : 'Conectar / Atualizar QR Code'}</span>
                     </button>
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Campo Rápido: Envie mensagem de confirmação a (tempo escolhido) */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-emerald-400" />
+                  <span>Envie mensagem de confirmação a (tempo escolhido):</span>
+                </label>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                  Automático quando há horário marcado
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select
+                  value={
+                    ['0', '15', '30', '60', '120', '240', '360', '720', '1440', '2880'].includes(
+                      String(whatsappConfig.tempo_antecedencia_minutos ?? 1440)
+                    )
+                      ? String(whatsappConfig.tempo_antecedencia_minutos ?? 1440)
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val !== 'custom') {
+                      const num = Number(val);
+                      setCustomMinutesInput(String(num));
+                      updateWhatsAppConfig({ tempo_antecedencia_minutos: num, auto_confirmacao_d1: true });
+                    }
+                  }}
+                  className="w-full bg-[var(--ui-surface)] border border-emerald-500/30 rounded-xl px-3 py-2 text-xs text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="0">Imediatamente quando o horário for marcado</option>
+                  <option value="15">15 minutos antes do horário marcado</option>
+                  <option value="30">30 minutos antes do horário marcado</option>
+                  <option value="60">1 hora antes do horário marcado</option>
+                  <option value="120">2 horas antes do horário marcado</option>
+                  <option value="240">4 horas antes do horário marcado</option>
+                  <option value="360">6 horas antes do horário marcado</option>
+                  <option value="720">12 horas antes do horário marcado</option>
+                  <option value="1440">24 horas (1 dia) antes do horário marcado</option>
+                  <option value="2880">48 horas (2 dias) antes do horário marcado</option>
+                  <option value="custom">Personalizado (digitar minutos ao lado)</option>
+                </select>
+
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={10080}
+                    value={customMinutesInput}
+                    onChange={(e) => setCustomMinutesInput(e.target.value)}
+                    placeholder="Minutos (ex: 90)"
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mins = Math.max(0, Number(customMinutesInput) || 0);
+                      updateWhatsAppConfig({ tempo_antecedencia_minutos: mins, auto_confirmacao_d1: true });
+                    }}
+                    className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xs cursor-pointer shrink-0"
+                  >
+                    Salvar min
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-300">
+                Atualmente configurado para disparar automaticamente{' '}
+                <strong className="text-emerald-300">
+                  {(whatsappConfig.tempo_antecedencia_minutos ?? 1440) === 0
+                    ? 'imediatamente assim que o horário é marcado'
+                    : (whatsappConfig.tempo_antecedencia_minutos ?? 1440) >= 60 &&
+                      (whatsappConfig.tempo_antecedencia_minutos ?? 1440) % 60 === 0
+                    ? `${(whatsappConfig.tempo_antecedencia_minutos ?? 1440) / 60} hora(s) antes do horário marcado`
+                    : `${whatsappConfig.tempo_antecedencia_minutos ?? 1440} minuto(s) antes do horário marcado`}
+                </strong>
+                . Você também pode escolher um tempo diferente individualmente ao criar cada gravação na Agenda.
+              </p>
             </div>
 
             {/* Informações da Integração com o Robô Local */}
