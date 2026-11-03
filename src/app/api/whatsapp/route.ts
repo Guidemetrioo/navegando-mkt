@@ -3,8 +3,6 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const runtime = 'nodejs';
-
 const BOT_BASE_URL = process.env.WHATSAPP_BOT_URL || 'http://localhost:3001';
 
 let lastSpawnAttempt = 0;
@@ -60,7 +58,8 @@ function ensureLocalBotStarted() {
   return false;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  void req.headers.get('user-agent');
   const res = await fetchBot('/api/status');
   if (res && res.ok) {
     const data = await res.json();
@@ -209,3 +208,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
