@@ -5,6 +5,8 @@ export const INITIAL_WHATSAPP_CONFIG: WhatsAppConfig = {
   status: 'desconectado',
   instancia_nome: 'Navegando MKT • Atendimento Oficial',
   numero_conectado: '',
+  qr_code: '2@NavegandoMKT-WhatsApp-MultiDevice-Session-Auth-2026',
+  pairing_code: 'NV84-29KT',
   auto_confirmacao_d1: true,
   horario_envio_padrao: '09:00',
   tempo_antecedencia_minutos: 1440,

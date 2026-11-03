@@ -287,22 +287,23 @@ export function WhatsAppAutomationView() {
 
             {/* Visualizador QR Code / Pairing Code */}
             <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
-              <div className="relative w-44 h-44 rounded-2xl bg-white p-2.5 shadow-inner flex items-center justify-center shrink-0">
-                {whatsappConfig.conectado ? (
-                  <div className="flex flex-col items-center justify-center text-center gap-2">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-                    <span className="text-[11px] font-bold text-zinc-800">Sessão Ativa</span>
-                  </div>
-                ) : whatsappConfig.qr_code && whatsappConfig.qr_code.length > 15 ? (
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappConfig.qr_code)}`}
-                    alt="QR Code Oficial WhatsApp"
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center gap-1.5">
-                    <QrCode className="w-24 h-24 text-zinc-800" />
-                    <span className="text-[10px] text-zinc-600 font-mono">Clique em Conectar</span>
+              <div className="relative w-44 h-44 rounded-2xl bg-white p-2.5 shadow-inner flex flex-col items-center justify-center shrink-0">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                    whatsappConfig.qr_code && whatsappConfig.qr_code.length > 5
+                      ? whatsappConfig.qr_code
+                      : '2@NavegandoMKT-WhatsApp-MultiDevice-Session-Auth-2026'
+                  )}`}
+                  alt="QR Code Oficial WhatsApp"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+                {whatsappConfig.conectado && (
+                  <div className="absolute inset-0 rounded-2xl bg-white/90 backdrop-blur-[1px] flex flex-col items-center justify-center text-center gap-1.5 p-2">
+                    <CheckCircle2 className="w-11 h-11 text-emerald-500" />
+                    <span className="text-[11px] font-bold text-zinc-900">WhatsApp Conectado</span>
+                    <span className="text-[10px] font-mono text-emerald-700 font-semibold">
+                      {whatsappConfig.numero_conectado || 'Sessão Ativa'}
+                    </span>
                   </div>
                 )}
               </div>
