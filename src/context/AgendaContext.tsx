@@ -1194,7 +1194,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const connectWhatsApp = useCallback(async () => {
     try {
       setWhatsappConfig((prev) => ({ ...prev, status: 'gerando_qrcode' }));
-      const res = await fetch('http://localhost:3001/api/status', { method: 'GET' }).catch(() => null);
+      const res = await fetch('/api/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'connect' }),
+      }).catch(() => null);
       if (res && res.ok) {
         const data = await res.json();
         setWhatsappConfig((prev) => ({
@@ -1205,7 +1209,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           qr_code: data.qrCode || prev.qr_code,
           numero_conectado: data.phoneNumber || prev.numero_conectado,
         }));
-        toast('Instância local do WhatsApp conectada (Porta 3001)!', 'success');
+        toast(
+          data.conectado
+            ? 'WhatsApp conectado com sucesso!'
+            : data.qrCode
+            ? 'QR Code pronto na tela! Escaneie com seu celular.'
+            : 'Iniciando conexão direta com o WhatsApp... O QR Code aparecerá em instantes.',
+          data.conectado ? 'success' : 'info'
+        );
         return;
       }
     } catch {
@@ -1227,10 +1238,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const requestWhatsAppPairingCode = useCallback(
     async (phoneNumber: string): Promise<{ success: boolean; code?: string; error?: string }> => {
       try {
-        const res = await fetch('http://localhost:3001/api/request-code', {
+        const res = await fetch('/api/whatsapp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber }),
+          body: JSON.stringify({ action: 'request-code', phoneNumber }),
         }).catch(() => null);
         if (res && res.ok) {
           const data = await res.json();
@@ -1240,26 +1251,30 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
               pairing_code: data.pairingCode,
               status: 'gerando_qrcode',
             }));
-            toast(`Código de pareamento gerado: ${data.pairingCode}`, 'success');
+            toast(`Código gerado: ${data.pairingCode}. Digite no seu WhatsApp!`, 'success');
             return { success: true, code: data.pairingCode };
           }
         } else if (res) {
           const errData = await res.json().catch(() => ({}));
-          return { success: false, error: errData.error || 'Erro ao solicitar código ao robô.' };
+          return { success: false, error: errData.error || 'Aguarde o QR Code aparecer e tente novamente.' };
         }
       } catch {
         // Fallback
       }
       return {
         success: false,
-        error: 'Inicie o robô do WhatsApp na pasta "whatsapp a2" (npm start) para gerar o código real no seu celular.',
+        error: 'Clique primeiro em "Gerar QR Code na Tela", aguarde alguns segundos e tente novamente.',
       };
     },
     [toast]
   );
 
   const disconnectWhatsApp = useCallback(() => {
-    fetch('http://localhost:3001/api/logout', { method: 'POST' }).catch(() => null);
+    fetch('/api/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' }),
+    }).catch(() => null);
     setWhatsappConfig((prev) => ({
       ...prev,
       conectado: false,
@@ -1488,6 +1503,33 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     },
     [events, clients, toast]
   );
+
+  // Sincroniza automaticamente o QR Code e status do WhatsApp quando a tela WhatsApp está aberta
+  useEffect(() => {
+    if (currentView !== 'whatsapp') return;
+
+    const syncBotStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp', { method: 'GET' }).catch(() => null);
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        setWhatsappConfig((prev) => ({
+          ...prev,
+          conectado: Boolean(data.conectado),
+          status: data.conectado ? 'conectado' : data.qrCode ? 'gerando_qrcode' : prev.status,
+          qr_code: data.qrCode || prev.qr_code,
+          pairing_code: data.pairingCode || prev.pairing_code,
+          numero_conectado: data.phoneNumber || prev.numero_conectado,
+        }));
+      } catch {
+        // Ignora erro silencioso de rede
+      }
+    };
+
+    syncBotStatus();
+    const poll = setInterval(syncBotStatus, 3500);
+    return () => clearInterval(poll);
+  }, [currentView]);
 
   // Agendador automático: envia mensagem de confirmação no tempo escolhido para cada horário marcado
   useEffect(() => {

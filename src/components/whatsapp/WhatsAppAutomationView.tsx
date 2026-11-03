@@ -455,15 +455,23 @@ export function WhatsAppAutomationView() {
               </p>
             </div>
 
-            {/* Informações da Integração com o Robô Local */}
-            <div className="p-3.5 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-2 text-xs">
-              <div className="flex items-center gap-2 text-foreground font-semibold">
-                <Terminal className="w-4 h-4 text-[#38bdf8]" />
-                <span>Integração Direta com os Robôs Disponíveis</span>
+            {/* Passo a Passo Intuitivo para Funcionários */}
+            <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-2.5 text-xs">
+              <div className="flex items-center gap-2 text-foreground font-bold">
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Como Conectar o WhatsApp Direto pelo Sistema (3 Passos Simples)</span>
               </div>
-              <p className="text-[11px] text-zinc-400">
-                Se você iniciar o bot do repositório local (<code className="text-foreground">..\whatsapp\whatsapp a2</code> na porta 3001), o CRM se conecta de forma direta. Sem o servidor rodando, o CRM utiliza a engine integrada de automação com persistência local.
-              </p>
+              <ol className="text-[11px] text-zinc-300 space-y-1.5 pl-4 list-decimal">
+                <li>
+                  Clique no botão <strong>&ldquo;Conectar / Atualizar QR Code&rdquo;</strong> acima (o sistema inicia a conexão sozinho).
+                </li>
+                <li>
+                  No seu celular, abra o <strong>WhatsApp ➔ Aparelhos Conectados ➔ Conectar um aparelho</strong>.
+                </li>
+                <li>
+                  Aponte a câmera para o <strong>QR Code da tela</strong> (ou digite seu telefone acima e clique em <strong>Gerar Código</strong> para conectar com o código de 8 letras).
+                </li>
+              </ol>
             </div>
           </div>
 
