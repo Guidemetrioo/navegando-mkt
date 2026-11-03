@@ -173,13 +173,13 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
   clientes: {
     view: 'clientes',
     title: 'Clientes & Restaurantes (Dossiê 360º)',
-    subtitle: 'Cadastro completo da carteira de restaurantes parceiros, contratos, briefing e coordenadas GPS',
+    subtitle: 'Cadastro completo da carteira de restaurantes parceiros, contratos e briefing',
     category: 'Comercial & Operação',
     purpose:
-      'Aqui ficam armazenados todos os restaurantes atendidos pela agência. Este é o cadastro-base mais importante do sistema: ele abastece a Agenda de Gravações, valida o raio de GPS do Ponto Externo, organiza as pastas do Google Drive e alimenta as mensalidades no Controle Financeiro.',
+      'Aqui ficam armazenados todos os restaurantes atendidos pela agência. Este é o cadastro-base mais importante do sistema: ele abastece a Agenda de Gravações, organiza as pastas do Google Drive e alimenta as mensalidades no Controle Financeiro.',
     installedFunctions: [
       'Cadastro completo com Nome, Responsável, WhatsApp, @Instagram, Endereço e Link do Cardápio',
-      'Coordenadas de GPS (Latitude e Longitude) para validação automática de presença no restaurante',
+      'Integração direta com a pasta de arquivos do cliente no Google Drive',
       'Dados de Contrato (Plano contratado, Meta mensal de Reels e Valor da Mensalidade)',
       'Dossiê 360º do Cliente: clique em qualquer restaurante para ver todo o histórico de gravações, vídeos, métricas e briefing em uma única janela',
     ],
@@ -197,12 +197,12 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
       {
         stepTitle: '2. Preencha os dados operacionais e o Briefing',
         description:
-          'Informe nome, telefone WhatsApp (com DDD, para envio de confirmação D-1), link da pasta do Google Drive e o briefing estético do restaurante.',
+          'Informe nome, endereço, telefone WhatsApp (com DDD, para envio de confirmação D-1), link da pasta do Google Drive e o briefing estético do restaurante.',
       },
       {
-        stepTitle: '3. Insira a Latitude e Longitude do Restaurante',
+        stepTitle: '3. Defina o Plano, Meta de Reels e Mensalidade',
         description:
-          'Abra o Google Maps, clique com o botão direito sobre o restaurante e copie os dois números (ex: -23.5605, -46.5985). Isso ativa a conferência de distância quando a equipe bater ponto lá!',
+          'Informe o plano contratado, quantos Reels o restaurante deve receber por mês e o valor da mensalidade para alimentar os indicadores e o Financeiro.',
       },
     ],
     exampleTitle: 'Exemplo de Ficha de Restaurante Preenchida',
@@ -219,9 +219,8 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
         value: 'Chef Marco Bellini • (11) 98877-6655',
       },
       {
-        label: 'Endereço & Coordenadas GPS (Google Maps)',
-        value: 'Rua dos Pinheiros, 450 - Pinheiros, SP • Lat: -23.5638 / Lng: -46.6854',
-        hint: 'Usado pelo radar de ponto para confirmar que a equipe está a menos de 300m do local.',
+        label: 'Endereço do Restaurante',
+        value: 'Rua dos Pinheiros, 450 - Pinheiros, São Paulo - SP',
       },
       {
         label: 'Plano, Meta Mensal & Mensalidade',

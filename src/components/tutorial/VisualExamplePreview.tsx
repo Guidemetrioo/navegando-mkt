@@ -161,28 +161,14 @@ export function VisualExamplePreview({ view }: VisualExamplePreviewProps) {
 
             <div className="sm:col-span-2">
               <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
-                Endereço Completo + Coordenadas GPS (Para Validação do Ponto)
+                Endereço Completo do Restaurante
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value="Rua dos Pinheiros, 450 - Pinheiros, SP"
-                  className="sm:col-span-1 px-3 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground"
-                />
-                <input
-                  type="text"
-                  readOnly
-                  value="Lat: -23.5638"
-                  className="px-3 py-2 rounded-xl bg-[var(--ui-surface)] border border-sky-500/40 text-xs text-sky-300 font-mono"
-                />
-                <input
-                  type="text"
-                  readOnly
-                  value="Lng: -46.6854"
-                  className="px-3 py-2 rounded-xl bg-[var(--ui-surface)] border border-sky-500/40 text-xs text-sky-300 font-mono"
-                />
-              </div>
+              <input
+                type="text"
+                readOnly
+                value="Rua dos Pinheiros, 450 - Pinheiros, São Paulo - SP"
+                className="w-full px-3 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground"
+              />
             </div>
 
             <div>

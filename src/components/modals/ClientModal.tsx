@@ -36,8 +36,6 @@ export function ClientModal() {
   const [valorMensalidade, setValorMensalidade] = useState<number>(3800);
   const [cardapioLink, setCardapioLink] = useState('');
   const [briefing, setBriefing] = useState('');
-  const [latitude, setLatitude] = useState<string>('');
-  const [longitude, setLongitude] = useState<string>('');
 
   useEffect(() => {
     if (isClientModalOpen) {
@@ -56,8 +54,6 @@ export function ClientModal() {
         setValorMensalidade(editingClient.valor_mensalidade ?? 0);
         setCardapioLink(editingClient.cardapio_link || '');
         setBriefing(editingClient.briefing || '');
-        setLatitude(editingClient.latitude==null ? '' : String(editingClient.latitude));
-        setLongitude(editingClient.longitude==null ? '' : String(editingClient.longitude));
       } else {
         setNome('');
         setInstagramHandle('');
@@ -72,8 +68,6 @@ export function ClientModal() {
         setValorMensalidade(0);
         setCardapioLink('');
         setBriefing('');
-        setLatitude('');
-        setLongitude('');
       }
     }
   }, [isClientModalOpen, editingClient]);
@@ -102,8 +96,6 @@ export function ClientModal() {
       valor_mensalidade: valorMensalidade || 0,
       cardapio_link: cardapioLink.trim() || undefined,
       briefing: briefing.trim() || undefined,
-      latitude:latitude.trim()==='' ? null : Number(latitude),
-      longitude:longitude.trim()==='' ? null : Number(longitude),
     };
 
     if (editingClient) {
@@ -187,7 +179,7 @@ export function ClientModal() {
           {/* Endereço */}
           <div>
             <label className="block font-semibold text-zinc-300 mb-1">
-              Endereço Físico (para validação do GPS do ponto)
+              Endereço do Restaurante
             </label>
             <input
               type="text"
@@ -200,11 +192,6 @@ export function ClientModal() {
 
           {/* Responsável e Telefone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="grid gap-1 text-xs text-zinc-300">Latitude real (opcional)<input type="number" step="any" min={-90} max={90} value={latitude} onChange={e=>setLatitude(e.target.value)} placeholder="Ex.: -23.5505" className="w-full border border-[var(--ui-border)] bg-[var(--ui-raised)] p-2 rounded-lg" /></label>
-              <label className="grid gap-1 text-xs text-zinc-300">Longitude real (opcional)<input type="number" step="any" min={-180} max={180} value={longitude} onChange={e=>setLongitude(e.target.value)} placeholder="Ex.: -46.6333" className="w-full border border-[var(--ui-border)] bg-[var(--ui-raised)] p-2 rounded-lg" /></label>
-              <p className="text-xs text-zinc-500 sm:col-span-2">Confirme o ponto exato do restaurante no mapa. Sem essas coordenadas, o sistema não validará o raio do ponto externo.</p>
-            </div>
             <div>
               <label className="block font-semibold text-zinc-300 mb-1">
                 Nome do Gerente / Responsável
