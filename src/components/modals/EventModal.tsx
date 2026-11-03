@@ -220,15 +220,13 @@ export function EventModal() {
     closeEventModal();
   };
 
-  const currentEventExpenses = useMemo(() => {
-    const list = editingEvent?.despesas || [];
-    if (userRole === 'admin') return list;
-    return list.filter((d) => d.employee_id === loggedEmployeeId);
-  }, [editingEvent?.despesas, userRole, loggedEmployeeId]);
+  const listDespesas = editingEvent?.despesas || [];
+  const currentEventExpenses =
+    userRole === 'admin'
+      ? listDespesas
+      : listDespesas.filter((d) => d.employee_id === loggedEmployeeId);
 
-  const totalEventExpenses = useMemo(() => {
-    return currentEventExpenses.reduce((sum, d) => sum + d.valor, 0);
-  }, [currentEventExpenses]);
+  const totalEventExpenses = currentEventExpenses.reduce((sum, d) => sum + d.valor, 0);
 
   const handleDespFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
