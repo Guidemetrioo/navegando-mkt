@@ -29,7 +29,7 @@ import { INITIAL_EMPLOYEES, INITIAL_CLIENTS, INITIAL_EVENTS } from '@/lib/supaba
 import { INITIAL_REELS, INITIAL_MENTIONS, INITIAL_SOCIAL_ACCOUNTS } from '@/lib/supabase/mock-social-data';
 import { INITIAL_PONTOS } from '@/lib/supabase/mock-ponto-data';
 import { INITIAL_DELIVERABLES } from '@/lib/supabase/mock-deliverables-data';
-import { INITIAL_SALARIOS, INITIAL_DESPESAS_GRAVACOES, INITIAL_TRANSACOES } from '@/lib/supabase/mock-financial-data';
+import { INITIAL_SALARIOS, INITIAL_DESPESAS_GRAVACOES, INITIAL_TRANSACOES, isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
 import { whatsappConnection, normalizeWhatsAppPhone, validPairingCode } from '@/lib/whatsapp-connection';
 import { INITIAL_WHATSAPP_CONFIG, INITIAL_WHATSAPP_LOGS } from '@/lib/supabase/mock-whatsapp-data';
 import { findEventConflicts } from '@/lib/conflicts';
@@ -290,7 +290,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
 
   // State Ponto Eletrônico & Geolocalização
-  const [pontos, setPontos] = useState<PontoRegistro[]>(IS_DEMO ? INITIAL_PONTOS : []);
+  const [pontos, setPontos] = useState<PontoRegistro[]>(INITIAL_PONTOS);
   const [isPontoModalOpen, setIsPontoModalOpen] = useState(false);
   const [pontoModalConfig, setPontoModalConfig] = useState<{
     preselectedClientId?: string;
@@ -299,9 +299,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   } | null>(null);
 
   // Gestão Financeira (Apenas Gestores)
-  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(IS_DEMO ? INITIAL_TRANSACOES : []);
-  const [salarios, setSalarios] = useState<FuncionarioSalario[]>(IS_DEMO ? INITIAL_SALARIOS : []);
-  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>(IS_DEMO ? INITIAL_DESPESAS_GRAVACOES : []);
+  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(INITIAL_TRANSACOES);
+  const [salarios, setSalarios] = useState<FuncionarioSalario[]>(INITIAL_SALARIOS);
+  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>(INITIAL_DESPESAS_GRAVACOES);
 
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
@@ -318,18 +318,22 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     const missing = INITIAL_EVENTS.filter((e) => !byId.has(e.id));
     return missing.length ? [...(list || []), ...missing] : list || [];
   }, []);
-  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions,despesas:extraDespesas,transacoes,salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
+  const mergeInitialPontos = useCallback((list: PontoRegistro[], empId?: string, manager?: boolean): PontoRegistro[] => { const real = (list || []).filter((p) => !isSimulatedRecord(p.id)); const byId = new Set(real.map((p) => p.id)); const simPool = manager || !empId ? INITIAL_PONTOS : INITIAL_PONTOS.filter((p) => p.employee_id === empId); return [...real, ...simPool.filter((p) => !byId.has(p.id))].sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime()); }, []);
+  const mergeInitialDespesas = useCallback((list: DespesaGravacao[], empId?: string, manager?: boolean): DespesaGravacao[] => { const real = (list || []).filter((d) => !isSimulatedRecord(d.id)); const byId = new Set(real.map((d) => d.id)); const simPool = manager || !empId ? INITIAL_DESPESAS_GRAVACOES : INITIAL_DESPESAS_GRAVACOES.filter((d) => d.employee_id === empId); return [...real, ...simPool.filter((d) => !byId.has(d.id))]; }, []);
+  const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
+  const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
+  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
     const managerSeed = isManager(member?.role);
     setEmployees(data.employees);
     setClients(managerSeed ? mergeInitialClients(data.clients) : data.clients);
     setEvents(managerSeed ? mergeInitialEvents(data.events) : data.events);
-    setPontos(data.pontos);
+    setPontos(mergeInitialPontos(data.pontos, member?.employee_id, managerSeed));
     setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
-    setExtraDespesas(data.despesas);setTransacoes(data.transacoes);setSalarios(data.salarios);
+    setExtraDespesas(mergeInitialDespesas(data.despesas, member?.employee_id, managerSeed));setTransacoes(managerSeed ? mergeInitialTransacoes(data.transacoes) : data.transacoes);setSalarios(managerSeed ? mergeInitialSalarios(data.salarios) : data.salarios);
     setIsAuthenticated(Boolean(member));
     if(member) {setLoggedEmployeeId(member.employee_id);}
-  },[mergeInitialClients,mergeInitialEvents]);
+  },[mergeInitialClients,mergeInitialEvents,mergeInitialPontos,mergeInitialDespesas,mergeInitialTransacoes,mergeInitialSalarios]);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
   const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao;
   const canManage=isManager(memberRole);
@@ -356,18 +360,18 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         for(const key of ['employees','clients','events','pontos','deliverables','reels','mentions'] as const) if(!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
         const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
           (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        setEmployees(ensureOfficial(saved.employees));setClients(mergeInitialClients(saved.clients));setEvents(mergeInitialEvents(saved.events));setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
+        setEmployees(ensureOfficial(saved.employees));setClients(mergeInitialClients(saved.clients));setEvents(mergeInitialEvents(saved.events));setPontos(mergeInitialPontos(sanitizePontos(saved.pontos), undefined, true));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
       }
 
       const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
       if (savedFin) {
         const parsedFin = JSON.parse(savedFin);
-        if (Array.isArray(parsedFin.transacoes)) setTransacoes(parsedFin.transacoes);
+        if (Array.isArray(parsedFin.transacoes)) setTransacoes(mergeInitialTransacoes(parsedFin.transacoes));
         if (Array.isArray(parsedFin.salarios)) {
           const salById = new Map((parsedFin.salarios as FuncionarioSalario[]).map((s) => [s.employee_id, s]));
-          setSalarios(INITIAL_SALARIOS.map((def) => (salById.has(def.employee_id) ? { ...def, ...salById.get(def.employee_id)! } : def)));
+          setSalarios(mergeInitialSalarios(parsedFin.salarios));
         }
-        if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(parsedFin.extraDespesas);
+        if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(mergeInitialDespesas(parsedFin.extraDespesas, undefined, true));
       }
 
       const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');

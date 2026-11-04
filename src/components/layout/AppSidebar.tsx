@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { IS_DEMO } from '@/lib/app-mode';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
+import { HIERARCHY_LABELS } from '@/lib/employee-login-matcher';
 import {
   LayoutDashboard,
   Calendar,
@@ -379,6 +380,9 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                   </div>
                   <div className="text-[10px] text-zinc-400 truncate">
                     {USERS_DATABASE.find((u) => u.employeeId === currentMember.id)?.cargo || currentMember.funcao}
+                  </div>
+                  <div className="text-[9px] font-bold text-[var(--ui-accent)] truncate">
+                    {HIERARCHY_LABELS[currentMember.funcao || 'interno']?.nivel || 'Equipe'} • {HIERARCHY_LABELS[currentMember.funcao || 'interno']?.label || currentMember.funcao}
                   </div>
                 </div>
               </div>

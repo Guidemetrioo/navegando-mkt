@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { todayInSaoPaulo } from '@/lib/date-utils';
+import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
 import { useAgenda } from '@/context/AgendaContext';
 import { filterPontoHistory } from '@/lib/ponto-history';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -40,6 +41,7 @@ export function PontoView() {
   const [selectedFilterEmpId, setSelectedFilterEmpId] = useState<string>('all');
   const [selectedFilterClientId, setSelectedFilterClientId] = useState<string>('all');
   const [selectedFilterTipo, setSelectedFilterTipo] = useState<string>('all');
+  const [originFilter, setOriginFilter] = useState<'todos' | 'reais' | 'simulados'>('todos');
   const [activeTab, setActiveTab] = useState<'cards' | 'tabela'>(isManagerOrOwner ? 'tabela' : 'cards');
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; nome: string; dataHora: string } | null>(null);
 
@@ -48,7 +50,7 @@ export function PontoView() {
   useEffect(() => {
     queueMicrotask(() => {
       const today = todayInSaoPaulo();
-      setStartDate(today); setEndDate(today);
+      setStartDate('2026-10-05'); setEndDate(today);
     });
   }, []);
   const closePhotoRef = useRef<HTMLButtonElement>(null);
@@ -74,7 +76,8 @@ export function PontoView() {
     ? pontos.filter(p => p.employee_id === loggedEmployeeId)
     : pontos;
   const invalidPeriod = Boolean(startDate && endDate && startDate > endDate);
-  const filteredPontos = filterPontoHistory(pontos, currentMember?.funcao, loggedEmployeeId, {
+  const originFilteredPontos = pontos.filter((p) => originFilter === 'todos' ? true : originFilter === 'reais' ? !isSimulatedRecord(p.id) : isSimulatedRecord(p.id));
+  const filteredPontos = filterPontoHistory(originFilteredPontos, currentMember?.funcao, loggedEmployeeId, {
     employeeId: isManagerOrOwner ? selectedFilterEmpId : 'all',
     clientId: selectedFilterClientId, tipo: selectedFilterTipo, startDate, endDate,
   });
@@ -243,7 +246,7 @@ export function PontoView() {
             <option value="all">Todas as batidas</option>
             <option value="entrada">Apenas Entradas</option>
             <option value="almoco">Apenas Almoço</option>
-            <option value="saida">Apenas Saídas</option>
+            <option value="saida">Apenas Saídas</option></select><select aria-label="Origem dos registros" value={originFilter} onChange={(e) => setOriginFilter(e.target.value as 'todos' | 'reais' | 'simulados')} className="text-xs bg-[var(--ui-raised)] text-zinc-200 border border-[var(--ui-border)] rounded-xl px-3 py-1.5"><option value="todos">Todos (Reais + Simulados)</option><option value="reais">Apenas Reais</option><option value="simulados">Apenas Simulados (1 Mês)</option>
           </select>
         </div>
 
@@ -334,7 +337,7 @@ export function PontoView() {
                 {/* Header do Cartão */}
                 <div className="p-4 pb-3 flex items-start justify-between border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100 min-h-[56px]">
                   <div className="flex items-center gap-2.5">
-                    {p.employee ? <EmployeeBadge employee={p.employee} size="md" showRole /> : <span>{p.employee_id}</span>}
+                    {p.employee ? <EmployeeBadge employee={p.employee} size="md" showRole /> : <span>{p.employee_id}</span>}<span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${isSimulatedRecord(p.id) ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'}`}>{isSimulatedRecord(p.id) ? 'SIMULADO' : 'REAL'}</span>
                   </div>
 
                   {p.tipo === 'entrada' && (
@@ -519,7 +522,7 @@ export function PontoView() {
                         )}
                       </td>
                       <td className="py-2.5 px-4 font-semibold text-foreground">
-                        {p.employee ? <EmployeeBadge employee={p.employee} size="sm" showRole /> : <span>{p.employee_id}</span>}
+                        <div className="flex items-center gap-1.5">{p.employee ? <EmployeeBadge employee={p.employee} size="sm" showRole /> : <span>{p.employee_id}</span>}<span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${isSimulatedRecord(p.id) ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'}`}>{isSimulatedRecord(p.id) ? 'SIMULADO' : 'REAL'}</span></div>
                       </td>
                       <td className="py-2.5 px-4">
                         {p.tipo === 'entrada' && (

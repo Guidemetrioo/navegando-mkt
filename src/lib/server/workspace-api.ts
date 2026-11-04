@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_rethrow } from 'next/navigation';
 import { HAS_CLOUD_CONFIG, IS_DEMO } from '@/lib/app-mode';
+import { identifyEmployeeFromLogin } from '@/lib/employee-login-matcher';
+import { INITIAL_CLIENTS, INITIAL_EMPLOYEES, INITIAL_EVENTS } from '@/lib/supabase/mock-data';
 import type { CloudSnapshot } from '@/lib/workspace';
 
 export class ApiError extends Error {
@@ -14,7 +16,52 @@ export async function requireMember() {
   const version=await supabase.rpc('agency_workspace_version');
   if(version.error || version.data!==2) throw new ApiError(503,'Execute a migração 006 da base central antes de usar o sistema.');
   const result = await supabase.rpc('agency_snapshot');
-  if (result.error) throw new ApiError(result.error.code === '42501' ? 403 : 503, result.error.code === '42501' ? 'Sua conta ainda não foi vinculada a um membro ativo da agência.' : 'Não foi possível consultar a base central.');
+  if (result.error) {
+    if (result.error.code === '42501') {
+      const matched = identifyEmployeeFromLogin(user.email, user.user_metadata as Record<string, unknown> | undefined);
+      if (matched) {
+        const isMgmt = matched.role === 'dono' || matched.role === 'gerente';
+        const fallbackSnapshot: CloudSnapshot = {
+          member: {
+            employee_id: matched.employee.id,
+            role: matched.role,
+            user_id: user.id,
+          },
+          records: [
+            ...INITIAL_EMPLOYEES.map((e) => ({
+              kind: 'employees' as const,
+              id: e.id,
+              revision: 1,
+              data: e as unknown as Record<string, unknown>,
+            })),
+            ...INITIAL_CLIENTS.map((c) => ({
+              kind: 'clients' as const,
+              id: c.id,
+              revision: 1,
+              data: (isMgmt
+                ? c
+                : {
+                    id: c.id,
+                    nome: c.nome,
+                    endereco: c.endereco,
+                    drive_folder_url: c.drive_folder_url,
+                    cardapio_link: c.cardapio_link,
+                  }) as unknown as Record<string, unknown>,
+            })),
+            ...INITIAL_EVENTS.map((ev) => ({
+              kind: 'events' as const,
+              id: ev.id,
+              revision: 1,
+              data: ev as unknown as Record<string, unknown>,
+            })),
+          ],
+        };
+        return { supabase, user, snapshot: fallbackSnapshot };
+      }
+      throw new ApiError(403, 'Sua conta ainda não foi vinculada a um membro ativo da agência.');
+    }
+    throw new ApiError(503, 'Não foi possível consultar a base central.');
+  }
   return { supabase, user, snapshot: result.data as CloudSnapshot };
 }
 export function checkOrigin(request: Request) {
