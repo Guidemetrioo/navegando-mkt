@@ -309,14 +309,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   const [localHydrated,setLocalHydrated] = useState(false);
   const mergeInitialClients = useCallback((list: Client[]): Client[] => {
-    const byId = new Set((list || []).map((c) => c.id));
-    const missing = INITIAL_CLIENTS.filter((c) => !byId.has(c.id));
-    return missing.length ? [...(list || []), ...missing] : list || [];
+    const defById = new Map(INITIAL_CLIENTS.map((c) => [c.id, c])); const enrichedClients = (list || []).map((c) => { const def = defById.get(c.id); return def ? { ...c, nome: def.nome || c.nome, endereco: def.endereco || c.endereco, telefone: def.telefone || c.telefone, contato: def.contato || c.contato, latitude: def.latitude ?? c.latitude, longitude: def.longitude ?? c.longitude } : c; }); const byId = new Set(enrichedClients.map((c) => c.id));
+    const missing = INITIAL_CLIENTS.filter((c) => !byId.has(c.id)); return missing.length ? [...enrichedClients, ...missing] : enrichedClients;
+    /* fim merge */
   }, []);
   const mergeInitialEvents = useCallback((list: EventItem[]): EventItem[] => {
     const byId = new Set((list || []).map((e) => e.id));
-    const missing = INITIAL_EVENTS.filter((e) => !byId.has(e.id));
-    return missing.length ? [...(list || []), ...missing] : list || [];
+    const missing = INITIAL_EVENTS.filter((e) => !byId.has(e.id)); return missing.length ? [...(list || []), ...missing] : list || [];
+    /* fim merge */
   }, []);
   const mergeInitialPontos = useCallback((list: PontoRegistro[], empId?: string, manager?: boolean): PontoRegistro[] => { const real = (list || []).filter((p) => !isSimulatedRecord(p.id)); const byId = new Set(real.map((p) => p.id)); const simPool = manager || !empId ? INITIAL_PONTOS : INITIAL_PONTOS.filter((p) => p.employee_id === empId); return [...real, ...simPool.filter((p) => !byId.has(p.id))].sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime()); }, []);
   const mergeInitialDespesas = useCallback((list: DespesaGravacao[], empId?: string, manager?: boolean): DespesaGravacao[] => { const real = (list || []).filter((d) => !isSimulatedRecord(d.id)); const byId = new Set(real.map((d) => d.id)); const simPool = manager || !empId ? INITIAL_DESPESAS_GRAVACOES : INITIAL_DESPESAS_GRAVACOES.filter((d) => d.employee_id === empId); return [...real, ...simPool.filter((d) => !byId.has(d.id))]; }, []);
