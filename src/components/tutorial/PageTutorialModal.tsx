@@ -600,60 +600,56 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
 
   briefing: {
     view: 'briefing',
-    title: 'Central de Briefings & Roteiros Criativos',
-    subtitle: 'Diretrizes estéticas, posicionamento, pratos carros-chefe, restrições e roteiros de cada restaurante',
+    title: 'Briefing Criativo & Gerador de PDF (Padrão Navegando MKT)',
+    subtitle: 'Cole o texto das notas, categorize automaticamente (POV, Situação, ASMR) e compartilhe o PDF direto no WhatsApp',
     category: 'Criativo & Produção',
     purpose:
-      'A Central de Briefings organiza em 7 categorias todas as instruções criativas e técnicas de cada restaurante parceiro, além dos roteiros específicos de cada diária de gravação. Assim, Filmmakers, Modelos e Editores têm acesso imediato ao tom de voz, iluminação, pratos obrigatórios e ganchos (hooks) antes de gravar ou editar.',
+      'O Gerador de Briefing Criativo elimina a necessidade de abrir o Google Docs no externo. Basta colar o roteiro dos vídeos, separar cada vídeo com uma linha em branco (ou numerar 1 -, 2 -) e usar "Referência:" ou "Exemplo:" antes de qualquer link. O sistema categoriza cada vídeo automaticamente, monta as folhas A4 oficiais da Navegando MKT com links clicáveis e permite enviar direto no WhatsApp sem nem precisar baixar no celular.',
     installedFunctions: [
-      'Dossiê criativo estruturado em 7 categorias: Conceito Geral, Público-Alvo, Tom de Voz/Trilha, Pratos Carros-Chefe, Iluminação/Estética, Restrições e Banco de Ganchos (Hooks)',
-      'Edição rápida por restaurante com salvamento instantâneo para toda a equipe',
-      'Lista integrada de Roteiros por Diária de Gravação (sincronizada com a aba Briefing dentro da Agenda)',
-      'Acesso liberado para toda a equipe (Donos, Gerentes, Filmmakers, Modelos e Editores Internos)',
+      'Separação inteligente de vídeos por espaço entre linhas (pular 1 linha em branco já cria o próximo card de vídeo) ou numeração (1 -, 2 -)',
+      'Reconhecimento automático de links com "Referência:" ou "Exemplo:" (vira botão/link clicável dentro do PDF)',
+      'Categorização automática do formato de cada vídeo: POV, Situação, ASMR, Foodporn, Entrevista, Trend, Tutorial, Preparo ou Falado',
+      'Botão "Compartilhar PDF" com pré-renderização A4 que abre direto o compartilhamento pro WhatsApp no celular (sem precisar baixar)',
     ],
     agencyBenefits: [
-      'Garante que nenhum filmmaker ou modelo chegue no restaurante sem saber o que gravar ou o que o cliente não gosta',
-      'Alinha os editores (Carol e Lucas) sobre o estilo de corte, música e legendas que cada restaurante aprova de primeira',
-      'Reduz drasticamente pedidos de refação e ajustes em vídeos',
+      'Muito mais rápido e leve para a equipe externa (Filmmakers e Modelos) abrir no celular sem depender de Google Docs',
+      'Padronização visual impecável no layout A4 escuro e laranja oficial da Navegando MKT',
+      'Sincroniza automaticamente o roteiro gerado com o restaurante e a gravação agendada no CRM',
     ],
     howToFeedSteps: [
       {
-        stepTitle: '1. Selecione o Restaurante na lista à esquerda',
+        stepTitle: '1. Escolha o Cliente (ou puxe da Agenda) e a Data',
         description:
-          'Caso ainda não tenha restaurantes cadastrados, clique em "+ Novo Restaurante" no topo da página.',
+          'Selecione um restaurante já cadastrado na Agenda ou digite o nome do cliente e a data do briefing.',
       },
       {
-        stepTitle: '2. Clique em "Preencher / Editar Categorias"',
+        stepTitle: '2. Cole o conteúdo dos vídeos (separe com espaço entre linhas)',
         description:
-          'Preencha as 7 categorias do Briefing (Conceito, Público-Alvo, Tom de Voz, Pratos Foco, Estética, Restrições e Ganchos/Roteiros) e clique em Salvar.',
+          'Monte o texto nas notas e cole no campo. Separe 2 linhas com um espaço em branco para o sistema entender que é outro vídeo, e use "Referência:" ou "Exemplo:" antes dos links.',
       },
       {
-        stepTitle: '3. Detalhe o Roteiro de cada Gravação',
+        stepTitle: '3. Clique em "Gerar briefing" e "Compartilhar PDF"',
         description:
-          'Na parte inferior da página (ou clicando na aba "Briefing" dentro de qualquer gravação na Agenda), descreva os Reels específicos que serão gravados naquela visita.',
+          'Clique em "Gerar briefing" para atualizar e salvar na agenda, e depois em "Compartilhar PDF" para mandar direto no WhatsApp.',
       },
     ],
-    exampleTitle: 'Exemplo Visual de Briefing & Roteiro Preenchido',
-    exampleSubtitle: 'Veja na imagem e nos campos abaixo como o Briefing de um restaurante fica estruturado:',
-    exampleBadge: 'EXEMPLO COM IMAGEM & CAMPOS PREENCHIDOS',
+    exampleTitle: 'Exemplo de Texto Colado no Briefing Criativo',
+    exampleSubtitle: 'Veja como escrever ou colar o texto para o sistema separar os vídeos e links automaticamente:',
+    exampleBadge: 'EXEMPLO PRÁTICO DE ROTEIRO',
     exampleFields: [
       {
-        label: '1. Conceito Geral & Público-Alvo',
-        value: 'Trattoria Italiana artesanal em Pinheiros • Público: Casais 25-45 anos e famílias no almoço de fim de semana.',
+        label: 'Vídeo 01 (Detectado como POV + Link de Referência)',
+        value: 'Fazer vídeo POV: Um dia de produção na cozinha mostrando a montagem dos pratos!\nReferência: https://instagram.com/reel/DaTn3wXhPO6',
         highlight: true,
       },
       {
-        label: '2. Pratos Carros-Chefe & Estética de Vídeo',
-        value: 'Fettuccine na roda de Grana Padano, Burrata ao Pesto e Negroni defumado • Luz quente 3200K + closes macro 60fps.',
-      },
-      {
-        label: '3. Restrições do Cliente (O que NÃO fazer)',
-        value: 'Não filmar a pia de lavagem da cozinha; não usar músicas com palavrão; chef prefere não gravar locução falada.',
+        label: 'Vídeo 02 (Separado por 1 linha em branco • Detectado como Situação)',
+        value: 'Fazer vídeo "Cliente: Quero o hambúrguer com mais queijo da casa!" mostrando o lanche saindo da chapa.\nExemplo: https://instagram.com/reel/DZFf-U7hLD2',
         highlight: true,
       },
       {
-        label: '4. Banco de Ganchos (Hooks) Aprovados',
-        value: '"Descobrimos a massa preparada dentro do queijo mais cremosa de São Paulo..."',
+        label: 'Vídeo 03 (Detectado como ASMR)',
+        value: 'Fazer vídeo totalmente ASMR cortando a massa crocante e servindo o molho artesanal.',
       },
     ],
     ctaLabel: '+ Cadastrar Restaurante para Briefing',
