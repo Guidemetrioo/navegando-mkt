@@ -23,6 +23,8 @@ import {
   ChevronRight,
   Terminal,
 } from 'lucide-react';
+import { IS_DEMO } from '@/lib/app-mode';
+import { WhatsAppQr } from './WhatsAppQr';
 import { EventItem } from '@/types/database';
 
 export function WhatsAppAutomationView() {
@@ -114,6 +116,8 @@ export function WhatsAppAutomationView() {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+      <p className="text-xs text-zinc-400 border border-[var(--ui-border)] rounded-xl p-3">O serviço WhatsApp precisa estar ativo. A conexão só será confirmada após a autorização no celular; códigos vencidos ou de demonstração não são aceitos.</p>
+      {!IS_DEMO && <p className="text-xs text-amber-400">Envio manual disponível com o serviço conectado. O agendamento automático precisa de um processo central no servidor e permanece desativado nesta versão.</p>}
       {/* Top Banner / Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-start gap-3.5">
@@ -263,7 +267,7 @@ export function WhatsAppAutomationView() {
               <div>
                 <h3 className="text-base font-bold text-foreground">Conectar WhatsApp do CRM</h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Conexão segura multi-aparelho via whatsapp-web.js
+                  Conexão multi-aparelho pelo serviço WhatsApp da agência
                 </p>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
@@ -288,15 +292,7 @@ export function WhatsAppAutomationView() {
             {/* Visualizador QR Code / Pairing Code */}
             <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
               <div className="relative w-44 h-44 rounded-2xl bg-white p-2.5 shadow-inner flex flex-col items-center justify-center shrink-0">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                    whatsappConfig.qr_code && whatsappConfig.qr_code.length > 5
-                      ? whatsappConfig.qr_code
-                      : '2@NavegandoMKT-WhatsApp-MultiDevice-Session-Auth-2026'
-                  )}`}
-                  alt="QR Code Oficial WhatsApp"
-                  className="w-full h-full object-contain rounded-lg"
-                />
+                <WhatsAppQr value={whatsappConfig.qr_code} />
                 {whatsappConfig.conectado && (
                   <div className="absolute inset-0 rounded-2xl bg-white/90 backdrop-blur-[1px] flex flex-col items-center justify-center text-center gap-1.5 p-2">
                     <CheckCircle2 className="w-11 h-11 text-emerald-500" />
@@ -310,7 +306,7 @@ export function WhatsAppAutomationView() {
 
               <div className="flex flex-col gap-2.5 flex-1 min-w-0 text-left w-full">
                 <div>
-                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">Instância Oficial</span>
+                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">Conexão da agência</span>
                   <div className="text-xs font-bold text-foreground">
                     {whatsappConfig.instancia_nome}
                   </div>
@@ -464,7 +460,7 @@ export function WhatsAppAutomationView() {
               </div>
               <ol className="text-[11px] text-zinc-300 space-y-1.5 pl-4 list-decimal">
                 <li>
-                  Clique no botão <strong>&ldquo;Conectar / Atualizar QR Code&rdquo;</strong> acima (o sistema inicia a conexão sozinho).
+                  Clique no botão <strong>&ldquo;Conectar / Atualizar QR Code&rdquo;</strong> acima (o serviço precisa estar ativo).
                 </li>
                 <li>
                   No seu celular, abra o <strong>WhatsApp ➔ Aparelhos Conectados ➔ Conectar um aparelho</strong>.
@@ -632,7 +628,7 @@ export function WhatsAppAutomationView() {
 
               <select
                 value={logFilter}
-                onChange={(e) => setLogFilter(e.target.value as any)}
+                onChange={(e) => setLogFilter(e.target.value as 'todos' | 'enviada' | 'respondida')}
                 className="bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               >
                 <option value="todos">Todos os Logs</option>
