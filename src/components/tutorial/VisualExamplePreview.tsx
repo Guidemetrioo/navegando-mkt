@@ -798,8 +798,8 @@ export function VisualExamplePreview({ view }: VisualExamplePreviewProps) {
     view === 'whatsapp'
       ? 'Confirmação Automática WhatsApp D-1'
       : view === 'backups'
-      ? 'Snapshot de Backup .JSON Verificado'
-      : 'Painel Operacional Navegando MKT',
+        ? 'Snapshot de Backup .JSON Verificado'
+        : 'Painel Operacional Navegando MKT',
     view === 'whatsapp'
       ? 'Mensagem enviada 24h antes • Resposta "1 - Confirmado" sincronizada'
       : 'Todos os indicadores e alertas sincronizados em tempo real',

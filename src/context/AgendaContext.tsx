@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Employee,
   Client,
@@ -30,6 +30,7 @@ import { INITIAL_REELS, INITIAL_MENTIONS, INITIAL_SOCIAL_ACCOUNTS } from '@/lib/
 import { INITIAL_PONTOS } from '@/lib/supabase/mock-ponto-data';
 import { INITIAL_DELIVERABLES } from '@/lib/supabase/mock-deliverables-data';
 import { INITIAL_SALARIOS, INITIAL_DESPESAS_GRAVACOES, INITIAL_TRANSACOES } from '@/lib/supabase/mock-financial-data';
+import { whatsappConnection, normalizeWhatsAppPhone, validPairingCode } from '@/lib/whatsapp-connection';
 import { INITIAL_WHATSAPP_CONFIG, INITIAL_WHATSAPP_LOGS } from '@/lib/supabase/mock-whatsapp-data';
 import { findEventConflicts } from '@/lib/conflicts';
 import { createClient } from '@/lib/supabase/client';
@@ -208,8 +209,8 @@ interface AgendaContextType {
   whatsappConfig: WhatsAppConfig;
   whatsappLogs: WhatsAppMessageLog[];
   updateWhatsAppConfig: (patch: Partial<WhatsAppConfig>) => void;
-  checkAndSendD1Reminders: () => { sentCount: number; messages: string[] };
-  sendManualWhatsAppConfirmation: (eventId: string) => boolean;
+  checkAndSendD1Reminders: () => Promise<{ sentCount: number; messages: string[] }>;
+  sendManualWhatsAppConfirmation: (eventId: string) => Promise<boolean>;
   processClientWhatsAppReply: (eventId: string, replyText: string) => { status: 'confirmado' | 'remarcar' | 'outro'; message: string };
   connectWhatsApp: () => Promise<void>;
   requestWhatsAppPairingCode: (phoneNumber: string) => Promise<{ success: boolean; code?: string; error?: string }>;
@@ -307,14 +308,28 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
 
   const [localHydrated,setLocalHydrated] = useState(false);
+  const mergeInitialClients = useCallback((list: Client[]): Client[] => {
+    const byId = new Set((list || []).map((c) => c.id));
+    const missing = INITIAL_CLIENTS.filter((c) => !byId.has(c.id));
+    return missing.length ? [...(list || []), ...missing] : list || [];
+  }, []);
+  const mergeInitialEvents = useCallback((list: EventItem[]): EventItem[] => {
+    const byId = new Set((list || []).map((e) => e.id));
+    const missing = INITIAL_EVENTS.filter((e) => !byId.has(e.id));
+    return missing.length ? [...(list || []), ...missing] : list || [];
+  }, []);
   const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions,despesas:extraDespesas,transacoes,salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
-    setEmployees(data.employees);setClients(data.clients);setEvents(data.events);setPontos(data.pontos);
+    const managerSeed = isManager(member?.role);
+    setEmployees(data.employees);
+    setClients(managerSeed ? mergeInitialClients(data.clients) : data.clients);
+    setEvents(managerSeed ? mergeInitialEvents(data.events) : data.events);
+    setPontos(data.pontos);
     setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
     setExtraDespesas(data.despesas);setTransacoes(data.transacoes);setSalarios(data.salarios);
     setIsAuthenticated(Boolean(member));
     if(member) {setLoggedEmployeeId(member.employee_id);}
-  },[]);
+  },[mergeInitialClients,mergeInitialEvents]);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
   const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao;
   const canManage=isManager(memberRole);
@@ -341,7 +356,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         for(const key of ['employees','clients','events','pontos','deliverables','reels','mentions'] as const) if(!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
         const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
           (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        setEmployees(ensureOfficial(saved.employees));setClients(saved.clients);setEvents(saved.events);setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
+        setEmployees(ensureOfficial(saved.employees));setClients(mergeInitialClients(saved.clients));setEvents(mergeInitialEvents(saved.events));setPontos(sanitizePontos(saved.pontos));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
       }
 
       const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
@@ -358,7 +373,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');
       if (savedWpp) {
         const parsedWpp = JSON.parse(savedWpp);
-        if (parsedWpp.config) setWhatsappConfig(parsedWpp.config);
+        if (parsedWpp.config) setWhatsappConfig({...parsedWpp.config,...whatsappConnection({})});
         if (Array.isArray(parsedWpp.logs)) setWhatsappLogs(parsedWpp.logs);
       }
 
@@ -1185,6 +1200,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // WhatsApp Config & Actions
   const updateWhatsAppConfig = useCallback(
     (patch: Partial<WhatsAppConfig>) => {
+      if(patch.auto_confirmacao_d1 && !IS_DEMO) {toast('O agendamento automático precisa de um processo central no servidor. Use o envio manual por enquanto.','error');return;}
       setWhatsappConfig((prev) => ({ ...prev, ...patch }));
       toast('Configurações do WhatsApp atualizadas com sucesso.', 'success');
     },
@@ -1192,129 +1208,50 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   );
 
   const connectWhatsApp = useCallback(async () => {
+    setWhatsappConfig(prev => ({...prev,...whatsappConnection({}),status:'gerando_qrcode'}));
     try {
-      setWhatsappConfig((prev) => ({ ...prev, status: 'gerando_qrcode' }));
-      const localRes = await fetch('http://localhost:3001/api/status', { method: 'GET' }).catch(() => null);
-      const res =
-        localRes && localRes.ok
-          ? localRes
-          : await fetch('/api/whatsapp', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'connect' }),
-            }).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data.online || data.qrCode || data.status === 'ready' || data.status === 'connected') {
-        setWhatsappConfig((prev) => ({
-          ...prev,
-          conectado: data.status === 'ready' || data.status === 'connected',
-          status: data.status === 'ready' || data.status === 'connected' ? 'conectado' : 'gerando_qrcode',
-          pairing_code: data.pairingCode || prev.pairing_code,
-          qr_code: data.qrCode || prev.qr_code,
-          numero_conectado: data.phoneNumber || prev.numero_conectado,
-        }));
-        toast(
-          data.conectado
-            ? 'WhatsApp conectado com sucesso!'
-            : data.qrCode
-            ? 'QR Code pronto na tela! Escaneie com seu celular.'
-            : 'Iniciando conexão direta com o WhatsApp... O QR Code aparecerá em instantes.',
-          data.conectado ? 'success' : 'info'
-        );
-        return;
-        }
-        throw new Error('fallback');
-        if (false) Boolean(true
-        );
-        return;
-      }
-    } catch {
-      // Fallback
+      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'connect'})});
+      const data=await response.json();
+      if(!response.ok) throw new Error(data.error || 'Não foi possível conectar o serviço WhatsApp.');
+      setWhatsappConfig(prev=>({...prev,...whatsappConnection(data)}));
+      toast(data.conectado ? 'WhatsApp conectado.' : data.qrCode ? 'QR Code recebido. Escaneie em Aparelhos conectados.' : 'Serviço acessível. Aguardando o WhatsApp emitir um QR Code.', 'info');
+    } catch(error) {
+      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
+      toast(error instanceof Error ? error.message : 'Serviço WhatsApp indisponível.', 'error');
     }
+  },[toast]);
 
-    setTimeout(() => {
-      setWhatsappConfig((prev) => ({
-        ...prev,
-        conectado: true,
-        status: 'conectado',
-        numero_conectado: '+55 11 93450-8800',
-        pairing_code: 'NV84-29KT',
-        qr_code: `2@NavegandoMKT-Session-${Date.now()}`,
-      }));
-      toast('WhatsApp Conectado com sucesso!', 'success');
-    }, 600);
-  }, [toast]);
+  const requestWhatsAppPairingCode = useCallback(async(phoneNumber:string):Promise<{success:boolean;code?:string;error?:string}>=>{
+    const phone=normalizeWhatsAppPhone(phoneNumber);
+    if(!phone)return {success:false,error:'Informe um número válido com país e DDD.'};
+    setWhatsappConfig(prev=>({...prev,pairing_code:undefined,qr_code:undefined,conectado:false,status:'gerando_qrcode'}));
+    try {
+      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request-code',phoneNumber:phone})});
+      const data=await response.json();
+      if(!response.ok || !validPairingCode(data.pairingCode))throw new Error(data.error || 'O WhatsApp não emitiu um código válido.');
+      setWhatsappConfig(prev=>({...prev,pairing_code:data.pairingCode,qr_code:undefined,conectado:false,status:'gerando_qrcode'}));
+      toast('Código recebido do WhatsApp. Confirme no celular para concluir a conexão.', 'info');
+      return {success:true,code:data.pairingCode};
+    } catch(error) {
+      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
+      return {success:false,error:error instanceof Error ? error.message : 'Não foi possível solicitar o código.'};
+    }
+  },[toast]);
 
-  const requestWhatsAppPairingCode = useCallback(
-    async (phoneNumber: string): Promise<{ success: boolean; code?: string; error?: string }> => {
-      const clean = phoneNumber.replace(/\D/g, '');
-      if (clean.length < 10) {
-        return { success: false, error: 'Digite o número com DDD (ex: 11958441390).' };
-      }
-
-      try {
-        const localRes = await fetch('http://localhost:3001/api/request-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: clean }),
-        }).catch(() => null);
-
-        if (localRes && localRes.ok) {
-          const data = await localRes.json();
-          if (data.pairingCode) {
-            setWhatsappConfig((prev) => ({
-              ...prev,
-              pairing_code: data.pairingCode,
-              numero_conectado: `+55 ${clean.slice(0, 2)} ${clean.slice(2, 7)}-${clean.slice(7, 11)}`,
-              status: 'gerando_qrcode',
-            }));
-            toast(`Código gerado: ${data.pairingCode}. Digite no seu WhatsApp!`, 'success');
-            return { success: true, code: data.pairingCode };
-          }
-        }
-      } catch {
-        // Fallback imediato
-      }
-
-      const ddd = clean.startsWith('55') ? clean.slice(2, 4) : clean.slice(0, 2);
-      const rest = clean.startsWith('55') ? clean.slice(4) : clean.slice(2);
-      const formattedPhone = `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5, 9)}`;
-      const generatedCode = `NV${ddd}-${rest.slice(-4).toUpperCase()}`;
-
-      setWhatsappConfig((prev) => ({
-        ...prev,
-        conectado: true,
-        status: 'conectado',
-        pairing_code: generatedCode,
-        numero_conectado: formattedPhone,
-        qr_code: `2@NavegandoMKT-${clean}-${Date.now()}`,
-      }));
-      toast(`Código ${generatedCode} gerado e número ${formattedPhone} conectado com sucesso!`, 'success');
-      return { success: true, code: generatedCode };
-    },
-    [toast]
-  );
-
-  const disconnectWhatsApp = useCallback(() => {
-    fetch('/api/whatsapp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'logout' }),
-    }).catch(() => null);
-    setWhatsappConfig((prev) => ({
-      ...prev,
-      conectado: false,
-      status: 'desconectado',
-      pairing_code: undefined,
-      qr_code: undefined,
-    }));
-    toast('WhatsApp desconectado.', 'info');
-  }, [toast]);
+  const disconnectWhatsApp = useCallback(async()=>{
+    try {
+      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
+      const data=await response.json();
+      if(!response.ok || data.success!==true)throw new Error(data.error || 'Desconexão não confirmada.');
+      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
+      toast('WhatsApp desconectado.','info');
+    } catch(error) {toast(error instanceof Error ? error.message : 'Não foi possível desconectar.','error');}
+  },[toast]);
 
   // Envio de mensagem de confirmação para um evento
+  const sendingWhatsApp=useRef(new Set<string>());
   const dispatchConfirmationMessage = useCallback(
-    (event: EventItem, client: Client | undefined) => {
+    async (event: EventItem, client: Client | undefined) => {
       const equipeNomes =
         (event.assigned_employee_ids || [])
           .map((id) => employees.find((e) => e.id === id)?.nome)
@@ -1331,6 +1268,17 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         .replace(/{{hora_fim}}/g, event.hora_fim.slice(0, 5))
         .replace(/{{restaurante}}/g, client?.nome || 'Restaurante')
         .replace(/{{equipe}}/g, equipeNomes);
+
+      const phone=normalizeWhatsAppPhone(client?.telefone || client?.contato || '');
+      if(!phone) {toast('Cadastre um telefone válido para o restaurante.','error');return null;}
+      if(sendingWhatsApp.current.has(event.id)) return null;
+      sendingWhatsApp.current.add(event.id);
+      try {
+        const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send',phone,message:msg})});
+        const result=await response.json();
+        if(!response.ok || result.success!==true)throw new Error(result.error || 'O WhatsApp não confirmou o envio.');
+      } catch(error) {toast(error instanceof Error ? error.message : 'Envio não confirmado.','error');return null;}
+      finally {sendingWhatsApp.current.delete(event.id);}
 
       const logItem: WhatsAppMessageLog = {
         id: `wpp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1363,82 +1311,44 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         )
       );
 
-      const rawPhone = (client?.telefone || client?.contato || '').replace(/\D/g, '');
-      if (rawPhone.length >= 10) {
-        const phoneWithCountry = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
-        const jid = `${phoneWithCountry}@c.us`;
-        fetch('http://localhost:3001/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: phoneWithCountry, jid, message: msg }),
-        }).catch(() => null);
-        try {
-          const sb = createClient();
-          if (sb) {
-            sb.from('whatsapp_messages')
-              .insert({
-                chat_jid: jid,
-                contact_name: client?.nome || 'Restaurante',
-                body: msg,
-                from_me: true,
-                status: 'pending',
-                created_at: new Date().toISOString(),
-              })
-              .then(() => null, () => null);
-          }
-        } catch {
-          // Ignora se tabela outbox não existir
-        }
-      }
-
       return msg;
     },
-    [employees, whatsappConfig.template_mensagem]
+    [employees, whatsappConfig.template_mensagem, toast]
   );
 
-  const sendManualWhatsAppConfirmation = useCallback(
-    (eventId: string): boolean => {
-      const event = events.find((e) => e.id === eventId);
-      if (!event) return false;
-      const client = clients.find((c) => c.id === event.client_id);
-      const msg = dispatchConfirmationMessage(event, client);
-      const rawPhone = (client?.telefone || client?.contato || '').replace(/\D/g, '');
-      if (rawPhone.length >= 10 && typeof window !== 'undefined') {
-        const phoneWithCountry = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
-        window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
-      }
-      toast(`Mensagem de confirmação gerada para ${client?.nome || 'o cliente'} via WhatsApp!`, 'success');
-      return true;
-    },
-    [events, clients, dispatchConfirmationMessage, toast]
-  );
+  const sendManualWhatsAppConfirmation = useCallback(async(eventId:string):Promise<boolean>=>{
+    const event=events.find(e=>e.id===eventId);
+    if(!event)return false;
+    const client=clients.find(c=>c.id===event.client_id);
+    const sent=await dispatchConfirmationMessage(event,client);
+    if(!sent)return false;
+    toast('Mensagem enviada pelo serviço WhatsApp.','success');return true;
+  },[events,clients,dispatchConfirmationMessage,toast]);
 
-  const checkAndSendD1Reminders = useCallback(() => {
+  const checkAndSendD1Reminders = useCallback(async () => {
     const today = parseDateIso(todayInSaoPaulo());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowIso = formatDateIso(tomorrow);
 
-    let eligible = events.filter((e) => e.data === tomorrowIso && e.status !== 'cancelado');
+    const eligible = events.filter((e) => e.data === tomorrowIso && e.status !== 'cancelado');
 
-    if (eligible.length === 0) {
-      eligible = events.filter((e) => e.status === 'agendado').slice(0, 2);
-    }
+
 
     const messages: string[] = [];
-    eligible.forEach((ev) => {
+    for (const ev of eligible) {
       const client = clients.find((c) => c.id === ev.client_id);
-      const text = dispatchConfirmationMessage(ev, client);
-      messages.push(`${client?.nome}: ${text}`);
-    });
+      const text = await dispatchConfirmationMessage(ev, client);
+      if(text)messages.push(`${client?.nome}: ${text}`);
+    }
 
     setWhatsappConfig((prev) => ({
       ...prev,
       ultima_verificacao: new Date().toISOString(),
     }));
 
-    toast(`Disparo D-1 executado: ${eligible.length} confirmação(ões) enviada(s)!`, 'success');
-    return { sentCount: eligible.length, messages };
+    toast(`Disparo D-1 executado: ${messages.length} confirmação(ões) enviada(s)!`, 'success');
+    return { sentCount: messages.length, messages };
   }, [events, clients, dispatchConfirmationMessage, toast]);
 
   const processClientWhatsAppReply = useCallback(
@@ -1531,51 +1441,27 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [events, clients, toast]
   );
 
-  // Sincroniza automaticamente o QR Code e status do WhatsApp quando a tela WhatsApp está aberta
-  useEffect(() => {
-    if (currentView !== 'whatsapp') return;
-
-    const syncBotStatus = async () => {
+  // Connection state is always read from the authenticated server, never from browser localhost.
+  useEffect(()=>{
+    if(currentView!=='whatsapp' || !canManage)return;
+    let active=true;
+    let pending=false;
+    const sync=async()=>{
+      if(pending)return;pending=true;
       try {
-        const localRes = await fetch('http://localhost:3001/api/status', { method: 'GET' }).catch(() => null);
-        if (localRes && localRes.ok) {
-          const data = await localRes.json();
-          setWhatsappConfig((prev) => ({
-            ...prev,
-            conectado: data.status === 'ready' || data.status === 'connected' || prev.conectado,
-            status: data.status === 'ready' || data.status === 'connected' ? 'conectado' : prev.status,
-            qr_code: data.qrCode || prev.qr_code || '2@NavegandoMKT-WhatsApp-MultiDevice-Session-Auth-2026',
-            pairing_code: data.pairingCode || prev.pairing_code || 'NV84-29KT',
-            numero_conectado: data.phoneNumber || prev.numero_conectado,
-          }));
-          return;
-        }
-
-        const res = await fetch('/api/whatsapp', { method: 'GET' }).catch(() => null);
-        if (!res || !res.ok) return;
-        const data = await res.json();
-        if (!data.online) return;
-        setWhatsappConfig((prev) => ({
-          ...prev,
-          conectado: Boolean(data.conectado),
-          status: data.conectado ? 'conectado' : data.qrCode ? 'gerando_qrcode' : prev.status,
-          qr_code: data.qrCode || prev.qr_code,
-          pairing_code: data.pairingCode || prev.pairing_code,
-          numero_conectado: data.phoneNumber || prev.numero_conectado,
-        }));
-      } catch {
-        // Ignora erro silencioso de rede
-      }
+        const response=await fetch('/api/whatsapp',{cache:'no-store'});
+        const data=await response.json();
+        if(active)setWhatsappConfig(prev=>({...prev,...whatsappConnection(response.ok?data:{})}));
+      } catch {if(active)setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));}
+      finally {pending=false;}
     };
-
-    syncBotStatus();
-    const poll = setInterval(syncBotStatus, 3500);
-    return () => clearInterval(poll);
-  }, [currentView]);
+    void sync();const timer=setInterval(()=>{void sync();},3500);
+    return()=>{active=false;clearInterval(timer);};
+  },[currentView,canManage]);
 
   // Agendador automático: envia mensagem de confirmação no tempo escolhido para cada horário marcado
   useEffect(() => {
-    if (!whatsappConfig.auto_confirmacao_d1) return;
+    if (!IS_DEMO || !canManage || !whatsappConfig.conectado || !whatsappConfig.auto_confirmacao_d1) return;
 
     const checkScheduledDispatches = () => {
       const now = new Date();
@@ -1612,7 +1498,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     checkScheduledDispatches();
     const timer = setInterval(checkScheduledDispatches, 15000);
     return () => clearInterval(timer);
-  }, [events, clients, whatsappConfig.auto_confirmacao_d1, whatsappConfig.tempo_antecedencia_minutos, dispatchConfirmationMessage, toast]);
+  }, [events, clients, canManage, whatsappConfig.conectado, whatsappConfig.auto_confirmacao_d1, whatsappConfig.tempo_antecedencia_minutos, dispatchConfirmationMessage, toast]);
 
   // Enriquecer entregáveis com relacionamentos
   const enrichedDeliverables = useMemo(() => {
@@ -1738,8 +1624,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         whatsappConfig,
         whatsappLogs,
         updateWhatsAppConfig: guarded(canManage, updateWhatsAppConfig),
-        checkAndSendD1Reminders: guarded(canManage, checkAndSendD1Reminders),
-        sendManualWhatsAppConfirmation: guarded(canManage, sendManualWhatsAppConfirmation),
+        checkAndSendD1Reminders: ()=>guarded(canManage, checkAndSendD1Reminders)(),
+        sendManualWhatsAppConfirmation: (id)=>guarded(canManage, sendManualWhatsAppConfirmation)(id),
         processClientWhatsAppReply: guarded(canManage, processClientWhatsAppReply),
         connectWhatsApp: guarded(canManage, connectWhatsApp),
         requestWhatsAppPairingCode: guarded(canManage, requestWhatsAppPairingCode),
