@@ -141,23 +141,23 @@ export function ExecutiveDashboardView() {
           </div>
         </div>
 
-        {/* KPI 2: Entregáveis / Arquivos */}
+        {/* KPI 2: Briefing & Roteiros */}
         <div
-          onClick={() => setCurrentView('arquivos')}
+          onClick={() => setCurrentView('briefing')}
           className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] hover:border-amber-500/40 transition-all cursor-pointer flex flex-col justify-between"
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
-            <span>Entregas em Produção</span>
+            <span>Briefing & Roteiros</span>
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
               <FolderOpen className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">
-              {pendingDeliverables.length}
+              {events.length}
             </div>
             <div className="text-[11px] text-zinc-400 mt-0.5">
-              <span>{approvedCount} de {totalDeliverablesCount} vídeos aprovados</span>
+              <span>Gravações na agenda com suporte a PDF</span>
             </div>
           </div>
         </div>
@@ -295,75 +295,35 @@ export function ExecutiveDashboardView() {
           </div>
         </div>
 
-        {/* Coluna Direita (5 cols): Fila de Aprovação de Arquivos & Vídeos */}
+        {/* Coluna Direita (5 cols): Atalho para Briefing Criativo & Relatórios */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
               <FolderOpen className="w-4 h-4 text-amber-400" />
-              <span>Aprovações Pendentes ({pendingDeliverables.length})</span>
+              <span>Briefing Criativo & PDF</span>
             </h3>
             <button
               type="button"
-              onClick={() => setCurrentView('arquivos')}
+              onClick={() => setCurrentView('briefing')}
               className="text-xs font-semibold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>Ver todos</span>
+              <span>Abrir Gerador</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {pendingDeliverables.slice(0, 4).map((deliv) => {
-              const client = clients.find((c) => c.id === deliv.client_id);
-              return (
-                <div
-                  key={deliv.id}
-                  className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-2.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-[var(--ui-accent)] uppercase tracking-wider block">
-                        {client?.nome}
-                      </span>
-                      <h4 className="text-xs font-bold text-foreground truncate mt-0.5">
-                        {deliv.titulo}
-                      </h4>
-                    </div>
-
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                      Aguardando Aprovação
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-[var(--ui-border)] text-xs">
-                    <span className="text-[11px] text-zinc-400">
-                      Versão: <strong className="text-foreground">v{deliv.versao}</strong>
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      {deliv.drive_url && (
-                        <a
-                          href={deliv.drive_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-[#38bdf8] hover:underline flex items-center gap-1"
-                        >
-                          <span>Ver no Drive</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => updateDeliverableStatus(deliv.id, 'aprovado')}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-foreground text-[11px] font-bold transition-colors cursor-pointer"
-                      >
-                        Aprovar ✓
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-3">
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Gere roteiros A4 no padrão oficial da Navegando MKT com categorização automática (POV, Situação, ASMR, Foodporn) e envie direto no WhatsApp.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCurrentView('briefing')}
+              className="w-full py-2.5 px-4 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Gerar Briefing Criativo</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

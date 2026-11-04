@@ -21,8 +21,6 @@ export function ViewSwitcher() {
     { id: 'escala', label: 'Escala da equipe', icon: <Table2 className="w-3.5 h-3.5" /> },
     { id: 'minha-agenda', label: 'Minha agenda', icon: <UserCheck className="w-3.5 h-3.5" /> },
     { id: 'ponto', label: 'Ponto & GPS', icon: <Camera className="w-3.5 h-3.5 text-emerald-400" /> },
-    { id: 'metricas-reels', label: 'Métricas Reels', icon: <Film className="w-3.5 h-3.5 text-[var(--ui-accent)]" />, isSocial: true },
-    { id: 'mural-ugc', label: 'Mural UGC / Menções', icon: <MessageSquareHeart className="w-3.5 h-3.5 text-rose-400" />, isSocial: true },
   ];
 
   return (

@@ -798,111 +798,9 @@ export function EmployeeWelcomeDashboard() {
           )}
         </div>
 
-        {/* Coluna Direita (5 cols): Entregáveis DAM (para quem tem acesso) ou Checklist */}
+        {/* Coluna Direita (5 cols): Checklist Operacional */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          {!isModelo ? (
-            /* CENTRAL DE VÍDEOS EM PRODUÇÃO (Filmmakers, Internos e Gestão) */
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-amber-400" />
-                  <span>Vídeos em Produção ({myDeliverables.length})</span>
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setCurrentView('arquivos')}
-                  className="text-xs font-semibold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Central DAM</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {myDeliverables.length === 0 ? (
-                  <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-center text-xs text-zinc-400">
-                    Você não possui vídeos atribuídos no momento.
-                  </div>
-                ) : (
-                  myDeliverables.slice(0, 3).map((deliv) => {
-                    const client = clients.find((c) => c.id === deliv.client_id);
-                    const isUrgent = deliv.status === 'ajustes_solicitados';
-
-                    return (
-                      <div
-                        key={deliv.id}
-                        className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 ${
-                          isUrgent
-                            ? 'bg-rose-500/10 border-rose-500/30'
-                            : 'bg-[var(--ui-surface)] border-[var(--ui-border)]'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-bold text-[var(--ui-accent)] uppercase truncate block">
-                              {client?.nome}
-                            </span>
-                            <h4 className="text-xs font-bold text-foreground truncate mt-0.5">
-                              {deliv.titulo}
-                            </h4>
-                          </div>
-
-                          <span
-                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                              isUrgent
-                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                                : 'bg-zinc-800 text-zinc-300'
-                            }`}
-                          >
-                            {deliv.status.replace('_', ' ').toUpperCase()} • v{deliv.versao}
-                          </span>
-                        </div>
-
-                        {deliv.observacoes_ajuste && (
-                          <div className="p-2 rounded-xl bg-black/40 text-[10px] text-rose-300 border border-rose-500/20">
-                            <strong>Nota do Cliente:</strong> {deliv.observacoes_ajuste}
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-1 border-t border-[var(--ui-border)]/60 text-xs">
-                          {deliv.drive_url ? (
-                            <a
-                              href={deliv.drive_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[11px] text-[#38bdf8] hover:underline flex items-center gap-1"
-                            >
-                              <span>Drive</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <span className="text-[10px] text-zinc-500 italic">Sem link</span>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => openEditDeliverableModal(deliv)}
-                            className="px-2.5 py-1 rounded-lg bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-300 hover:text-foreground font-bold text-[10px] border border-[var(--ui-border)] cursor-pointer"
-                          >
-                            Atualizar
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => openDeliverableModal()}
-                  className="py-2.5 px-4 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] text-zinc-300 hover:text-foreground text-xs font-bold border border-[var(--ui-border)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
-                  <span>Cadastrar Novo Arquivo de Vídeo</span>
-                </button>
-              </div>
-            </div>
-          ) : (
+          {isModelo && (
             /* CHECKLIST EXCLUSIVO DA MODELO */
             <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
               <div>
@@ -1066,31 +964,17 @@ export function EmployeeWelcomeDashboard() {
             </button>
           )}
 
-          {canUserAccessView(role, 'arquivos') && (
+          {canUserAccessView(role, 'briefing') && (
             <button
               type="button"
-              onClick={() => setCurrentView('arquivos')}
+              onClick={() => setCurrentView('briefing')}
               className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
             >
               <FolderOpen className="w-5 h-5 text-[#38bdf8] mb-2" />
               <div className="font-bold text-xs text-foreground group-hover:text-[#38bdf8] transition-colors">
-                Central DAM
+                Briefing & Roteiros
               </div>
-              <div className="text-[10px] text-zinc-400">Funil Kanban de Vídeos</div>
-            </button>
-          )}
-
-          {canUserAccessView(role, 'metricas-reels') && (
-            <button
-              type="button"
-              onClick={() => setCurrentView('metricas-reels')}
-              className="p-3.5 rounded-2xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-left transition-all cursor-pointer group"
-            >
-              <BarChart3 className="w-5 h-5 text-purple-400 mb-2" />
-              <div className="font-bold text-xs text-foreground group-hover:text-purple-400 transition-colors">
-                Métricas do Instagram
-              </div>
-              <div className="text-[10px] text-zinc-400">Performance dos Reels</div>
+              <div className="text-[10px] text-zinc-400">Gerar PDF A4 e compartilhar</div>
             </button>
           )}
 

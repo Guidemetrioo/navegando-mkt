@@ -101,14 +101,14 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       },
     },
     {
-      id: 'action-new-deliverable',
-      title: 'Subir Novo Entregável / Reel',
-      subtitle: 'Cadastrar link de Drive ou vídeo para aprovação',
+      id: 'action-briefing',
+      title: 'Gerar Briefing Criativo (PDF A4)',
+      subtitle: 'Criar roteiro de vídeos e compartilhar no WhatsApp',
       icon: FolderOpen,
       iconColor: 'text-[#38bdf8]',
       action: () => {
         onClose();
-        openDeliverableModal();
+        setCurrentView('briefing');
       },
     },
     {
@@ -206,32 +206,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       }
     });
 
-    // 3. Entregáveis / Reels no DAM
-    deliverables.forEach((d) => {
-      const clientName = d.client?.nome || '';
-      if (
-        d.titulo.toLowerCase().includes(q) ||
-        clientName.toLowerCase().includes(q) ||
-        (d.descricao && d.descricao.toLowerCase().includes(q))
-      ) {
-        items.push({
-          id: `deliv-${d.id}`,
-          category: 'Central de Arquivos & Reels',
-          title: d.titulo,
-          subtitle: `${clientName} • Formato: ${d.formato} (v${d.versao})`,
-          icon: FolderOpen,
-          iconColor: 'text-[#38bdf8]',
-          badge: d.status.replace('_', ' '),
-          badgeColor: 'bg-sky-500/10 text-sky-400 border border-sky-500/20',
-          action: () => {
-            onClose();
-            openEditDeliverableModal(d);
-          },
-        });
-      }
-    });
-
-    // 4. Membros da Equipe
+    // 3. Membros da Equipe
     employees.forEach((emp) => {
       if (emp.nome.toLowerCase().includes(q) || (emp.funcao && emp.funcao.toLowerCase().includes(q))) {
         items.push({

@@ -135,10 +135,7 @@ function AgendaMainContent() {
               {currentView === 'relatorios' && 'Relatórios de Produção'}
               {currentView === 'briefing' && 'Briefing & Roteiros'}
               {currentView === 'reembolsos' && 'Reembolsos'}
-              {currentView === 'arquivos' && 'Central DAM'}
               {currentView === 'clientes' && 'Restaurantes'}
-              {currentView === 'metricas-reels' && 'Métricas Instagram'}
-              {currentView === 'mural-ugc' && 'Mural UGC'}
               {currentView === 'financeiro' && 'Controle Financeiro'}
               {currentView === 'whatsapp' && 'Automação WhatsApp D-1'}
               {currentView === 'backups' && 'Segurança & Backup'}
@@ -199,14 +196,14 @@ function AgendaMainContent() {
                       type="button"
                       onClick={() => {
                         setIsQuickActionOpen(false);
-                        openDeliverableModal();
+                        setCurrentView('briefing');
                       }}
                       className="flex items-center gap-2.5 p-2 rounded-xl text-zinc-300 hover:text-foreground hover:bg-[var(--ui-hover)] transition-colors cursor-pointer text-left"
                     >
                       <FolderOpen className="w-4 h-4 text-[#38bdf8]" />
                       <div>
-                        <span className="font-bold block">Novo Entregável / Reel</span>
-                        <span className="text-[10px] text-zinc-400">Link do Drive ou vídeo</span>
+                        <span className="font-bold block">Novo Briefing Criativo</span>
+                        <span className="text-[10px] text-zinc-400">Gerar roteiro A4 & PDF</span>
                       </div>
                     </button>
 
@@ -344,10 +341,7 @@ function AgendaMainContent() {
             {currentView === 'relatorios' && <ProductionReportsView />}
             {currentView === 'briefing' && <BriefingView />}
             {currentView === 'reembolsos' && <ReembolsosView />}
-            {currentView === 'arquivos' && <FilesDeliverablesView />}
             {currentView === 'clientes' && <ClientsView />}
-            {currentView === 'metricas-reels' && <InstagramMetricsView />}
-            {currentView === 'mural-ugc' && <MentionsUgcView />}
             {currentView === 'backups' && <BackupSafetyView />}
             {currentView === 'financeiro' && <FinancialControlView />}
             {currentView === 'whatsapp' && <WhatsAppAutomationView />}

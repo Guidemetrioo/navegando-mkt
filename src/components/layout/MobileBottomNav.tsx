@@ -114,28 +114,23 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
           </span>
         </button>
 
-        {/* 4. DAM Arquivos */}
+        {/* 4. Briefing Criativo */}
         <button
           type="button"
-          onClick={() => setCurrentView('arquivos')}
+          onClick={() => setCurrentView('briefing')}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all cursor-pointer relative ${
-            currentView === 'arquivos'
+            currentView === 'briefing'
               ? 'text-[var(--ui-accent)]'
               : 'text-zinc-400 hover:text-zinc-200 active:scale-95'
           }`}
         >
           <div className="relative">
             <FolderOpen className="w-5 h-5" />
-            {pendingApprovalsCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-[9px] font-black text-black flex items-center justify-center border border-[var(--ui-surface)]">
-                {pendingApprovalsCount}
-              </span>
-            )}
-            {currentView === 'arquivos' && (
+            {currentView === 'briefing' && (
               <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--ui-accent)]" />
             )}
           </div>
-          <span className="text-[10px] font-semibold mt-1 tracking-tight">Arquivos</span>
+          <span className="text-[10px] font-semibold mt-1 tracking-tight">Briefing</span>
         </button>
 
         {/* 5. Menu / Mais */}

@@ -152,31 +152,9 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       groupTitle: 'Relacionamento',
       items: [
         {
-          id: 'arquivos',
-          label: 'Central de Arquivos',
-          icon: FolderOpen,
-          badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount} pend.` : undefined,
-          badgeColor: 'bg-amber-500/20 text-amber-400',
-        },
-        {
           id: 'clientes',
           label: 'Restaurantes',
           icon: Building,
-        },
-      ],
-    },
-    {
-      groupTitle: 'Performance',
-      items: [
-        {
-          id: 'metricas-reels',
-          label: 'Analytics de Reels',
-          icon: TrendingUp,
-        },
-        {
-          id: 'mural-ugc',
-          label: 'Mural UGC & Menções',
-          icon: MessageSquare,
         },
       ],
     },
