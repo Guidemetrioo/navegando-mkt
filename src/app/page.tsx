@@ -140,7 +140,7 @@ function AgendaMainContent() {
               title="Buscar clientes, vídeos, equipe (Ctrl+K)"
             >
               <Search className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
-              <span className="hidden lg:inline text-zinc-400">Buscar no sistema...</span>
+              <span className="text-zinc-400">Buscar</span>
               <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[var(--ui-page)] text-zinc-400 rounded border border-[var(--ui-border)]">
                 Ctrl K
               </kbd>
@@ -357,3 +357,4 @@ export default function Page() {
     </AgendaProvider>
   );
 }
+

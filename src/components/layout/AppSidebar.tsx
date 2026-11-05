@@ -305,8 +305,8 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           return (
             <div key={group.groupTitle} className="space-y-1">
               {!isCollapsed && (
-                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                  {group.groupTitle}
+                <div className="hidden">
+              {/* Sem títulos de categorias: apenas botões diretos na barra */}
                 </div>
               )}
               {accessibleItems.map((item) => {

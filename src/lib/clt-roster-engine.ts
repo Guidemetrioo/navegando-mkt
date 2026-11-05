@@ -255,6 +255,58 @@ export function calculateDailyEmployeeBreakdown(params: {
     // EQUAÇÃO DOS FUNCIONÁRIOS EXTERNOS:
     // Começa no primeiro restaurante do dia e termina no último restaurante do dia (locomoção entre eles conta como hora trabalhada)
     if (empEvents.length === 0 && empPontos.length === 0) {
+      const dow = dateObj.getDay(); // 0=Dom, 1=Seg ... 6=Sáb
+      const isNovOrOct2026 = dateIso.startsWith('2026-10-') || dateIso.startsWith('2026-11-');
+      const isHolidayNov = dateIso === '2026-11-02' || dateIso === '2026-11-15' || dateIso === '2026-11-20';
+      const empChar = employee.id.charCodeAt(employee.id.length - 1);
+      // Simula escala 5x2 (Ter a Sex + Seg ou Sáb conforme colaborador) para abastecer o Banco de Horas com jornadas reais/simuladas de ~40h a ~45h/semana
+      const isSimFieldDay =
+        isNovOrOct2026 &&
+        !isHolidayNov &&
+        (dow === 2 || dow === 3 || dow === 4 || dow === 5 || (empChar % 2 === 0 ? dow === 1 : dow === 6));
+
+      if (isSimFieldDay) {
+        const simPairs = [
+          ['Flor do Paraíso (Simulado)', 'O Mineiro SP (Simulado)'],
+          ['Sloop Burger (Simulado)', 'Kazza Bar e Restaurante (Simulado)'],
+          ['Pecatto Bar e Restaurante (Simulado)', 'Santo Portuga (Simulado)'],
+          ['Hao Sushi Brooklin (Simulado)', 'Sampa Burger (Simulado)'],
+          ['Padaria Bella Paulista (Simulado)', 'La Braciera Jardins (Simulado)'],
+          ['Legado Parrilla (Simulado)', 'Nossa Carne (Simulado)'],
+          ['Cannoleria do Bixiga (Simulado)', 'Borgo Mooca (Simulado)'],
+        ];
+        const pairIdx = (dateObj.getDate() + empChar) % simPairs.length;
+        const [rest1, rest2] = simPairs[pairIdx];
+        const simStart = 9 * 60 + 30; // 09:30 no 1º restaurante
+        const extraMins = ((dateObj.getDate() + empChar) % 4) * 15; // 0, 15, 30 ou 45 min
+        const simEnd = 17 * 60 + 45 + extraMins; // 17:45 a 18:30 no último restaurante
+        const simSpan = simEnd - simStart; // 8h15 a 9h00 totais no dia
+        const simRec = 360 + (extraMins >= 30 ? 30 : 0); // 6h00 a 6h30 de gravação
+        const simLoc = simSpan - simRec; // ~2h15 de locomoção entre restaurantes
+
+        return {
+          dateIso,
+          employeeId: employee.id,
+          regime: 'externo',
+          isSunday,
+          eventsCount: 2,
+          firstStartMin: simStart,
+          lastEndMin: simEnd,
+          firstStartFormatted: minutesToTimeStr(simStart),
+          lastEndFormatted: minutesToTimeStr(simEnd),
+          firstRestaurantName: rest1,
+          lastRestaurantName: rest2,
+          recordingMinutes: simRec,
+          locomotionMinutes: simLoc,
+          internalBreakMinutes: 0,
+          totalWorkedMinutes: simSpan,
+          manualAdjustmentMinutes,
+          hasNightShift: false,
+          isSimulated: true,
+          events: [],
+        };
+      }
+
       return {
         dateIso,
         employeeId: employee.id,
