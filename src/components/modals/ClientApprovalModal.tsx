@@ -3,20 +3,7 @@
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { MediaDeliverable } from '@/types/database';
-import {
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  Play,
-  Copy,
-  ExternalLink,
-  MessageCircle,
-  Share2,
-  Sparkles,
-  Smartphone,
-  Eye,
-  Check,
-} from 'lucide-react';
+import { AlertTriangle, Play, ExternalLink, MessageCircle, Sparkles, Check } from 'lucide-react';
 
 interface ClientApprovalModalProps {
   deliverable: MediaDeliverable | null;
@@ -70,9 +57,7 @@ export function ClientApprovalModal({ deliverable, isOpen, onClose }: ClientAppr
         {/* Topo */}
         <div className="flex items-center justify-between border-b border-[var(--ui-border)] pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
-              <Eye className="w-4 h-4" />
-            </div>
+
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base sm:text-lg font-bold text-foreground font-heading">
@@ -92,9 +77,7 @@ export function ClientApprovalModal({ deliverable, isOpen, onClose }: ClientAppr
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* Mockup Smartphone 9:16 + Detalhes do Conteúdo */}

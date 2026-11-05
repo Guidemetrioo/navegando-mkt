@@ -4,29 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client, DespesaGravacao, CategoriaDespesa } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import {
-  X,
-  AlertTriangle,
-  Trash2,
-  Clock,
-  MapPin,
-  FileText,
-  UserCheck,
-  Search,
-  PlusCircle,
-  Video,
-  Sparkles,
-  ExternalLink,
-  FolderOpen,
-  CheckCircle2,
-  Building,
-  Receipt,
-  DollarSign,
-  MessageCircle,
-  Send,
-  Check,
-  Plus,
-} from 'lucide-react';
+import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, MessageCircle, Send, Check, Plus } from 'lucide-react';
 
 export function EventModal() {
   const {
@@ -363,9 +341,7 @@ export function EventModal() {
             type="button"
             onClick={closeEventModal}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* Abas Superiores: Agenda vs Relatório vs Custos */}
@@ -1128,7 +1104,7 @@ export function EventModal() {
                 />
                 {despComprovanteNome && (
                   <span className="text-[10px] text-emerald-400 font-semibold mt-1 block">
-                    ✓ Comprovante anexado: {despComprovanteNome}
+                     Comprovante anexado: {despComprovanteNome}
                   </span>
                 )}
               </div>

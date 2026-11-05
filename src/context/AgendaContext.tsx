@@ -47,6 +47,7 @@ import {
 } from '@/lib/storage-backup';
 import { ToastContainer, ToastItem, ToastType } from '@/components/ui/Toast';
 import { verifyCredentials, canUserAccessView } from '@/lib/auth-users';
+import { BancoHorasLancamento, generateBalancedMonthlyRoster } from '@/lib/clt-roster-engine';
 
 export type AgendaView =
   | 'home'
@@ -56,6 +57,7 @@ export type AgendaView =
   | 'escala'
   | 'minha-agenda'
   | 'ponto'
+  | 'banco-horas'
   | 'relatorios'
   | 'arquivos'
   | 'clientes'
@@ -157,6 +159,11 @@ interface AgendaContextType {
   saveEvent: (eventData: Omit<EventItem, 'id'> & { id?: string }, allowConflictOverride?: boolean) => { success: boolean; conflicts?: ConflictRecord[] };
   deleteEvent: (id: string) => void;
   saveEventReport: (eventId: string, report: RelatorioFilmmaker) => void;
+  autoGenerateMonthlyRoster: (year: number, month: number, mode: 'only_incomplete' | 'rebalance_all') => { assignedCount: number; summaryMessage: string };
+  updateEventTeamAssignment: (eventId: string, newEmployeeIds: string[]) => void;
+  bancoHorasLancamentos: BancoHorasLancamento[];
+  addBancoHorasLancamento: (novo: Omit<BancoHorasLancamento, 'id' | 'created_at'>) => BancoHorasLancamento;
+  deleteBancoHorasLancamento: (id: string) => void;
 
   // Permissões e Autenticação
   userRole: UserRole;
@@ -306,6 +313,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
+  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>([]);
 
   const [localHydrated,setLocalHydrated] = useState(false);
   const mergeInitialClients = useCallback((list: Client[]): Client[] => {
@@ -381,6 +389,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         if (Array.isArray(parsedWpp.logs)) setWhatsappLogs(parsedWpp.logs);
       }
 
+      const savedBh = localStorage.getItem('navegando_mkt_banco_horas_real_v1');
+      if (savedBh) {
+        const parsedBh = JSON.parse(savedBh);
+        if (Array.isArray(parsedBh)) setBancoHorasLancamentos(parsedBh);
+      }
       setLocalHydrated(true);
     } catch {setIsDataSaved(false);toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.','error');}
     });
@@ -390,8 +403,51 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     const saved=saveToStorage('navegando_mkt_workspace_real_v1',localWorkspace);
     saveToStorage('navegando_mkt_financial_real_v1',{transacoes,salarios,extraDespesas});
     saveToStorage('navegando_mkt_whatsapp_real_v1',{config:whatsappConfig,logs:whatsappLogs});
+    saveToStorage('navegando_mkt_banco_horas_real_v1',bancoHorasLancamentos);
     queueMicrotask(()=>setIsDataSaved(saved));
-  },[localWorkspace,transacoes,salarios,extraDespesas,whatsappConfig,whatsappLogs,localHydrated]);
+  },[localWorkspace,transacoes,salarios,extraDespesas,whatsappConfig,whatsappLogs,bancoHorasLancamentos,localHydrated]);
+
+  const autoGenerateMonthlyRoster = useCallback(
+    (year: number, month: number, mode: 'only_incomplete' | 'rebalance_all') => {
+      const result = generateBalancedMonthlyRoster({ year, month, events, employees, mode });
+      setEvents(result.updatedEvents);
+      toast(result.summaryMessage, result.assignedCount > 0 ? 'success' : 'info');
+      return { assignedCount: result.assignedCount, summaryMessage: result.summaryMessage };
+    },
+    [events, employees, toast]
+  );
+
+  const updateEventTeamAssignment = useCallback(
+    (eventId: string, newEmployeeIds: string[]) => {
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === eventId ? { ...ev, assigned_employee_ids: newEmployeeIds } : ev))
+      );
+      toast('Escala da gravação atualizada manualmente!', 'success');
+    },
+    [toast]
+  );
+
+  const addBancoHorasLancamento = useCallback(
+    (novo: Omit<BancoHorasLancamento, 'id' | 'created_at'>): BancoHorasLancamento => {
+      const item: BancoHorasLancamento = {
+        ...novo,
+        id: `bh-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        created_at: new Date().toISOString(),
+      };
+      setBancoHorasLancamentos((prev) => [item, ...prev]);
+      toast(`Compensação/ajuste no Banco de Horas de ${item.employee_nome} salvo com segurança!`, 'success');
+      return item;
+    },
+    [toast]
+  );
+
+  const deleteBancoHorasLancamento = useCallback(
+    (id: string) => {
+      setBancoHorasLancamentos((prev) => prev.filter((item) => item.id !== id));
+      toast('Registro de ajuste removido do Banco de Horas.', 'info');
+    },
+    [toast]
+  );
 
   const openPontoModal = useCallback(
     (preselectedClientId?: string, preselectedEventId?: string, tipo: PontoTipo = 'entrada') => {
@@ -1596,6 +1652,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         saveEvent:guarded(canManage,saveEvent),
         deleteEvent:guarded(canManage,deleteEvent),
         saveEventReport:(id,report)=>guarded(canManage || memberRole==='filmmaker' && Boolean(events.find(e=>e.id===id)?.assigned_employee_ids?.includes(loggedEmployeeId)),saveEventReport)(id,report),
+        autoGenerateMonthlyRoster:guarded(canManage,autoGenerateMonthlyRoster),
+        updateEventTeamAssignment:guarded(canManage,updateEventTeamAssignment),
+        bancoHorasLancamentos:canManage ? bancoHorasLancamentos : bancoHorasLancamentos.filter(b=>b.employee_id===loggedEmployeeId),
+        addBancoHorasLancamento:guarded(canManage,addBancoHorasLancamento),
+        deleteBancoHorasLancamento:guarded(canManage,deleteBancoHorasLancamento),
         userRole,
         setUserRole:()=>{toast('As permissões são definidas pelo cargo do membro.','info');},
         loggedEmployeeId,

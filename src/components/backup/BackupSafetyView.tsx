@@ -4,18 +4,7 @@ import { AuditLog } from './AuditLog';
 import { IS_DEMO } from '@/lib/app-mode';
 import React, { useRef, useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import {
-  ShieldCheck,
-  Download,
-  Upload,
-  CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
-  HardDrive,
-  FileJson,
-  Lock,
-  Sparkles,
-} from 'lucide-react';
+import { Download, Upload, CheckCircle2, AlertTriangle, FileJson } from 'lucide-react';
 
 export function BackupSafetyView() {
   const {
@@ -79,9 +68,7 @@ export function BackupSafetyView() {
       {/* 1. HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
+
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
@@ -140,9 +127,7 @@ export function BackupSafetyView() {
         {/* Card Exportação */}
         <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between gap-5">
           <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] flex items-center justify-center">
-              <Download className="w-5 h-5" />
-            </div>
+
             <h3 className="text-base font-bold text-foreground font-heading mt-1">
               Exportar Cópia de Segurança
             </h3>
@@ -164,9 +149,7 @@ export function BackupSafetyView() {
         {/* Card Restauração */}
         <div className="p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between gap-5">
           <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-[#38bdf8] flex items-center justify-center">
-              <Upload className="w-5 h-5" />
-            </div>
+
             <h3 className="text-base font-bold text-foreground font-heading mt-1">
               Restaurar Dados de Backup
             </h3>

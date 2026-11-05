@@ -4,26 +4,7 @@ import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import {
-  Building,
-  X,
-  MapPin,
-  Phone,
-  FolderOpen,
-  Calendar,
-  ExternalLink,
-  MessageCircle,
-  Copy,
-  Plus,
-  Edit,
-  Clock,
-  Sparkles,
-  TrendingUp,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  Video,
-} from 'lucide-react';
+import { MapPin, FolderOpen, ExternalLink, MessageCircle, Plus, Edit, Sparkles, TrendingUp, Video } from 'lucide-react';
 
 interface ClientDossierModalProps {
   client: Client | null;
@@ -84,9 +65,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
         {/* 1. TOPO: Identidade do Restaurante & Ações */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--ui-border)] pb-5">
           <div className="flex items-start gap-3.5">
-            <div className="w-13 h-13 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20 flex items-center justify-center shrink-0">
-              <Building className="w-7 h-7" />
-            </div>
+
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -140,9 +119,7 @@ export function ClientDossierModal({ client, isOpen, onClose, onEdit }: ClientDo
               type="button"
               onClick={onClose}
               className="p-2 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
           </div>
         </div>
 

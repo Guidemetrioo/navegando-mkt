@@ -3,24 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
-import {
-  DollarSign,
-  TrendingUp,
-  Receipt,
-  Users,
-  Building,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  Check,
-  X,
-  ShieldAlert,
-  FileText,
-  Sparkles,
-  Database,
-  Camera,
-  Briefcase,
-} from 'lucide-react';
+import { Building, Plus, Check, FileText, Sparkles, Database } from 'lucide-react';
 import {
   TransacaoTipo,
   TransacaoCategoria,
@@ -214,9 +197,7 @@ export function FinancialControlView() {
   if (!canManage) {
     return (
       <div className="py-16 text-center rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] p-8 flex flex-col items-center gap-4 max-w-xl mx-auto my-12 animate-in fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg">
-          <ShieldAlert className="w-8 h-8" />
-        </div>
+
         <h3 className="text-xl font-bold text-foreground font-heading">
           Acesso Restrito ao Controle Financeiro
         </h3>
@@ -268,9 +249,7 @@ export function FinancialControlView() {
       {/* Top Banner / Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-start gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 shrink-0">
-            <DollarSign className="w-6 h-6 stroke-[2.5]" />
-          </div>
+
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
@@ -302,9 +281,7 @@ export function FinancialControlView() {
       {/* Painel de Transparência: Dados Simulados vs Dados Reais */}
       <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/25 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex items-start sm:items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
+
           <div className="text-xs">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-foreground">Identificação Clara: Dados Simulados vs Dados Reais</span>
@@ -366,9 +343,7 @@ export function FinancialControlView() {
         <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-zinc-400 uppercase font-semibold">Receitas Mensais (Clientes)</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl font-extrabold text-foreground font-heading font-mono">
@@ -385,9 +360,7 @@ export function FinancialControlView() {
         <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-zinc-400 uppercase font-semibold">Gastos Totais da Agência</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
-              <ArrowDownRight className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl font-extrabold text-rose-400 font-heading font-mono">
@@ -403,11 +376,7 @@ export function FinancialControlView() {
         <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-zinc-400 uppercase font-semibold">Resultado / Caixa Operacional</span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              lucroLiquido >= 0 ? 'bg-sky-500/10 text-sky-400' : 'bg-amber-500/10 text-amber-400'
-            }`}>
-              <TrendingUp className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className={`text-2xl font-extrabold font-heading font-mono ${
@@ -425,9 +394,7 @@ export function FinancialControlView() {
         <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-zinc-400 uppercase font-semibold">Reembolsos de Campo</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl font-extrabold text-amber-400 font-heading font-mono">
@@ -459,9 +426,7 @@ export function FinancialControlView() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center">
-                <Camera className="w-5 h-5" />
-              </div>
+
               <div>
                 <span className="text-[11px] font-bold text-sky-400 uppercase block">Filmmakers Externos</span>
                 <span className="text-xs text-zinc-400">Victor, Gimenez e Henry ({mediasPorFuncao.filmmaker.qtd} PJ)</span>
@@ -480,9 +445,7 @@ export function FinancialControlView() {
 
           <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-pink-500/15 border border-pink-500/30 text-pink-400 flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
+
               <div>
                 <span className="text-[11px] font-bold text-pink-400 uppercase block">Modelos Oficiais</span>
                 <span className="text-xs text-zinc-400">Isadora, Giovana, Milena e Julia ({mediasPorFuncao.modelo.qtd} PJ)</span>
@@ -501,9 +464,7 @@ export function FinancialControlView() {
 
           <div className="p-4 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                <Briefcase className="w-5 h-5" />
-              </div>
+
               <div>
                 <span className="text-[11px] font-bold text-emerald-400 uppercase block">Funcionários Internos</span>
                 <span className="text-xs text-zinc-400">Carol, Bruna, Lucas, Evelin, Júlia e Augusto ({mediasPorFuncao.interno.qtd} CLT)</span>
@@ -1142,9 +1103,7 @@ export function FinancialControlView() {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 rounded-lg text-zinc-400 hover:text-foreground cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             <form onSubmit={handleCreateTransacao} className="flex flex-col gap-3.5 text-xs">

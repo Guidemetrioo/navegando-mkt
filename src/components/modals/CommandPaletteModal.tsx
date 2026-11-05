@@ -2,24 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
-import {
-  Search,
-  Building,
-  Calendar,
-  FolderOpen,
-  Users,
-  Sparkles,
-  MapPin,
-  Plus,
-  ArrowRight,
-  Clock,
-  X,
-  ExternalLink,
-  ShieldCheck,
-  Moon,
-  Sun,
-  LayoutDashboard,
-} from 'lucide-react';
+import { Search, Building, Calendar, FolderOpen, Users, MapPin, Plus, ArrowRight, Moon, Sun } from 'lucide-react';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 
 interface PaletteItem {
@@ -302,9 +285,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
               type="button"
               onClick={() => setQuery('')}
               className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
           ) : (
             <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono text-zinc-400 bg-[var(--ui-hover)] border border-[var(--ui-border)] rounded-md">
               ESC
@@ -338,13 +319,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-[var(--ui-accent)]/20' : 'bg-[var(--ui-raised)]'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${item.iconColor || 'text-zinc-300'}`} />
-                    </div>
+
 
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-2">

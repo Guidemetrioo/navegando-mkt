@@ -5,23 +5,7 @@ import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { formatDistance } from '@/lib/geo-utils';
-import {
-  Calendar,
-  Clock,
-  Video,
-  FolderOpen,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  Plus,
-  Camera,
-  ExternalLink,
-  ShieldCheck,
-  TrendingUp,
-  Download,
-  Building,
-  Sparkles,
-} from 'lucide-react';
+import { Clock, Video, FolderOpen, ArrowRight, Plus, Camera, Download, Sparkles } from 'lucide-react';
 
 export function ExecutiveDashboardView() {
   const {
@@ -127,9 +111,7 @@ export function ExecutiveDashboardView() {
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
             <span>Gravações da Semana</span>
-            <div className="w-8 h-8 rounded-xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">
@@ -148,9 +130,7 @@ export function ExecutiveDashboardView() {
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
             <span>Briefing & Roteiros</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-              <FolderOpen className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">
@@ -169,9 +149,7 @@ export function ExecutiveDashboardView() {
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
             <span>Presença no Local (GPS)</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">
@@ -190,9 +168,7 @@ export function ExecutiveDashboardView() {
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
             <span>Restaurantes Ativos</span>
-            <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-[#38bdf8] flex items-center justify-center">
-              <Building className="w-4 h-4" />
-            </div>
+
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">

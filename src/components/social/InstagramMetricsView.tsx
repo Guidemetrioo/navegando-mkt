@@ -2,21 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import {
-  Play,
-  Users,
-  Heart,
-  Bookmark,
-  Share2,
-  ExternalLink,
-  Film,
-  CalendarCheck,
-  Building2,
-  Sparkles,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { Play, Users, Heart, Bookmark, Share2, ExternalLink, Film, CalendarCheck, Building2, Sparkles, Plus } from 'lucide-react';
 
 export function InstagramMetricsView() {
   const {
@@ -123,9 +109,7 @@ export function InstagramMetricsView() {
       {/* Barra de Filtro e Cadastro de Métrica */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[var(--ui-accent)]/10 border border-[var(--ui-accent)]/20 flex items-center justify-center text-[var(--ui-accent)]">
-            <Film className="w-4 h-4" />
-          </div>
+
           <div>
             <h2 className="text-base font-bold text-foreground font-heading">
               Métricas & Performance dos Reels
@@ -312,9 +296,7 @@ export function InstagramMetricsView() {
                         onClick={() => deleteReel(reel.id)}
                         className="p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                         title="Remover métrica"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                       data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>
                     )}
                   </div>
 
@@ -378,9 +360,7 @@ export function InstagramMetricsView() {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">

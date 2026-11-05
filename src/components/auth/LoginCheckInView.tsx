@@ -17,28 +17,7 @@ import {
   MAX_GEOFENCE_RADIUS_METERS,
   DEFAULT_CLIENT_COORDINATES,
 } from '@/lib/geo-utils';
-import {
-  Camera,
-  MapPin,
-  Lock,
-  User,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Sparkles,
-  Shield,
-  Eye,
-  EyeOff,
-  Building,
-  ArrowRight,
-  ShieldCheck,
-  Video,
-  Scale,
-  Calendar,
-  Check,
-  ChevronRight,
-  RefreshCw,
-} from 'lucide-react';
+import { Camera, MapPin, Lock, User, AlertTriangle, Sparkles, ArrowRight, ShieldCheck, Check } from 'lucide-react';
 import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 export function LoginCheckInView() {
@@ -362,9 +341,7 @@ export function LoginCheckInView() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-3 text-zinc-400 hover:text-foreground cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                     data-text-action="true"><span className="text-action-label">{showPassword ? 'Ocultar' : 'Mostrar'}</span></button>
                   </div>
                   <span className="text-[10px] text-zinc-400 mt-1 block">
                     Regra oficial: <strong>nome123</strong> (Ex: <em>felipe123</em>, <em>vitinho123</em>, <em>isa123</em>)
@@ -534,9 +511,7 @@ export function LoginCheckInView() {
               <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-5 shadow-2xl">
                 {/* Banner da Nova CLT */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
-                    <Scale className="w-5 h-5" />
-                  </div>
+
                   <div>
                     <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
                       Regime CLT Interno 2026/2027 • Normas Trabalhistas
@@ -684,9 +659,7 @@ export function LoginCheckInView() {
               <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-5 shadow-2xl">
                 {/* Banner Equipe Externa */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-[#38bdf8]/10 via-[#38bdf8]/5 to-transparent border border-[#38bdf8]/20 flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-[#38bdf8]/20 text-[#38bdf8] shrink-0">
-                    <Video className="w-5 h-5" />
-                  </div>
+
                   <div>
                     <h4 className="text-xs font-bold text-[#38bdf8] uppercase tracking-wider">
                       Regime Externo (Restaurante / Campo) • Filmmakers & Modelos
@@ -831,7 +804,7 @@ export function LoginCheckInView() {
 
       {/* 3. RODAPÉ: Informações de Segurança */}
       <footer className="max-w-5xl w-full mx-auto pt-4 border-t border-[var(--ui-border)] text-center text-xs text-zinc-400 flex flex-col sm:flex-row items-center justify-between gap-2 relative z-10">
-        <span>© 2026 Navegando MKT • Sistema Integrado de Gestão & Ponto Eletrônico</span>
+        <span> 2026 Navegando MKT • Sistema Integrado de Gestão & Ponto Eletrônico</span>
         <span className="flex items-center gap-1.5 text-zinc-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Normas configurada pela agência • Geolocalização & Biometria</span>

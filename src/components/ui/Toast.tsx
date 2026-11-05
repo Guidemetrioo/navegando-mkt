@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, XCircle } from 'lucide-react';
 
 export type ToastType = 'success' | 'info' | 'warning' | 'error';
 
@@ -60,9 +60,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
               onClick={() => onDismiss(toast.id)}
               className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Fechar"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
           </div>
         );
       })}

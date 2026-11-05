@@ -6,35 +6,8 @@ import { IS_DEMO } from '@/lib/app-mode';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { HIERARCHY_LABELS } from '@/lib/employee-login-matcher';
-import {
-  LayoutDashboard,
-  Calendar,
-  Users,
-  UserCheck,
-  MapPin,
-  FolderOpen,
-  Building,
-  TrendingUp,
-  MessageSquare,
-  ShieldCheck,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Download,
-  CheckCircle2,
-  Sparkles,
-  Camera,
-  X,
-  LogOut,
-  Home,
-  FileText,
-  ClipboardList,
-  Receipt,
-  DollarSign,
-  Smartphone,
-} from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, CheckCircle2, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock } from 'lucide-react';
 import { canUserAccessView, USERS_DATABASE } from '@/lib/auth-users';
-import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 interface AppSidebarProps {
   isMobileOpen?: boolean;
@@ -113,7 +86,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
         {
           id: 'escala',
-          label: 'Escala por Duplas',
+          label: 'Escalas (Auto & CLT)',
           icon: Users,
         },
         {
@@ -126,6 +99,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           label: 'Ponto e localização',
           icon: MapPin,
           badgeColor: 'bg-emerald-500/15 text-emerald-400',
+        },
+        {
+          id: 'banco-horas',
+          label: 'Banco de Horas',
+          icon: Clock,
+          badge: '42h',
+          badgeColor: 'bg-[#38bdf8]/15 text-[#38bdf8]',
         },
         {
           id: 'relatorios',
@@ -195,6 +175,18 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
     },
   ];
 
+  const orderedGroups: { groupTitle: string; ids: AgendaView[] }[] = [
+    { groupTitle: 'Visão geral', ids: ['home', 'dashboard'] },
+    { groupTitle: 'Produção', ids: ['mes', 'escala', 'minha-agenda', 'ponto', 'banco-horas', 'relatorios', 'briefing'] },
+    { groupTitle: 'Gestão', ids: ['reembolsos', 'financeiro', 'clientes', 'whatsapp'] },
+    { groupTitle: 'Sistema', ids: ['backups'] },
+  ];
+  const controlGroups: NavGroup[] = orderedGroups.map(group => ({
+    groupTitle: group.groupTitle,
+    items: group.ids.flatMap(id => navGroups.flatMap(g => g.items).filter(item => item.id === id))
+      .map(item => ({ ...item, badge: ['briefing', 'reembolsos'].includes(item.id) ? undefined : item.badge })),
+  }));
+
   return (
     <>
       {/* Backdrop Mobile */}
@@ -216,7 +208,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         <div className="p-4 border-b border-[var(--ui-border)] flex items-center justify-between">
           {!isCollapsed ? (
             <div className="flex flex-col gap-1 min-w-0">
-              <NavegandoLogo variant="horizontal" size="md" showTagline withGlow={false} />
+              <div className="control-brand"><span className="control-brand-symbol" aria-hidden="true">N</span><span><strong>NAVEGANDO <b>MKT</b></strong><small>Agência de Marketing</small></span></div>
               {currentMember?.funcao === 'modelo' && (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center gap-1">
@@ -228,7 +220,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             </div>
           ) : (
             <div className="mx-auto">
-              <NavegandoLogo variant="symbol" size="sm" withGlow={false} />
+              <span className="control-brand-symbol" aria-label="Navegando">N</span>
             </div>
           )}
 
@@ -238,24 +230,20 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="hidden lg:flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
               title={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-            >
-              {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
+             data-text-action="true"><span className="text-action-label">{isCollapsed ? 'Expandir' : 'Recolher'}</span></button>
             {onCloseMobile && (
               <button
                 type="button"
                 onClick={onCloseMobile}
                 className="flex lg:hidden p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                 title="Fechar menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             )}
           </div>
         </div>
 
       {/* 2. BOTÃO DE AÇÃO RÁPIDA PRINCIPAL */}
-      <div className="p-3 border-b border-[var(--ui-border)]/60">
+      <div className="control-sidebar-quick p-3 border-b border-[var(--ui-border)]/60">
         {!isCollapsed ? (
           userRole!=='admin' ? (
             <button
@@ -301,15 +289,13 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             onClick={() => (userRole!=='admin' ? openPontoModal() : openNewEventModal())}
             className="w-10 h-10 mx-auto rounded-xl brand-solid bg-[var(--ui-accent)] text-foreground flex items-center justify-center shadow-md cursor-pointer"
             title={userRole!=='admin' ? 'Bater Ponto' : 'Nova Gravação'}
-          >
-            {userRole!=='admin' ? <Camera className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-          </button>
+           data-text-action="true"><span className="text-action-label">{userRole !== 'admin' ? 'Ponto' : 'Criar'}</span></button>
         )}
       </div>
 
       {/* 3. NAVEGAÇÃO AGRUPADA COM CONTROLE RIGOROSO DE ACESSO */}
       <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-        {navGroups.map((group) => {
+        {controlGroups.map((group) => {
           const accessibleItems = group.items.filter((item) =>
             canUserAccessView(currentMember?.funcao, item.id)
           );
@@ -317,7 +303,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
 
           return (
             <div key={group.groupTitle} className="space-y-1">
-              {false && !isCollapsed && (
+              {!isCollapsed && (
                 <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                   {group.groupTitle}
                 </div>
@@ -455,9 +441,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                   onClick={logout}
                   className="p-1 rounded-lg hover:bg-rose-500/15 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                   title="Sair / Trocar de Ponto"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                 data-text-action="true"><span className="text-action-label">{"Sair"}</span></button>
               </div>
             </div>
           </>
@@ -469,9 +453,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
               onClick={logout}
               className="p-2 rounded-xl hover:bg-rose-500/15 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
               title="Sair / Trocar Ponto"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Sair"}</span></button>
           </div>
         )}
       </div>

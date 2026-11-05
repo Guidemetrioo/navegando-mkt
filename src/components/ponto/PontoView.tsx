@@ -10,21 +10,7 @@ import { formatDistance, MAX_GEOFENCE_RADIUS_METERS } from '@/lib/geo-utils';
 import { LiveLocationRadar } from './LiveLocationRadar';
 import { PontoStreet } from './PontoStreet';
 import { TeamPontoOverview } from './TeamPontoOverview';
-import {
-  Camera,
-  MapPin,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Plus,
-  Calendar,
-  ExternalLink,
-  ShieldCheck,
-  LayoutGrid,
-  List,
-  X,
-  Scale,
-} from 'lucide-react';
+import { Camera, MapPin, Clock, CheckCircle2, AlertTriangle, Plus, Calendar, ExternalLink, ShieldCheck } from 'lucide-react';
 
 export function PontoView() {
   const {
@@ -106,9 +92,7 @@ export function PontoView() {
       {/* 0.1 Banner de Normas configurada pela agência & Cargas Horárias */}
       <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
-            <Scale className="w-6 h-6" />
-          </div>
+
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
@@ -261,9 +245,7 @@ export function PontoView() {
                 activeTab === 'cards' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Visualização em Cards"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Cards"}</span></button>
             <button
               type="button"
               onClick={() => setActiveTab('tabela')}
@@ -271,9 +253,7 @@ export function PontoView() {
                 activeTab === 'tabela' ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
               }`}
               title="Tabela de Auditoria"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Tabela"}</span></button>
           </div>
 
           {/* Botão de Bater Ponto */}
@@ -391,9 +371,7 @@ export function PontoView() {
                       className="relative w-24 h-28 rounded-xl border-2 border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)]/60 flex flex-col items-center justify-center text-center p-2 shrink-0 group hover:border-[var(--ui-accent)]/50 transition-colors"
                       title="Foto não disponível"
                     >
-                      <div className="w-8 h-8 rounded-full bg-[var(--ui-surface)] border border-[var(--ui-border)] flex items-center justify-center text-zinc-400 group-hover:text-[var(--ui-accent)] transition-colors mb-1 shadow-sm">
-                        <Camera className="w-4 h-4" />
-                      </div>
+
                       <span className="text-[9px] font-medium text-zinc-400 leading-tight">
                         Foto não disponível
                       </span>
@@ -513,12 +491,7 @@ export function PontoView() {
                               className="w-14 h-14 rounded-xl object-cover border border-[var(--ui-border)]" />
                           </button>
                         ) : (
-                          <div
-                            className="w-10 h-10 rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)] flex items-center justify-center text-zinc-400"
-                            title="Foto não disponível"
-                          >
-                            <Camera className="w-4 h-4 text-zinc-400" />
-                          </div>
+                          null
                         )}
                       </td>
                       <td className="py-2.5 px-4 font-semibold text-foreground">
@@ -620,9 +593,7 @@ export function PontoView() {
                 aria-label="Fechar foto"
                 onClick={() => setZoomPhoto(null)}
                 className="p-1 rounded-xl text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             <div className="rounded-2xl overflow-hidden border border-[var(--ui-border)] shadow-inner bg-black">

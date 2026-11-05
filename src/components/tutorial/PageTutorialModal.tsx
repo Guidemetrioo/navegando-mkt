@@ -3,20 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AgendaView, useAgenda } from '@/context/AgendaContext';
 import { VisualExamplePreview } from './VisualExamplePreview';
-import {
-  BookOpen,
-  Sparkles,
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  X,
-  HelpCircle,
-  Eye,
-  Layers,
-  ListChecks,
-  FileCheck2,
-  Plus,
-} from 'lucide-react';
+import { Sparkles, CheckCircle2, ArrowRight, ArrowLeft, HelpCircle, Eye, Layers, ListChecks, FileCheck2, Plus } from 'lucide-react';
 
 export interface ExampleField {
   label: string;
@@ -46,6 +33,40 @@ export interface PageTutorialData {
 }
 
 export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
+  'banco-horas': {
+    view: 'banco-horas',
+    title: 'Banco de Horas (Meta 42h Semanais & Locomoção)',
+    subtitle: 'Controle de jornada externo (1º ao último restaurante + locomoção) e compensação manual',
+    category: 'Produção & CLT',
+    purpose: 'Acompanha as horas trabalhadas semana a semana frente ao limite de 42h semanais (EC 141/2026), somando gravações e locomoção entre restaurantes no mesmo dia e permitindo compensações manuais sem perda de dados.',
+    installedFunctions: [
+      'Cálculo diferenciado para externos: início no 1º restaurante até o término no último restaurante do dia',
+      'Contabilização automática do tempo de locomoção entre restaurantes como hora trabalhada',
+      'Indicador claro de quanto passou ou faltou para completar as 42 horas semanais',
+      'Compensação manual auditável e exportação de extrato CSV',
+    ],
+    agencyBenefits: [
+      'Conformidade trabalhista com as normas de dezembro de 2026 (42h semanais)',
+      'Zero perda de dados com salvamento automático e histórico completo',
+    ],
+    howToFeedSteps: [
+      {
+        stepTitle: '1. Agende as gravações e registre os pontos',
+        description: 'O sistema calcula automaticamente o início no 1º restaurante, o fim no último e a locomoção entre eles.',
+      },
+      {
+        stepTitle: '2. Use o botão Compensar / Ajustar Horas quando necessário',
+        description: 'Lance folgas compensatórias, abonos ou horas extras pagas com motivo e data.',
+      },
+    ],
+    exampleTitle: 'Exemplo de Semana no Banco de Horas',
+    exampleSubtitle: 'Comparativo semanal contra a meta de 42h semanais:',
+    exampleBadge: 'EXEMPLO ILUSTRATIVO',
+    exampleFields: [
+      { label: 'Meta Semanal (EC 141/2026)', value: '42h 00min', highlight: true },
+      { label: 'Regra Externa', value: '1º Restaurante ao Último Restaurante (Locomoção incluída)' },
+    ],
+  },
   home: {
     view: 'home',
     title: 'Meu Painel Diário (Central Operacional)',
@@ -891,7 +912,7 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
       },
       {
         label: 'Autor da Marcação & Seguidores',
-        value: '@roteirogastronomico.sp • 28.400 seguidores (⭐ Influenciador Detectado)',
+        value: '@roteirogastronomico.sp • 28.400 seguidores ( Influenciador Detectado)',
         highlight: true,
       },
       {
@@ -1153,9 +1174,7 @@ export function PageTutorialModal() {
       {/* Barra Flutuante / Banner Contextual de Ajuda e Exemplo de Preenchimento */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-2xl bg-[var(--ui-surface)]/90 border border-[var(--ui-accent)]/25 shadow-sm">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="p-1.5 rounded-lg bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] shrink-0">
-            <BookOpen className="w-3.5 h-3.5" />
-          </span>
+
           <div className="truncate">
             <span className="text-xs font-bold text-foreground">
               Guia Rápido: {tutorial.title}
@@ -1221,9 +1240,7 @@ export function PageTutorialModal() {
                 onClick={handleClose}
                 className="p-2 rounded-xl bg-[var(--ui-surface)] hover:bg-[var(--ui-hover)] text-zinc-400 hover:text-foreground border border-[var(--ui-border)] transition-colors cursor-pointer shrink-0"
                 title="Fechar tutorial"
-              >
-                <X className="w-4 h-4" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             {/* Abas / Etapas do Tutorial */}
@@ -1385,7 +1402,7 @@ export function PageTutorialModal() {
                         </div>
                         {field.hint && (
                           <span className="text-[10px] text-emerald-400 mt-1 block">
-                            💡 {field.hint}
+                             {field.hint}
                           </span>
                         )}
                       </div>

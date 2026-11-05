@@ -7,36 +7,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { USERS_DATABASE, CLT_NORMS_2026, canUserAccessView } from '@/lib/auth-users';
 import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
-import {
-  Calendar,
-  Clock,
-  Video,
-  FolderOpen,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  Plus,
-  Camera,
-  ExternalLink,
-  MapPin,
-  Sparkles,
-  Navigation,
-  ListTodo,
-  TrendingUp,
-  FileText,
-  ShieldCheck,
-  CheckSquare,
-  Square,
-  Building,
-  UserCheck,
-  Users,
-  Award,
-  BarChart3,
-  Flame,
-  ChefHat,
-  Coffee,
-  Check,
-} from 'lucide-react';
+import { Calendar, Clock, Video, FolderOpen, CheckCircle2, ArrowRight, Camera, ExternalLink, MapPin, Sparkles, Navigation, ListTodo, TrendingUp, FileText, ShieldCheck, CheckSquare, Square, Building, UserCheck, Users, Award, ChefHat } from 'lucide-react';
 
 export function EmployeeWelcomeDashboard() {
   const {
@@ -331,9 +302,7 @@ export function EmployeeWelcomeDashboard() {
         <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[var(--ui-surface)] via-[var(--ui-surface)] to-[var(--ui-surface)] border border-[var(--ui-accent)]/30 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] flex items-center justify-center border border-[var(--ui-accent)]/30 shadow-md">
-                <Sparkles className="w-6 h-6 text-[var(--ui-accent)] animate-pulse" />
-              </div>
+
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[var(--ui-accent)] px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/10 border border-[var(--ui-accent)]/25">
@@ -397,9 +366,7 @@ export function EmployeeWelcomeDashboard() {
         <div className="p-5 rounded-3xl bg-[var(--ui-surface)] border border-emerald-500/25 shadow-lg flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
+
               <div>
                 <h3 className="text-sm font-bold text-foreground font-heading">
                   Controle de Ponto configurada pela agência — Equipe Interna
@@ -434,7 +401,7 @@ export function EmployeeWelcomeDashboard() {
                 </div>
               </div>
               <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                Registrado ✅
+                Registrado
               </span>
             </div>
 
@@ -457,7 +424,7 @@ export function EmployeeWelcomeDashboard() {
               </div>
               {pontoAlmoco ? (
                 <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Registrado ✅
+                  Registrado
                 </span>
               ) : (
                 <button
@@ -489,7 +456,7 @@ export function EmployeeWelcomeDashboard() {
               </div>
               {pontoSaida ? (
                 <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                  Registrado ✅
+                  Registrado
                 </span>
               ) : (
                 <button
@@ -509,9 +476,7 @@ export function EmployeeWelcomeDashboard() {
       {!isModelo && myPendingAdjustments.length > 0 && (
         <div className="p-4 sm:p-5 rounded-3xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in slide-in-from-top-2">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
+
             <div>
               <h3 className="text-sm font-bold text-rose-200 font-heading">
                 Você tem {myPendingAdjustments.length} vídeo(s) com ajustes solicitados pelo cliente!
@@ -749,7 +714,7 @@ export function EmployeeWelcomeDashboard() {
                               Relatório OK ({ev.relatorio_filmmaker.takes_gravados_qtd || 0} takes • {ev.relatorio_filmmaker.pratos_gravados?.length || 0} pratos)
                             </span>
                             <span className="text-[11px] text-zinc-400">
-                              Nota da sessão: ⭐ {ev.relatorio_filmmaker.avaliacao_sessao || 5}/5
+                              Nota da sessão:  {ev.relatorio_filmmaker.avaliacao_sessao || 5}/5
                             </span>
                           </div>
                         )}

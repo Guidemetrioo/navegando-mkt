@@ -3,16 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { Client } from '@/types/database';
-import {
-  X,
-  Building,
-  MapPin,
-  Phone,
-  User,
-  Link,
-  Save,
-  FileText,
-} from 'lucide-react';
+import { Link, FileText } from 'lucide-react';
 
 export function ClientModal() {
   const {
@@ -122,9 +113,7 @@ export function ClientModal() {
         {/* Cabeçalho */}
         <div className="flex items-start justify-between border-b border-[var(--ui-border)] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center justify-center">
-              <Building className="w-5 h-5" />
-            </div>
+
             <div>
               <h3 className="text-lg font-bold text-foreground font-heading">
                 {editingClient ? 'Editar Restaurante' : 'Novo Restaurante Parceiro'}
@@ -139,9 +128,7 @@ export function ClientModal() {
             type="button"
             onClick={closeClientModal}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* Formulário */}

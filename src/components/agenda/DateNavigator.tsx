@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { ChevronLeft, ChevronRight, Calendar, Check, Clock } from 'lucide-react';
+import { Calendar, Check, Clock } from 'lucide-react';
 import {
   formatMonthYear,
   formatWeekRange,
@@ -99,9 +99,7 @@ export function DateNavigator() {
           onClick={() => navigate('prev')}
           aria-label="Período anterior"
           className="p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
+         data-text-action="true"><span className="text-action-label">{"Anterior"}</span></button>
 
         {/* Botão Central que abre o Seletor de Período Completo */}
         <button
@@ -121,9 +119,7 @@ export function DateNavigator() {
           onClick={() => navigate('next')}
           aria-label="Próximo período"
           className="p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+         data-text-action="true"><span className="text-action-label">{"Próximo"}</span></button>
       </div>
 
       {/* Botão Hoje */}

@@ -5,7 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { formatTimeClean, WEEKDAYS_SHORT, MONTH_NAMES_SHORT, parseDateIso } from '@/lib/date-utils';
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/types/database';
 import { EmployeeBadge } from './EmployeeBadge';
-import { MapPin, Phone, Calendar, Clock, Navigation, CheckCircle2, Camera } from 'lucide-react';
+import { MapPin, Calendar, Clock, Navigation, CheckCircle2, Camera } from 'lucide-react';
 
 export function MyAgendaView() {
   const { events, loggedEmployeeId, employees, openEditEventModal, openPontoModal, userRole } = useAgenda();
@@ -56,9 +56,7 @@ export function MyAgendaView() {
       {/* Banner de Ação Rápida: Bater Ponto no Restaurante */}
       <div className="p-4 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white border border-emerald-500/30 flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <Camera className="w-5 h-5" />
-          </div>
+
           <div>
             <div className="text-xs font-bold text-foreground dark:text-foreground text-zinc-900">
               Chegou no restaurante da gravação?

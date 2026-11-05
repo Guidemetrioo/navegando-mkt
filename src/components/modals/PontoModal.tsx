@@ -13,22 +13,7 @@ import {
   MAX_GEOFENCE_RADIUS_METERS,
   DEFAULT_CLIENT_COORDINATES,
 } from '@/lib/geo-utils';
-import {
-  X,
-  Camera,
-  MapPin,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  Clock,
-  Building,
-  Upload,
-  Compass,
-  Check,
-  Video,
-  Sparkles,
-  ShieldCheck,
-} from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw, Clock, Building, Upload, Compass, Check, ShieldCheck } from 'lucide-react';
 
 export function PontoModal() {
   const {
@@ -439,9 +424,7 @@ export function PontoModal() {
         {/* Cabeçalho */}
         <div className="flex items-start justify-between border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[var(--ui-accent)] to-[var(--ui-accent-hover)] flex items-center justify-center text-foreground shadow-lg shadow-[var(--ui-accent)]/20">
-              <Camera className="w-5 h-5" />
-            </div>
+
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
@@ -461,17 +444,13 @@ export function PontoModal() {
             type="button"
             onClick={closePontoModal}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* TELA DE COMPROVANTE (Após bater o ponto) */}
         {submittedPonto ? (
           <div className="flex flex-col items-center text-center gap-5 py-4 animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shadow-xl shadow-emerald-500/10">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
+
 
             <div>
               <h4 className="text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
@@ -924,7 +903,7 @@ export function PontoModal() {
                       rel="noopener noreferrer"
                       className="text-[11px] underline shrink-0 hover:opacity-80"
                     >
-                      Google Maps ↗
+                      Google Maps
                     </a>
                   </div>
 
@@ -959,9 +938,7 @@ export function PontoModal() {
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-[var(--ui-border)] border border-[var(--ui-border)] flex flex-col items-center justify-center gap-3 text-center">
-                  <div className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center">
-                    <Compass className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
-                  </div>
+
                   <div>
                     <h5 className="text-xs font-bold text-foreground">
                       Permissão de Localização do Dispositivo Obrigatória

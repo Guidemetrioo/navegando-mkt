@@ -8,7 +8,7 @@ import { DesignSelector } from '@/components/design/DesignSelector';
 import { AgendaProvider, useAgenda } from '@/context/AgendaContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { ExecutiveDashboardView } from '@/components/dashboard/ExecutiveDashboardView';
-import { EmployeeWelcomeDashboard } from '@/components/dashboard/EmployeeWelcomeDashboard';
+import { ControlCenterDashboard as EmployeeWelcomeDashboard } from '@/components/dashboard/ControlCenterDashboard';
 import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
 import { FilesDeliverablesView } from '@/components/files/FilesDeliverablesView';
 import { ProductionReportsView } from '@/components/reports/ProductionReportsView';
@@ -23,6 +23,7 @@ import { MyAgendaView } from '@/components/agenda/MyAgendaView';
 import { InstagramMetricsView } from '@/components/social/InstagramMetricsView';
 import { MentionsUgcView } from '@/components/social/MentionsUgcView';
 import { PontoView } from '@/components/ponto/PontoView';
+import { BancoDeHorasView } from '@/components/banco-horas/BancoDeHorasView';
 import { FinancialControlView } from '@/components/financial/FinancialControlView';
 import { WhatsAppAutomationView } from '@/components/whatsapp/WhatsAppAutomationView';
 import { DateNavigator } from '@/components/agenda/DateNavigator';
@@ -35,20 +36,7 @@ import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
 import { PageTutorialModal } from '@/components/tutorial/PageTutorialModal';
-import {
-  CheckCircle2,
-  Calendar,
-  Columns,
-  Table2,
-  UserCheck,
-  Menu,
-  Camera,
-  Plus,
-  Search,
-  Building,
-  FolderOpen,
-  ChevronDown,
-} from 'lucide-react';
+import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Search, Building, FolderOpen, ChevronDown } from 'lucide-react';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
 
@@ -94,7 +82,6 @@ function AgendaMainContent() {
   const isCalendarView =
     currentView === 'mes' ||
     currentView === 'semana' ||
-    currentView === 'escala' ||
     currentView === 'minha-agenda';
 
   return (
@@ -119,9 +106,7 @@ function AgendaMainContent() {
               onClick={() => setIsMobileNavOpen(true)}
               className="lg:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Abrir menu lateral"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+             data-text-action="true"><span className="text-action-label">{"Menu"}</span></button>
             <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
             <span className="font-bold text-foreground capitalize truncate text-xs sm:text-sm">
@@ -132,6 +117,7 @@ function AgendaMainContent() {
               {currentView === 'escala' && 'Escala da Equipe'}
               {currentView === 'minha-agenda' && 'Minha Agenda'}
               {currentView === 'ponto' && 'Ponto & GPS'}
+              {currentView === 'banco-horas' && 'Banco de Horas (42h Semanais)'}
               {currentView === 'relatorios' && 'Relatórios de Produção'}
               {currentView === 'briefing' && 'Briefing & Roteiros'}
               {currentView === 'reembolsos' && 'Reembolsos'}
@@ -152,7 +138,7 @@ function AgendaMainContent() {
               title="Buscar clientes, vídeos, equipe (Ctrl+K)"
             >
               <Search className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
-              <span className="hidden lg:inline text-zinc-400">Buscar no CRM...</span>
+              <span className="hidden lg:inline text-zinc-400">Buscar no sistema...</span>
               <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[var(--ui-page)] text-zinc-400 rounded border border-[var(--ui-border)]">
                 Ctrl K
               </kbd>
@@ -218,7 +204,7 @@ function AgendaMainContent() {
                       <Building className="w-4 h-4 text-amber-400" />
                       <div>
                         <span className="font-bold block">Novo Restaurante</span>
-                        <span className="text-[10px] text-zinc-400">Cadastrar no CRM</span>
+                        <span className="text-[10px] text-zinc-400">Cadastrar restaurante</span>
                       </div>
                     </button>
 
@@ -260,7 +246,7 @@ function AgendaMainContent() {
         {/* Conteúdo Central */}
         <main className="crm-workspace p-3 sm:p-6 md:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
           {/* Guia de Uso Interativo & Pop-up de Primeira Visita / Exemplo Preenchido */}
-          <PageTutorialModal />
+          {currentView !== 'home' && <PageTutorialModal />}
 
           {/* Sub-header de Navegação de Datas se estiver nas abas de agenda */}
           {isCalendarView && (
@@ -295,11 +281,7 @@ function AgendaMainContent() {
                   <button
                     type="button"
                     onClick={() => setCurrentView('escala')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      currentView === 'escala'
-                        ? 'bg-[var(--ui-border)] text-foreground shadow-sm'
-                        : 'text-zinc-400 hover:text-foreground'
-                    }`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap text-zinc-400 hover:text-foreground"
                   >
                     <Table2 className="w-3.5 h-3.5" />
                     <span>Escala da Equipe</span>

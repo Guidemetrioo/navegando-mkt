@@ -282,13 +282,13 @@ export function canUserAccessView(funcao: TeamRole | undefined, viewId: string):
  * Regras CLT 2026/2027 para Equipe Interna
  */
 export const CLT_NORMS_2026 = {
-  JORNADA_SEMANAL_HORAS: 44,
-  JORNADA_DIARIA_PADRAO_HORAS: 8.8, // 8h48min de segunda a sexta para fechar 44h sem trabalhar sábado
+  JORNADA_SEMANAL_HORAS: 42,
+  JORNADA_DIARIA_PADRAO_HORAS: 8, // EC 141/2026 (Dez/2026): limite de 42h semanais e 8h diárias (escala máxima 5x2)
   INTERVALO_INTRAJORNADA_MIN_HORAS: 1, // Mínimo de 1 hora de almoço
   INTERVALO_INTRAJORNADA_MAX_HORAS: 2, // Máximo de 2 horas de almoço
   INTERVALO_INTERJORNADA_MIN_HORAS: 11, // Mínimo de 11 horas consecutivas de descanso entre jornadas
   LIMITE_HORAS_EXTRAS_DIARIAS: 2, // Máximo 2h extras por dia
-  DIAS_TRABALHO: 'Segunda a Sexta-feira',
+  DIAS_TRABALHO: 'Escala 5x2 (2 dias de DSR por semana)',
   BATIDAS_OBRIGATORIAS_INTERNO: [
     { tipo: 'entrada', label: '1ª Batida: Entrada da Manhã' },
     { tipo: 'almoco', label: '2ª Batida: Intervalo de Almoço' },

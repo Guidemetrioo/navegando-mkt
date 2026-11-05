@@ -5,7 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { parseDateIso, formatTimeClean, WEEKDAYS_SHORT, MONTH_NAMES } from '@/lib/date-utils';
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { X, Plus, Calendar, Clock, MapPin, UserCheck, FileText } from 'lucide-react';
+import { Plus, Calendar, Clock, MapPin, UserCheck, FileText } from 'lucide-react';
 
 export function DayDetailModal() {
   const {
@@ -68,9 +68,7 @@ export function DayDetailModal() {
             type="button"
             onClick={closeDayDetailModal}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* Seção: Equipe Livre Neste Dia */}

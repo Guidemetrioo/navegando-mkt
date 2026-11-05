@@ -3,17 +3,7 @@
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { MentionSentiment, MentionType } from '@/types/database';
-import {
-  MessageSquareHeart,
-  Star,
-  CheckCheck,
-  RefreshCw,
-  ExternalLink,
-  Clock,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { MessageSquareHeart, Star, CheckCheck, RefreshCw, ExternalLink, Clock, Plus } from 'lucide-react';
 
 export function MentionsUgcView() {
   const {
@@ -91,9 +81,7 @@ export function MentionsUgcView() {
       {/* Top Banner & Ações */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
-            <MessageSquareHeart className="w-5 h-5" />
-          </div>
+
           <div>
             <h2 className="text-lg font-bold text-foreground font-heading">
               Mural de UGC & Marcações dos Clientes
@@ -185,7 +173,7 @@ export function MentionsUgcView() {
                 : 'text-zinc-400 hover:text-foreground'
             }`}
           >
-            ⭐ Influenciadores ({influencerCount})
+             Influenciadores ({influencerCount})
           </button>
           <button
             type="button"
@@ -303,9 +291,7 @@ export function MentionsUgcView() {
                       onClick={() => deleteMention(men.id)}
                       className="p-1 text-zinc-500 hover:text-rose-400 cursor-pointer"
                       title="Remover marcação"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                     data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>
                   )}
                 </div>
               </div>
@@ -390,9 +376,7 @@ export function MentionsUgcView() {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">

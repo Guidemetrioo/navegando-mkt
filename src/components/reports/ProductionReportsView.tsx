@@ -5,25 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { EventItem } from '@/types/database';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
 import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
-import {
-  FileText,
-  Search,
-  Filter,
-  Calendar,
-  Building,
-  Video,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  FolderOpen,
-  Sparkles,
-  AlertTriangle,
-  Camera,
-  Star,
-  Plus,
-  RefreshCw,
-  Download,
-} from 'lucide-react';
+import { FileText, Search, Filter, Calendar, Building, CheckCircle2, Clock, ExternalLink, FolderOpen, AlertTriangle, Camera, Star, Plus, RefreshCw, Download } from 'lucide-react';
 
 export function ProductionReportsView() {
   const {
@@ -149,9 +131,7 @@ export function ProductionReportsView() {
 
         <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30">
-              <Video className="w-5 h-5 text-[var(--ui-accent)]" />
-            </span>
+
             <span className="text-xs font-black text-[var(--ui-accent)] tracking-wider uppercase">
               Relatórios de Produção de Vídeo • Navegando MKT
             </span>

@@ -4,18 +4,7 @@ import React from 'react';
 import { useRealGeolocation } from '@/hooks/useRealGeolocation';
 import { useAgenda } from '@/context/AgendaContext';
 import { calculateDistanceMeters, formatDistance, MAX_GEOFENCE_RADIUS_METERS, DEFAULT_CLIENT_COORDINATES } from '@/lib/geo-utils';
-import {
-  MapPin,
-  Navigation,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  Compass,
-  ExternalLink,
-  ShieldCheck,
-  Building,
-  Camera,
-} from 'lucide-react';
+import { MapPin, CheckCircle2, AlertTriangle, RefreshCw, Compass, ExternalLink, ShieldCheck, Building, Camera } from 'lucide-react';
 
 export function LiveLocationRadar() {
   const { permissionState, isLocating, location, error, requestLocation } = useRealGeolocation();
@@ -126,9 +115,7 @@ export function LiveLocationRadar() {
           ) : (
             <div className="p-5 rounded-2xl bg-gradient-to-r from-[var(--ui-raised)] via-[var(--ui-surface)] to-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0">
-                  <Navigation className="w-6 h-6 animate-bounce" />
-                </div>
+
                 <div>
                   <h4 className="text-sm font-bold text-foreground">
                     Permita o acesso à sua localização

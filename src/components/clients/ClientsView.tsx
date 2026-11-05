@@ -3,25 +3,7 @@
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { Client } from '@/types/database';
-import {
-  Building,
-  Plus,
-  Search,
-  ExternalLink,
-  MapPin,
-  Phone,
-  User,
-  FolderOpen,
-  Camera,
-  Calendar,
-  Edit,
-  Trash2,
-  Video,
-  Copy,
-  MessageCircle,
-  AlertTriangle,
-  CheckCircle2,
-} from 'lucide-react';
+import { Building, Plus, Search, ExternalLink, MapPin, Phone, User, FolderOpen, Video, MessageCircle, AlertTriangle } from 'lucide-react';
 
 import { ClientDossierModal } from '../modals/ClientDossierModal';
 
@@ -84,9 +66,7 @@ export function ClientsView() {
       {/* 1. HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--ui-accent)]/10 text-[var(--ui-accent)] border border-[var(--ui-accent)]/20 flex items-center justify-center shrink-0">
-            <Building className="w-6 h-6" />
-          </div>
+
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
@@ -265,9 +245,7 @@ export function ClientsView() {
                       onClick={() => openClientModal(client)}
                       className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                       title="Editar restaurante"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
+                     data-text-action="true"><span className="text-action-label">{"Editar"}</span></button>
                     <button
                       type="button"
                       onClick={() => {
@@ -277,9 +255,7 @@ export function ClientsView() {
                       }}
                       className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Excluir restaurante"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                     data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>
                   </div>
                 </div>
 
@@ -381,9 +357,7 @@ export function ClientsView() {
                         onClick={() => handleCopyFolder(client.drive_folder_url)}
                         className="p-1.5 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-hover)] text-zinc-400 hover:text-foreground border border-[var(--ui-border)] transition-colors cursor-pointer"
                         title="Copiar link da pasta"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
+                       data-text-action="true"><span className="text-action-label">{"Copiar"}</span></button>
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-between py-1.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">

@@ -111,9 +111,7 @@ export function MonthView() {
                         }}
                         title="Agendar novo compromisso neste dia"
                         className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-[var(--ui-accent)]/15 hover:bg-[var(--ui-accent)] text-[var(--ui-accent)] hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                       data-text-action="true"><span className="text-action-label">{"Novo"}</span></button>
                     )}
                   </div>
 

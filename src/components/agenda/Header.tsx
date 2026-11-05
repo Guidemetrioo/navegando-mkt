@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { Plus, Sun, Moon, ShieldCheck, User, Camera } from 'lucide-react';
+import { Plus, ShieldCheck, User, Camera } from 'lucide-react';
 
 export function Header() {
   const {
@@ -93,9 +93,7 @@ export function Header() {
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
           className="p-2 text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] rounded-xl border border-[var(--ui-border)] transition-colors"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
-        </button>
+         data-text-action="true"><span className="text-action-label">{theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}</span></button>
 
         {/* Botão Bater Ponto */}
         <button

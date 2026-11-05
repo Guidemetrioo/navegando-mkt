@@ -4,31 +4,7 @@ import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { MediaDeliverable, DeliverableStatus, DeliverableFormat } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import {
-  FolderOpen,
-  Plus,
-  Search,
-  ExternalLink,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Video,
-  FileText,
-  Upload,
-  Play,
-  Trash2,
-  Eye,
-  Check,
-  Building,
-  Copy,
-  Edit,
-  Kanban,
-  LayoutGrid,
-  ShieldAlert,
-  ArrowRight,
-  MessageSquare,
-  Smartphone,
-} from 'lucide-react';
+import { FolderOpen, Plus, Search, ExternalLink, AlertTriangle, Video, Eye, Building, Kanban, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { ClientApprovalModal } from '../modals/ClientApprovalModal';
 
 const KANBAN_COLUMNS: { id: DeliverableStatus; title: string; color: string; border: string; bg: string }[] = [
@@ -130,9 +106,7 @@ export function FilesDeliverablesView() {
       {/* 1. HEADER DA CENTRAL DE ARQUIVOS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
-            <FolderOpen className="w-6 h-6" />
-          </div>
+
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
@@ -376,17 +350,13 @@ export function FilesDeliverablesView() {
                                   onClick={() => setApprovalDeliverable(item)}
                                   className="p-1 rounded-lg text-purple-400 hover:text-foreground hover:bg-purple-500/20 transition-colors cursor-pointer"
                                   title="Visualizar Prévia do Cliente / Aprovação"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                </button>
+                                 data-text-action="true"><span className="text-action-label">{"Prévia"}</span></button>
                                 <button
                                   type="button"
                                   onClick={() => openEditDeliverableModal(item)}
                                   className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
                                   title="Editar Arquivo / Versão"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </button>
+                                 data-text-action="true"><span className="text-action-label">{"Editar"}</span></button>
                                 {col.id === 'aguardando_aprovacao' && (
                                   <button
                                     type="button"
@@ -394,7 +364,7 @@ export function FilesDeliverablesView() {
                                     className="px-2 py-0.5 rounded-lg bg-emerald-500 text-foreground font-bold text-[10px] cursor-pointer"
                                     title="Aprovar vídeo"
                                   >
-                                    Aprovar ✓
+                                    Aprovar
                                   </button>
                                 )}
                                 {col.id === 'aprovado' && (
@@ -508,9 +478,7 @@ export function FilesDeliverablesView() {
                             onClick={() => openEditDeliverableModal(deliv)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer shrink-0"
                             title="Editar Arquivo / Informações"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
+                           data-text-action="true"><span className="text-action-label">{"Editar"}</span></button>
                         </div>
 
                         {deliv.descricao && (
@@ -558,9 +526,7 @@ export function FilesDeliverablesView() {
                                 onClick={() => handleCopyLink(deliv.drive_url)}
                                 className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
                                 title="Copiar link do vídeo"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </button>
+                               data-text-action="true"><span className="text-action-label">{"Copiar"}</span></button>
                             </div>
                           ) : (
                             <span className="text-[11px] text-rose-400 font-medium flex items-center gap-1">
@@ -610,7 +576,7 @@ export function FilesDeliverablesView() {
                               className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-foreground text-xs font-bold transition-all shadow-sm cursor-pointer"
                               title="Aprovar vídeo"
                             >
-                              Aprovar ✓
+                              Aprovar
                             </button>
                           )}
                           {deliv.status === 'aprovado' && (
@@ -632,9 +598,7 @@ export function FilesDeliverablesView() {
                             }}
                             className="p-1.5 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                             title="Excluir arquivo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                           data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>
                         </div>
                       </div>
                     </div>

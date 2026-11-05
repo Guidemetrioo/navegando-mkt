@@ -5,23 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { StatusDespesa, DespesaGravacao } from '@/types/database';
 import { todayInSaoPaulo } from '@/lib/date-utils';
 import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
-import {
-  Receipt,
-  Upload,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Eye,
-  DollarSign,
-  FileText,
-  Image as ImageIcon,
-  ShieldCheck,
-  User,
-  Check,
-  X,
-  Trash2,
-  Sparkles,
-} from 'lucide-react';
+import { Receipt, CheckCircle2, Clock, Eye, DollarSign, FileText, Check, Sparkles } from 'lucide-react';
 
 export function ReembolsosView() {
   const {
@@ -181,33 +165,13 @@ export function ReembolsosView() {
       {/* 1. CABEÇALHO COM IDENTIFICAÇÃO DE PERMISSÃO */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-start sm:items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center justify-center shrink-0">
-            <Receipt className="w-6 h-6" />
-          </div>
+
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-black text-foreground font-heading">
                 Reembolsos de Despesas de Gravação
               </h2>
-              <span
-                className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
-                  canManage
-                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                }`}
-              >
-                {canManage ? (
-                  <>
-                    <ShieldCheck className="w-3 h-3" />
-                    Visão Gestor: Todos os Funcionários
-                  </>
-                ) : (
-                  <>
-                    <User className="w-3 h-3" />
-                    Visão Individual: Apenas Meus Reembolsos
-                  </>
-                )}
-              </span>
+
             </div>
             <p className="text-xs text-zinc-400 mt-1">
               {canManage
@@ -357,9 +321,7 @@ export function ReembolsosView() {
                     : 'border-[var(--ui-border)] bg-[var(--ui-raised)]/60 hover:bg-[var(--ui-raised)] hover:border-[var(--ui-accent)]/50'
                 }`}
               >
-                <div className="w-11 h-11 rounded-2xl bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] flex items-center justify-center">
-                  <Upload className="w-5 h-5" />
-                </div>
+
                 <div>
                   <span className="text-xs font-bold text-foreground block">
                     Clique para enviar ou arraste o comprovante aqui
@@ -387,9 +349,7 @@ export function ReembolsosView() {
                     }}
                     className="p-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs cursor-pointer"
                     title="Remover comprovante"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                   data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>
                 </div>
 
                 {comprovanteDataUrl.startsWith('data:image/') && (
@@ -503,14 +463,10 @@ export function ReembolsosView() {
                           ) : (
                             <FileText className="w-6 h-6 text-[var(--ui-accent)]" />
                           )}
-                          <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <Eye className="w-4 h-4 text-white" />
-                          </span>
+
                         </button>
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shrink-0 flex items-center justify-center text-zinc-500">
-                          <ImageIcon className="w-5 h-5" />
-                        </div>
+                        null
                       )}
 
                       <div className="space-y-1 min-w-0">
@@ -531,7 +487,7 @@ export function ReembolsosView() {
                             }`}
                           >
                             {item.status === 'reembolsado'
-                              ? '✓ Reembolsado'
+                              ? ' Reembolsado'
                               : item.status === 'aprovado'
                               ? 'Aprovado'
                               : item.status === 'recusado'
@@ -605,9 +561,7 @@ export function ReembolsosView() {
                               onClick={() => updateDespesaStatus(item.id, 'recusado')}
                               className="p-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-[10px] cursor-pointer"
                               title="Recusar reembolso"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                            </button>
+                             data-text-action="true"><span className="text-action-label">{"Recusar reembolso"}</span></button>
                           )}
                         </div>
                       )}
@@ -643,9 +597,7 @@ export function ReembolsosView() {
                 type="button"
                 onClick={() => setPreviewReceipt(null)}
                 className="p-1.5 rounded-xl bg-[var(--ui-raised)] text-zinc-400 hover:text-foreground cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
             </div>
 
             <div className="rounded-2xl bg-[var(--ui-page)] border border-[var(--ui-border)] p-3 flex items-center justify-center max-h-[65vh] overflow-auto">

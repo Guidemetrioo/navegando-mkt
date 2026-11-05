@@ -2,27 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import {
-  MessageSquare,
-  Smartphone,
-  QrCode,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  Send,
-  Clock,
-  Settings,
-  ListFilter,
-  Check,
-  X,
-  ShieldCheck,
-  Play,
-  RotateCcw,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  Terminal,
-} from 'lucide-react';
+import { Smartphone, CheckCircle2, RefreshCw, Send, Clock, Check, RotateCcw } from 'lucide-react';
 import { IS_DEMO } from '@/lib/app-mode';
 import { WhatsAppQr } from './WhatsAppQr';
 import { EventItem } from '@/types/database';
@@ -121,9 +101,7 @@ export function WhatsAppAutomationView() {
       {/* Top Banner / Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-sm">
         <div className="flex items-start gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
-            <MessageSquare className="w-6 h-6" />
-          </div>
+
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
@@ -173,9 +151,7 @@ export function WhatsAppAutomationView() {
               {whatsappConfig.numero_conectado || '+55 11 93450-8800'}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-            <Smartphone className="w-5 h-5" />
-          </div>
+
         </div>
 
         {/* Gravações Confirmadas via Bot */}
@@ -187,9 +163,7 @@ export function WhatsAppAutomationView() {
             </div>
             <span className="text-[11px] text-zinc-500">Status confirmado no CRM</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
+
         </div>
 
         {/* Gravações Pendentes */}
@@ -201,9 +175,7 @@ export function WhatsAppAutomationView() {
             </div>
             <span className="text-[11px] text-zinc-500">Disparo D-1 programado</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-            <Clock className="w-5 h-5" />
-          </div>
+
         </div>
 
         {/* Total de Mensagens */}
@@ -215,9 +187,7 @@ export function WhatsAppAutomationView() {
             </div>
             <span className="text-[11px] text-zinc-500">Logs de envios e respostas</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
-            <MessageSquare className="w-5 h-5" />
-          </div>
+
         </div>
       </div>
 
@@ -270,23 +240,7 @@ export function WhatsAppAutomationView() {
                   Conexão multi-aparelho pelo serviço WhatsApp da agência
                 </p>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                whatsappConfig.conectado
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-              }`}>
-                {whatsappConfig.conectado ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Conectado
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Desconectado
-                  </>
-                )}
-              </span>
+
             </div>
 
             {/* Visualizador QR Code / Pairing Code */}
@@ -463,7 +417,7 @@ export function WhatsAppAutomationView() {
                   Clique no botão <strong>&ldquo;Conectar / Atualizar QR Code&rdquo;</strong> acima (o serviço precisa estar ativo).
                 </li>
                 <li>
-                  No seu celular, abra o <strong>WhatsApp ➔ Aparelhos Conectados ➔ Conectar um aparelho</strong>.
+                  No seu celular, abra o <strong>WhatsApp  Aparelhos Conectados  Conectar um aparelho</strong>.
                 </li>
                 <li>
                   Aponte a câmera para o <strong>QR Code da tela</strong> (ou digite seu telefone acima e clique em <strong>Gerar Código</strong> para conectar com o código de 8 letras).
@@ -663,15 +617,7 @@ export function WhatsAppAutomationView() {
                     }`}
                   >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        isSent
-                          ? 'bg-sky-500/20 text-sky-400'
-                          : isConfirmed
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-rose-500/20 text-rose-400'
-                      }`}>
-                        {isSent ? <Send className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-                      </div>
+
 
                       <div className="flex flex-col gap-1 min-w-0">
                         <div className="flex items-center gap-2">

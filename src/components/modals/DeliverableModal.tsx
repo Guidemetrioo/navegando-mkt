@@ -4,18 +4,7 @@ import { todayInSaoPaulo } from '@/lib/date-utils';
 import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { DeliverableFormat, DeliverableStatus } from '@/types/database';
-import {
-  X,
-  FolderOpen,
-  Video,
-  Link,
-  Building,
-  CheckCircle2,
-  Sparkles,
-  Layers,
-  FileText,
-  AlertTriangle,
-} from 'lucide-react';
+import { Link, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export function DeliverableModal() {
   const {
@@ -148,9 +137,7 @@ export function DeliverableModal() {
         {/* Cabeçalho */}
         <div className="flex items-start justify-between border-b border-[var(--ui-border)] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <FolderOpen className="w-5 h-5" />
-            </div>
+
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-foreground font-heading">
@@ -172,9 +159,7 @@ export function DeliverableModal() {
             type="button"
             onClick={closeDeliverableModal}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+           data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
         {/* Formulário */}
