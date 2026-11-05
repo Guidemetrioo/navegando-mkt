@@ -308,7 +308,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       </div>
 
       {/* 3. NAVEGAÇÃO AGRUPADA COM CONTROLE RIGOROSO DE ACESSO */}
-      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto p-3 space-y-5 custom-scrollbar">
+      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
         {navGroups.map((group) => {
           const accessibleItems = group.items.filter((item) =>
             canUserAccessView(currentMember?.funcao, item.id)
@@ -317,7 +317,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
 
           return (
             <div key={group.groupTitle} className="space-y-1">
-              {!isCollapsed && (
+              {false && !isCollapsed && (
                 <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                   {group.groupTitle}
                 </div>
