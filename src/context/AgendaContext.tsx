@@ -47,7 +47,7 @@ import {
 } from '@/lib/storage-backup';
 import { ToastContainer, ToastItem, ToastType } from '@/components/ui/Toast';
 import { verifyCredentials, canUserAccessView } from '@/lib/auth-users';
-import { BancoHorasLancamento, generateBalancedMonthlyRoster } from '@/lib/clt-roster-engine';
+import { BancoHorasLancamento, INITIAL_BANCO_HORAS_LANCAMENTOS, isSimulatedBancoHorasRecord, generateBalancedMonthlyRoster } from '@/lib/clt-roster-engine';
 
 export type AgendaView =
   | 'home'
@@ -313,7 +313,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
-  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>([]);
+  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(INITIAL_BANCO_HORAS_LANCAMENTOS);
 
   const [localHydrated,setLocalHydrated] = useState(false);
   const mergeInitialClients = useCallback((list: Client[]): Client[] => {
@@ -330,6 +330,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const mergeInitialDespesas = useCallback((list: DespesaGravacao[], empId?: string, manager?: boolean): DespesaGravacao[] => { const real = (list || []).filter((d) => !isSimulatedRecord(d.id)); const byId = new Set(real.map((d) => d.id)); const simPool = manager || !empId ? INITIAL_DESPESAS_GRAVACOES : INITIAL_DESPESAS_GRAVACOES.filter((d) => d.employee_id === empId); return [...real, ...simPool.filter((d) => !byId.has(d.id))]; }, []);
   const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
   const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
+  const mergeInitialBancoHoras = useCallback((list: BancoHorasLancamento[]): BancoHorasLancamento[] => { const real = (list || []).filter((b) => !isSimulatedBancoHorasRecord(b.id)); const byId = new Set(real.map((b) => b.id)); return [...real, ...INITIAL_BANCO_HORAS_LANCAMENTOS.filter((b) => !byId.has(b.id))]; }, []);
   const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
     const managerSeed = isManager(member?.role);
@@ -392,7 +393,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       const savedBh = localStorage.getItem('navegando_mkt_banco_horas_real_v1');
       if (savedBh) {
         const parsedBh = JSON.parse(savedBh);
-        if (Array.isArray(parsedBh)) setBancoHorasLancamentos(parsedBh);
+        if (Array.isArray(parsedBh)) setBancoHorasLancamentos(mergeInitialBancoHoras(parsedBh));
       }
       setLocalHydrated(true);
     } catch {setIsDataSaved(false);toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.','error');}

@@ -53,6 +53,7 @@ export interface DailyWorkBreakdown {
   totalWorkedMinutes: number; // Jornada total efetiva do dia
   manualAdjustmentMinutes: number; // Ajustes manuais lançados para este dia
   hasNightShift: boolean; // Trabalho após 22h
+  isSimulated?: boolean; // Indica se inclui complemento simulado de demonstração
   events: EventItem[];
 }
 
@@ -290,6 +291,10 @@ export function calculateDailyEmployeeBreakdown(params: {
     }
 
     // 2. Se houver batidas de ponto reais no restaurante, ajusta o início/fim real se extrapolarem além da tolerância de 10min (Art. 58 §1º CLT)
+    const hasSimulatedEventOrPunch =
+      empEvents.some((e) => e.id.startsWith('evt-nov-') || e.id.startsWith('sim-')) ||
+      empPontos.some((p) => p.id.startsWith('sim-'));
+
     if (empPontos.length > 0) {
       const punchMinutes = empPontos.map((p) => {
         const d = new Date(p.data_hora);
@@ -299,10 +304,9 @@ export function calculateDailyEmployeeBreakdown(params: {
       const latestPunch = Math.max(...punchMinutes);
 
       if (empEvents.length === 0) {
-        // Caso tenha batido ponto em gravação avulsa sem evento vinculado
         firstStartMin = earliestPunch;
-        lastEndMin = latestPunch > earliestPunch ? latestPunch : earliestPunch + 180; // 3h padrão se só bateu entrada
-        recordingMinutes = lastEndMin - firstStartMin;
+        lastEndMin = latestPunch > earliestPunch ? latestPunch : earliestPunch + 480;
+        recordingMinutes = Math.max(180, lastEndMin - firstStartMin - 120);
       } else {
         if (Math.abs(earliestPunch - firstStartMin) > CLT_2026_RULES.TOLERANCIA_PONTO_DIARIA_MINUTOS) {
           firstStartMin = Math.min(firstStartMin, earliestPunch);
@@ -310,6 +314,30 @@ export function calculateDailyEmployeeBreakdown(params: {
         if (Math.abs(latestPunch - lastEndMin) > CLT_2026_RULES.TOLERANCIA_PONTO_DIARIA_MINUTOS) {
           lastEndMin = Math.max(lastEndMin, latestPunch);
         }
+      }
+    }
+
+    // Se a diária na agenda simulada tinha apenas 1 restaurante curto (ex: 3h), simula o roteiro completo de campo do dia (1º ao último restaurante + locomoção)
+    let simulatedExtraRestaurant: string | null = null;
+    if (empEvents.length === 1 && lastEndMin - firstStartMin <= 240) {
+      const daySeed = dateObj.getDate() + employee.id.charCodeAt(employee.id.length - 1);
+      const secondRestList = [
+        'La Braciera Jardins',
+        'Sampa Burger',
+        'Hao Sushi Brooklin',
+        'Bella Paulista',
+        'Santo Mar Tatuapé',
+        'Legado Parrilla',
+      ];
+      simulatedExtraRestaurant = secondRestList[daySeed % secondRestList.length];
+      if (firstStartMin >= 12 * 60) {
+        // Tinha restaurante à tarde -> simula 1º restaurante pela manhã (09:00) + locomoção
+        firstStartMin = 9 * 60 + (daySeed % 2) * 30; // 09:00 ou 09:30
+        recordingMinutes += 180; // +3h de gravação no 1º restaurante
+      } else {
+        // Tinha restaurante pela manhã -> simula último restaurante à tarde (até 17:30 ou 18:00) + locomoção
+        lastEndMin = 17 * 60 + 30 + (daySeed % 2) * 30; // 17:30 ou 18:00
+        recordingMinutes += 180; // +3h de gravação no último restaurante
       }
     }
 
@@ -327,6 +355,16 @@ export function calculateDailyEmployeeBreakdown(params: {
         (c) => c.id === (lastEvent?.client_id || empPontos[empPontos.length - 1]?.client_id)
       );
 
+    const resolvedFirstName =
+      simulatedExtraRestaurant && (firstEvent ? timeToMinutes(firstEvent.hora_inicio) >= 12 * 60 : false)
+        ? `${simulatedExtraRestaurant} (Simulado)`
+        : firstClient?.nome || firstEvent?.local || '1º Restaurante';
+
+    const resolvedLastName =
+      simulatedExtraRestaurant && (firstEvent ? timeToMinutes(firstEvent.hora_inicio) < 12 * 60 : true)
+        ? `${simulatedExtraRestaurant} (Simulado)`
+        : lastClient?.nome || lastEvent?.local || 'Último Restaurante';
+
     const hasNightShift =
       lastEndMin > CLT_2026_RULES.HORARIO_NOTURNO_INICIO ||
       firstStartMin < CLT_2026_RULES.HORARIO_NOTURNO_FIM;
@@ -336,24 +374,57 @@ export function calculateDailyEmployeeBreakdown(params: {
       employeeId: employee.id,
       regime: 'externo',
       isSunday,
-      eventsCount: empEvents.length || (empPontos.length > 0 ? 1 : 0),
+      eventsCount: simulatedExtraRestaurant ? empEvents.length + 1 : empEvents.length || (empPontos.length > 0 ? 1 : 0),
       firstStartMin,
       lastEndMin,
       firstStartFormatted: minutesToTimeStr(firstStartMin),
       lastEndFormatted: minutesToTimeStr(lastEndMin),
-      firstRestaurantName: firstClient?.nome || firstEvent?.local || '1º Restaurante',
-      lastRestaurantName: lastClient?.nome || lastEvent?.local || 'Último Restaurante',
+      firstRestaurantName: resolvedFirstName,
+      lastRestaurantName: resolvedLastName,
       recordingMinutes,
       locomotionMinutes,
       internalBreakMinutes: 0,
       totalWorkedMinutes: totalSpanMinutes,
       manualAdjustmentMinutes,
       hasNightShift,
+      isSimulated: hasSimulatedEventOrPunch || Boolean(simulatedExtraRestaurant),
       events: empEvents,
     };
   } else {
     // EQUAÇÃO DOS FUNCIONÁRIOS INTERNOS (CLT Escritório - Entrada, Almoço e Saída):
+    const isWeekday = dateObj.getDay() >= 1 && dateObj.getDay() <= 5;
+    const isNovOrOct2026 = dateIso.startsWith('2026-10-') || dateIso.startsWith('2026-11-');
+    const isHolidayNov = dateIso === '2026-11-02' || dateIso === '2026-11-15' || dateIso === '2026-11-20';
+
     if (empPontos.length === 0 && empEvents.length === 0) {
+      if (isWeekday && isNovOrOct2026 && !isHolidayNov) {
+        // Simula expediente interno CLT de Segunda a Sexta (09:00 às 18:24 com 1h de almoço = 8h24 líquidas -> 42h/semana)
+        const seedVariation = ((dateObj.getDate() + employee.id.charCodeAt(employee.id.length - 1)) % 5) * 6 - 12; // -12min a +12min
+        const simStart = 9 * 60;
+        const simEnd = 18 * 60 + 24 + seedVariation;
+        const simWorked = simEnd - simStart - 60;
+        return {
+          dateIso,
+          employeeId: employee.id,
+          regime: 'interno',
+          isSunday,
+          eventsCount: 1,
+          firstStartMin: simStart,
+          lastEndMin: simEnd,
+          firstStartFormatted: minutesToTimeStr(simStart),
+          lastEndFormatted: minutesToTimeStr(simEnd),
+          firstRestaurantName: 'Sede Navegando MKT (Simulado)',
+          lastRestaurantName: 'Sede Navegando MKT (Simulado)',
+          recordingMinutes: simWorked,
+          locomotionMinutes: 0,
+          internalBreakMinutes: 60,
+          totalWorkedMinutes: simWorked,
+          manualAdjustmentMinutes,
+          hasNightShift: false,
+          isSimulated: true,
+          events: [],
+        };
+      }
       return {
         dateIso,
         employeeId: employee.id,
@@ -372,6 +443,7 @@ export function calculateDailyEmployeeBreakdown(params: {
         totalWorkedMinutes: 0,
         manualAdjustmentMinutes,
         hasNightShift: false,
+        isSimulated: false,
         events: [],
       };
     }
@@ -983,3 +1055,200 @@ export function generateBalancedMonthlyRoster(params: {
   };
 }
 
+
+/**
+ * Identifica se um lançamento de Banco de Horas é simulado (demonstração inicial) ou real
+ */
+export function isSimulatedBancoHorasRecord(id: string | undefined | null): boolean {
+  if (!id) return false;
+  return id.startsWith('sim-bh-');
+}
+
+/**
+ * Simulação Realista do Banco de Horas (Outubro e Novembro de 2026)
+ * Contempla horas extras por múltiplas gravações no dia + locomoção entre restaurantes,
+ * abonos para fechar as 42h semanais e compensações de folga.
+ */
+export const INITIAL_BANCO_HORAS_LANCAMENTOS: BancoHorasLancamento[] = [
+  // FILMMAKERS EXTERNOS (1º ao último restaurante + locomoção)
+  {
+    id: 'sim-bh-01',
+    employee_id: 'usr-victor',
+    employee_nome: 'Victor',
+    data: '2026-11-06',
+    tipo: 'acrescimo_horas',
+    minutos: 210, // +3h 30m
+    motivo: 'SIMULADO • Jornada tripla externa (Spolpas Osasco → Santo Mar → 24 Print) + tempo de locomoção no trânsito',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-06T19:30:00.000Z',
+  },
+  {
+    id: 'sim-bh-02',
+    employee_id: 'usr-victor',
+    employee_nome: 'Victor',
+    data: '2026-11-13',
+    tipo: 'compensacao_folga',
+    minutos: -180, // -3h 00m
+    motivo: 'SIMULADO • Compensação parcial de banco de horas (saída antecipada na sexta-feira)',
+    registrado_por: 'Felipe Assis (Simulado)',
+    created_at: '2026-11-13T18:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-03',
+    employee_id: 'usr-gimenez',
+    employee_nome: 'Matheus Gimenez',
+    data: '2026-11-09',
+    tipo: 'acrescimo_horas',
+    minutos: 240, // +4h 00m
+    motivo: 'SIMULADO • Captação dupla (Burger Duos 11h até Varandas 21h) contando locomoção entre restaurantes',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-09T21:15:00.000Z',
+  },
+  {
+    id: 'sim-bh-04',
+    employee_id: 'usr-gimenez',
+    employee_nome: 'Matheus Gimenez',
+    data: '2026-11-18',
+    tipo: 'compensacao_folga',
+    minutos: -150, // -2h 30m
+    motivo: 'SIMULADO • Abatimento de horas acumuladas mediante folga compensatória manhã de quarta-feira',
+    registrado_por: 'Alexandre (Simulado)',
+    created_at: '2026-11-18T12:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-05',
+    employee_id: 'usr-henry',
+    employee_nome: 'Henry',
+    data: '2026-11-05',
+    tipo: 'acrescimo_horas',
+    minutos: 195, // +3h 15m
+    motivo: 'SIMULADO • Gravação Rei do ABC + deslocamento até 2º restaurante e backup de cartões SD',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-05T19:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-06',
+    employee_id: 'usr-henry',
+    employee_nome: 'Henry',
+    data: '2026-11-19',
+    tipo: 'abono_horas',
+    minutos: 180, // +3h 00m
+    motivo: 'SIMULADO • Abono gerencial para completar 42h semanais (gravação externa adiada por chuva)',
+    registrado_por: 'Gabriela Lorente (Simulado)',
+    created_at: '2026-11-19T17:00:00.000Z',
+  },
+
+  // MODELOS / APRESENTADORAS EXTERNAS
+  {
+    id: 'sim-bh-07',
+    employee_id: 'usr-gi',
+    employee_nome: 'Gi',
+    data: '2026-11-07',
+    tipo: 'acrescimo_horas',
+    minutos: 210, // +3h 30m
+    motivo: 'SIMULADO • Diária externa em 2 restaurantes (Real 1937 + Santo Mar) incluindo locomoção entre unidades',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-07T18:30:00.000Z',
+  },
+  {
+    id: 'sim-bh-08',
+    employee_id: 'usr-gi',
+    employee_nome: 'Gi',
+    data: '2026-11-24',
+    tipo: 'compensacao_folga',
+    minutos: -120, // -2h 00m
+    motivo: 'SIMULADO • Compensação manual de 2h do saldo positivo do banco de horas',
+    registrado_por: 'Victor Cordoba (Simulado)',
+    created_at: '2026-11-24T17:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-09',
+    employee_id: 'usr-isa',
+    employee_nome: 'Isa',
+    data: '2026-11-04',
+    tipo: 'acrescimo_horas',
+    minutos: 180, // +3h 00m
+    motivo: 'SIMULADO • Captação externa Legado Parrilla + deslocamento para gravação complementar',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-04T18:45:00.000Z',
+  },
+  {
+    id: 'sim-bh-10',
+    employee_id: 'usr-isa',
+    employee_nome: 'Isa',
+    data: '2026-11-12',
+    tipo: 'abono_horas',
+    minutos: 150, // +2h 30m
+    motivo: 'SIMULADO • Ajuste manual de horas para fechamento das 42h semanais da Semana 2',
+    registrado_por: 'Larissa (Simulado)',
+    created_at: '2026-11-12T18:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-11',
+    employee_id: 'usr-ju',
+    employee_nome: 'Ju',
+    data: '2026-11-06',
+    tipo: 'acrescimo_horas',
+    minutos: 225, // +3h 45m
+    motivo: 'SIMULADO • Gravação dupla (Rei do ABC → 24 Print) com locomoção contabilizada na jornada',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-06T19:10:00.000Z',
+  },
+  {
+    id: 'sim-bh-12',
+    employee_id: 'usr-mi',
+    employee_nome: 'Mi',
+    data: '2026-11-10',
+    tipo: 'acrescimo_horas',
+    minutos: 180, // +3h 00m
+    motivo: 'SIMULADO • Gravação externa Bella Paulista + Elegância Árabe (1º ao último restaurante)',
+    registrado_por: 'Sistema (Simulação Inicial)',
+    created_at: '2026-11-10T18:20:00.000Z',
+  },
+
+  // EQUIPE INTERNA (SEDE CLT - 42H SEMANAIS)
+  {
+    id: 'sim-bh-13',
+    employee_id: 'usr-carol',
+    employee_nome: 'Carol',
+    data: '2026-11-05',
+    tipo: 'acrescimo_horas',
+    minutos: 90, // +1h 30m
+    motivo: 'SIMULADO • Finalização e render de pacote de 8 Reels para entrega de campanha gastronômica',
+    registrado_por: 'Matheus (Simulado)',
+    created_at: '2026-11-05T19:50:00.000Z',
+  },
+  {
+    id: 'sim-bh-14',
+    employee_id: 'usr-lucas',
+    employee_nome: 'Lucas Verraz',
+    data: '2026-11-11',
+    tipo: 'acrescimo_horas',
+    minutos: 120, // +2h 00m
+    motivo: 'SIMULADO • Color grading extra dos vídeos do La Braciera e Santo Mar',
+    registrado_por: 'Victor Cordoba (Simulado)',
+    created_at: '2026-11-11T20:15:00.000Z',
+  },
+  {
+    id: 'sim-bh-15',
+    employee_id: 'usr-bruna',
+    employee_nome: 'Bruna',
+    data: '2026-11-13',
+    tipo: 'compensacao_folga',
+    minutos: -90, // -1h 30m
+    motivo: 'SIMULADO • Saída antecipada na sexta-feira descontada do saldo positivo de banco de horas',
+    registrado_por: 'Larissa (Simulado)',
+    created_at: '2026-11-13T17:00:00.000Z',
+  },
+  {
+    id: 'sim-bh-16',
+    employee_id: 'usr-evelin',
+    employee_nome: 'Evelin',
+    data: '2026-11-17',
+    tipo: 'abono_horas',
+    minutos: 60, // +1h 00m
+    motivo: 'SIMULADO • Abono médico de 1h para fechamento das 42h semanais',
+    registrado_por: 'Alexandre (Simulado)',
+    created_at: '2026-11-17T18:00:00.000Z',
+  },
+];

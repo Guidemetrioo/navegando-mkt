@@ -8,6 +8,7 @@ import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import { HIERARCHY_LABELS } from '@/lib/employee-login-matcher';
 import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, CheckCircle2, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock } from 'lucide-react';
 import { canUserAccessView, USERS_DATABASE } from '@/lib/auth-users';
+import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 interface AppSidebarProps {
   isMobileOpen?: boolean;
@@ -208,7 +209,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         <div className="p-4 border-b border-[var(--ui-border)] flex items-center justify-between">
           {!isCollapsed ? (
             <div className="flex flex-col gap-1 min-w-0">
-              <div className="control-brand"><span className="control-brand-symbol" aria-hidden="true">N</span><span><strong>NAVEGANDO <b>MKT</b></strong><small>Agência de Marketing</small></span></div>
+              <NavegandoLogo variant="horizontal" size="md" showTagline withGlow={false} />
               {currentMember?.funcao === 'modelo' && (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30 flex items-center gap-1">
@@ -220,7 +221,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             </div>
           ) : (
             <div className="mx-auto">
-              <span className="control-brand-symbol" aria-label="Navegando">N</span>
+              <NavegandoLogo variant="symbol" size="sm" withGlow={false} />
             </div>
           )}
 

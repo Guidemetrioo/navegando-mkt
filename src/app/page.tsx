@@ -7,6 +7,7 @@ import { WorkspaceStatus } from '@/components/layout/WorkspaceStatus';
 import { DesignSelector } from '@/components/design/DesignSelector';
 import { AgendaProvider, useAgenda } from '@/context/AgendaContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import { ExecutiveDashboardView } from '@/components/dashboard/ExecutiveDashboardView';
 import { ControlCenterDashboard as EmployeeWelcomeDashboard } from '@/components/dashboard/ControlCenterDashboard';
 import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
@@ -107,6 +108,7 @@ function AgendaMainContent() {
               className="lg:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
               title="Abrir menu lateral"
              data-text-action="true"><span className="text-action-label">{"Menu"}</span></button>
+            <NavegandoLogo variant="symbol" size="sm" />
             <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
             <span className="font-bold text-foreground capitalize truncate text-xs sm:text-sm">
