@@ -33,10 +33,12 @@ export function EventModal() {
     isEventModalOpen,
     editingEvent,
     closeEventModal,
+    openNewEventModal,
     saveEvent,
     deleteEvent,
     saveEventReport,
     loggedEmployeeId,
+    events,
     clients,
     employees,
     addClient,
@@ -95,7 +97,7 @@ export function EventModal() {
       setDate(editingEvent.data || '');
       setStartTime(editingEvent.hora_inicio ? editingEvent.hora_inicio.slice(0, 5) : '09:00');
       setEndTime(editingEvent.hora_fim ? editingEvent.hora_fim.slice(0, 5) : '12:00');
-      setTipo(editingEvent.tipo || 'gravacao');
+      setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
       setLocal(editingEvent.local || '');
       setObservacoes(editingEvent.observacoes || '');
       setBriefingGravacao(editingEvent.briefing_gravacao || '');
@@ -177,7 +179,15 @@ export function EventModal() {
     setIsClientDropdownOpen(false);
   };
 
-  const handleSubmit = (allowOverride = false) => {
+  // Outros compromissos já marcados nesta mesma data
+  const sameDayEvents = useMemo(() => {
+    if (!date) return [];
+    return events
+      .filter((e) => e.data === date && e.id !== editingEvent?.id && e.status !== 'cancelado')
+      .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+  }, [events, date, editingEvent?.id]);
+
+  const handleSubmit = (allowOverride = false, keepOpenForSameDay = false) => {
     setErrorMessage('');
 
     // Validações obrigatórias conforme especificação:
@@ -226,6 +236,26 @@ export function EventModal() {
 
     if (!res.success && res.conflicts && res.conflicts.length > 0) {
       setConflicts(res.conflicts);
+      return;
+    }
+
+    if (res.success && keepOpenForSameDay) {
+      const targetDate = date;
+      const nextHour = Math.min(20, Math.max(9, parseInt(endTime.slice(0, 2), 10) + 1));
+      const nextEndHour = Math.min(23, nextHour + 3);
+      const nextStartStr = `${String(nextHour).padStart(2, '0')}:00`;
+      const nextEndStr = `${String(nextEndHour).padStart(2, '0')}:00`;
+      setTimeout(() => {
+        openNewEventModal(targetDate);
+        setStartTime(nextStartStr);
+        setEndTime(nextEndStr);
+        setClientId('');
+        setClientSearch('');
+        setLocal('');
+        setObservacoes('');
+        setBriefingGravacao('');
+        setSelectedEmpIds([]);
+      }, 30);
     }
   };
 
@@ -566,51 +596,110 @@ export function EventModal() {
           )}
 
           {/* Data e Horários */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Data *
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-              />
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  Data *
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  Início *
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  Fim *
+                </label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Início *
-              </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-              />
+            {/* Atalhos rápidos de turno para facilitar múltiplos compromissos no mesmo dia */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-zinc-400 mr-1">Turnos rápidos:</span>
+              {[
+                { label: 'Manhã (09h–12h)', start: '09:00', end: '12:00' },
+                { label: 'Almoço (12h–15h)', start: '12:00', end: '15:00' },
+                { label: 'Tarde (14h–17h)', start: '14:00', end: '17:00' },
+                { label: 'Noite (18h–21h)', start: '18:00', end: '21:00' },
+              ].map((slot) => {
+                const isSelectedSlot = startTime === slot.start && endTime === slot.end;
+                return (
+                  <button
+                    key={slot.label}
+                    type="button"
+                    onClick={() => {
+                      setStartTime(slot.start);
+                      setEndTime(slot.end);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer ${
+                      isSelectedSlot
+                        ? 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border-[var(--ui-accent)]/40'
+                        : 'bg-[var(--ui-raised)] text-zinc-400 border-[var(--ui-border)] hover:text-foreground'
+                    }`}
+                  >
+                    {slot.label}
+                  </button>
+                );
+              })}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Fim *
-              </label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-              />
-            </div>
+            {/* Resumo dos outros compromissos já agendados neste mesmo dia */}
+            {sameDayEvents.length > 0 && (
+              <div className="p-2.5 rounded-xl bg-[var(--ui-raised)]/80 border border-[var(--ui-border)] flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-300">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
+                    Já agendados neste dia ({sameDayEvents.length}):
+                  </span>
+                  <span className="text-[10px] text-zinc-400">Você pode marcar quantos compromissos quiser</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {sameDayEvents.map((ev) => {
+                    const cli = clients.find((c) => c.id === ev.client_id);
+                    return (
+                      <span
+                        key={ev.id}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ui-surface)] border border-[var(--ui-border)] text-[10px] text-zinc-300"
+                      >
+                        <strong className="text-[var(--ui-accent)]">{ev.hora_inicio.slice(0, 5)}</strong>
+                        <span className="truncate max-w-[130px]">{cli?.nome || 'Compromisso'}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Tipo de Trabalho */}
+          {/* Tipo de Trabalho (Sem Fotografia) */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
               Tipo de Trabalho
             </label>
-            <div className="grid grid-cols-4 gap-2">
-              {(['gravacao', 'foto', 'edicao', 'reuniao'] as EventTipo[]).map((t) => (
+            <div className="grid grid-cols-3 gap-2">
+              {(['gravacao', 'edicao', 'reuniao'] as EventTipo[]).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -621,7 +710,7 @@ export function EventModal() {
                       : 'bg-[var(--ui-raised)] text-zinc-400 border-[var(--ui-border)] hover:text-foreground'
                   }`}
                 >
-                  {t === 'gravacao' ? 'Gravação' : t === 'foto' ? 'Fotografia' : t === 'edicao' ? 'Edição' : 'Reunião'}
+                  {t === 'gravacao' ? 'Gravação' : t === 'edicao' ? 'Edição' : 'Reunião'}
                 </button>
               ))}
             </div>
@@ -1166,13 +1255,26 @@ export function EventModal() {
                 <span>Concluir Despesas</span>
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => handleSubmit(false)}
-                className="px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-semibold text-xs shadow-md shadow-[var(--ui-accent)]/20 transition-all hover:scale-[1.02] cursor-pointer"
-              >
-                {isEditing ? 'Salvar alterações' : 'Criar gravação'}
-              </button>
+              <div className="flex items-center gap-2">
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit(false, true)}
+                    className="px-3 py-2 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-accent)]/40 text-[var(--ui-accent)] font-semibold text-xs transition-all cursor-pointer flex items-center gap-1"
+                    title="Salva este compromisso e mantém a janela aberta no mesmo dia para adicionar o próximo"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Salvar + Outro no Dia</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleSubmit(false, false)}
+                  className="px-4 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-semibold text-xs shadow-md shadow-[var(--ui-accent)]/20 transition-all hover:scale-[1.02] cursor-pointer"
+                >
+                  {isEditing ? 'Salvar alterações' : 'Criar gravação'}
+                </button>
+              </div>
             )}
           </div>
         </div>
