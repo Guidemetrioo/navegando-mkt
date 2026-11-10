@@ -2,12 +2,9 @@
 import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React, { useState } from 'react';
-import { IS_DEMO } from '@/lib/app-mode';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
-import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { HIERARCHY_LABELS } from '@/lib/employee-login-matcher';
-import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, CheckCircle2, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock } from 'lucide-react';
-import { canUserAccessView, USERS_DATABASE } from '@/lib/auth-users';
+import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock, LogOut } from 'lucide-react';
+import { canUserAccessView } from '@/lib/auth-users';
 import { NavegandoLogo } from '../brand/NavegandoLogo';
 
 interface AppSidebarProps {
@@ -358,110 +355,19 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         })}
       </nav>
 
-      {/* 4. RODAPÉ: MEMBRO LOGADO & CONTROLE DE TEMA */}
-      <div className="p-3 border-t border-[var(--ui-border)] bg-[var(--ui-page)] flex flex-col gap-2">
-        {!isCollapsed ? (
-          <>
-            {/* Seletor de Membro Atual */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-inner">
-              <div className="flex items-center gap-2 min-w-0">
-                <EmployeeBadge employee={currentMember} size="sm" />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-foreground truncate">
-                    {currentMember.nome}
-                  </div>
-                  <div className="text-[10px] text-zinc-400 truncate">
-                    {USERS_DATABASE.find((u) => u.employeeId === currentMember.id)?.cargo || currentMember.funcao}
-                  </div>
-                  <div className="text-[9px] font-bold text-[var(--ui-accent)] truncate">
-                    {HIERARCHY_LABELS[currentMember.funcao || 'interno']?.nivel || 'Equipe'} • {HIERARCHY_LABELS[currentMember.funcao || 'interno']?.label || currentMember.funcao}
-                  </div>
-                </div>
-              </div>
-
-              <select
-                disabled={!IS_DEMO}
-                value={loggedEmployeeId}
-                onChange={(e) => setLoggedEmployeeId(e.target.value)}
-                className="text-[10px] bg-[var(--ui-raised)] text-zinc-300 border border-[var(--ui-border)] rounded-lg px-1.5 py-1 focus:outline-none cursor-pointer"
-                title="Trocar membro logado"
-              >
-                <optgroup label="Donos & Diretores" className="bg-[var(--ui-raised)] text-[#fbbf24] font-bold">
-                  {employees
-                    .filter((e) => e.funcao === 'dono')
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
-                        {emp.nome} (Dono)
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Gerentes" className="bg-[var(--ui-raised)] text-[#38bdf8] font-bold">
-                  {employees
-                    .filter((e) => e.funcao === 'gerente')
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
-                        {emp.nome} (Gerente)
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Filmmakers" className="bg-[var(--ui-raised)] text-[#34d399] font-bold">
-                  {employees
-                    .filter((e) => e.funcao === 'filmmaker')
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
-                        {emp.nome} (Filmmaker)
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Modelos & Criadoras" className="bg-[var(--ui-raised)] text-[#f472b6] font-bold">
-                  {employees
-                    .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
-                        {emp.nome} (Modelo)
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Equipe Interna (CLT 3 Batidas)" className="bg-[var(--ui-raised)] text-[#a78bfa] font-bold">
-                  {employees
-                    .filter((e) => e.funcao === 'interno')
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id} className="text-foreground font-normal">
-                        {emp.nome} (Interno)
-                      </option>
-                    ))}
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Status de Segurança e Toggle de Tema */}
-            <div className="flex items-center justify-between px-1 text-[11px] text-zinc-400">
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{isDataSaved ? 'Sistema Operacional Ativo' : 'Salvando alterações...'}</span>
-              </span>
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="p-1 rounded-lg hover:bg-rose-500/15 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-                  title="Sair / Trocar de Ponto"
-                 data-text-action="true"><span className="text-action-label">{"Sair"}</span></button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <EmployeeBadge employee={currentMember} size="sm" />
-            <button
-              type="button"
-              onClick={logout}
-              className="p-2 rounded-xl hover:bg-rose-500/15 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-              title="Sair / Trocar Ponto"
-             data-text-action="true"><span className="text-action-label">{"Sair"}</span></button>
-          </div>
-        )}
+      {/* 4. RODAPÉ: BOTÃO DE SAIR */}
+      <div className="p-3 border-t border-[var(--ui-border)] bg-[var(--ui-page)]">
+        <button
+          type="button"
+          onClick={logout}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-bold text-xs transition-all cursor-pointer ${
+            isCollapsed ? 'justify-center' : 'justify-center'
+          }`}
+          title="Sair da conta"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          {!isCollapsed && <span>Sair</span>}
+        </button>
       </div>
     </aside>
     </>

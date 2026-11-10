@@ -2,7 +2,28 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { Share2, Download, Sparkles, CheckCircle2, Building, Calendar } from 'lucide-react';
+import { EventItem, EVENT_TYPE_LABELS } from '@/types/database';
+import { EmployeeBadge } from '../agenda/EmployeeBadge';
+import {
+  Share2,
+  Download,
+  Sparkles,
+  CheckCircle2,
+  Building,
+  Calendar,
+  Clock,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Video,
+  Link as LinkIcon,
+  FileText,
+  AlertCircle,
+  Search,
+  ChevronRight,
+  Save,
+  Eye,
+} from 'lucide-react';
 
 export interface BriefingRefItem {
   rotulo: 'Referência' | 'Exemplo';
@@ -22,23 +43,28 @@ export interface BriefingUrlPart {
   display?: string;
 }
 
-const DEFAULT_RAW_BRIEFING = `1 - Fazer vídeo totalmente ASMR produzindo embalagem de sushi (para divulgar a linha oriental)
+export interface EditableVideoDraft {
+  id: string;
+  titulo: string;
+  formato: string;
+  roteiro: string;
+  refRotulo: 'Referência' | 'Exemplo';
+  refUrl: string;
+}
 
-2 - Fazer vídeo apresentando o que é a linha oriental e mostrando as principais embalagens da linha, enquanto passam takes da produção das embalagens!
-
-3 - Fazer vídeo com música em alta personalizando embalagens da linha de pastel e mostrando produção das embalagens!
-
-4 - Fazer vídeo apresentando o que é a linha de pastel e mostrando todos os tipos de embalagem da linha, enquanto passam takes da produção delas e da personalização!
-
-5 - Fazer vídeo POV: Um dia de produção da fábrica da 24print! Mostrar takes do pessoal produzindo embalagens, personalizando, fazendo impressões!
-Referência: https://instagram.com/reel/DaTn3wXhPO6
-
-6 - Fazer vídeo "Cliente: Minha hamburgueria não tem embalagens para os hambúrgueres!" "24print: Não diga mais nada que nós resolvemos" takes saindo várias embalagens de hambúrguer das máquinas!
-Referência: https://instagram.com/reel/DZFf-U7hLD2
-
-7 - Fazer vídeo com óculos meta apresentando a 24print e falando tudo que eles produzem e fazem de diferencial, mostrar takes das 3 fábricas e das máquinas trabalhando explicando o que elas fazem, mostrar estoque e falar que tudo é feito para envio imediato!
-
-8 - Fazer vídeo chegando em um moço que está trabalhando na máquina e perguntar "Tá fazendo o que nessa máquina?" Ele responder "É nessa máquina que eu faço todas essas embalagens para hamburgueria, pastelaria, restaurante japonês, quer ver como eu faço?" Passar takes de todas essas embalagens e mostrar ele preparando uma de cada!`;
+const VIDEO_FORMATS = [
+  'Automático',
+  'POV',
+  'ASMR',
+  'Foodporn',
+  'Trend',
+  'Situação',
+  'Entrevista',
+  'Preparo',
+  'Tutorial',
+  'Falado',
+  'Conteúdo',
+] as const;
 
 const RE_URL = /((?:https?:\/\/|www\.)[^\s<>"']+)/;
 const RE_ROTULADO =
@@ -159,7 +185,6 @@ export function parseItems(raw: string): BriefingVideoItem[] {
     const merged: BriefingVideoItem[] = [];
     for (const block of rawBlocks) {
       const parsed = extrairRefs(block.trim());
-      // Se a pessoa pulou linha antes de "Referência: https://...", anexa ao vídeo anterior
       if (!parsed.texto && parsed.refs.length > 0 && merged.length > 0) {
         merged[merged.length - 1].refs.push(...parsed.refs);
       } else {
@@ -178,6 +203,84 @@ export function parseItems(raw: string): BriefingVideoItem[] {
     const end = i + 1 < starts.length ? (starts[i + 1].index ?? normalized.length) : normalized.length;
     return montar(normalized.slice(start, end), Number(m[1]));
   });
+}
+
+function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
+  if (!raw || !raw.trim()) {
+    return [
+      {
+        id: 'video-1',
+        titulo: '',
+        formato: 'Automático',
+        roteiro: '',
+        refRotulo: 'Referência',
+        refUrl: '',
+      },
+    ];
+  }
+  const parsed = parseItems(raw);
+  if (parsed.length === 0) {
+    return [
+      {
+        id: 'video-1',
+        titulo: '',
+        formato: 'Automático',
+        roteiro: '',
+        refRotulo: 'Referência',
+        refUrl: '',
+      },
+    ];
+  }
+  return parsed.map((item, idx) => {
+    let text = item.text;
+    let formato = 'Automático';
+    let titulo = '';
+
+    // Extrai prefixo opcional "[Formato] Título: " se foi salvo estruturado
+    const formatMatch = text.match(/^\[([^\]]+)\]\s*(?:([^\n:]+):\s*)?([\s\S]*)$/);
+    if (formatMatch) {
+      const candidateFormat = formatMatch[1].trim();
+      if (VIDEO_FORMATS.includes(candidateFormat as (typeof VIDEO_FORMATS)[number])) {
+        formato = candidateFormat;
+        titulo = (formatMatch[2] || '').trim();
+        text = formatMatch[3].trim();
+      }
+    }
+
+    return {
+      id: `video-${idx + 1}-${Date.now()}`,
+      titulo,
+      formato,
+      roteiro: text,
+      refRotulo: item.refs[0]?.rotulo || 'Referência',
+      refUrl: item.refs[0]?.url || '',
+    };
+  });
+}
+
+function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
+  const valid = drafts.filter((d) => d.roteiro.trim() || d.titulo.trim() || d.refUrl.trim());
+  if (valid.length === 0) return '';
+
+  return valid
+    .map((d, idx) => {
+      const num = idx + 1;
+      const prefixFormat = d.formato && d.formato !== 'Automático' ? `[${d.formato}] ` : '';
+      const prefixTitle = d.titulo.trim() ? `${d.titulo.trim()}: ` : '';
+      const mainBody = `${num} - ${prefixFormat}${prefixTitle}${d.roteiro.trim()}`.trim();
+      const refLine = d.refUrl.trim() ? `\n${d.refRotulo}: ${normalizarUrl(d.refUrl.trim())}` : '';
+      return `${mainBody}${refLine}`;
+    })
+    .join('\n\n');
+}
+
+function hasBriefingDone(event: EventItem): boolean {
+  return Boolean(event.briefing_gravacao && event.briefing_gravacao.trim().length > 0);
+}
+
+function countBriefingVideos(event: EventItem): number {
+  if (!event.briefing_gravacao || !event.briefing_gravacao.trim()) return 0;
+  return parseItems(event.briefing_gravacao).filter((i) => i.text.trim().length > 0).length;
 }
 
 function NavegandoBrandLogo() {
@@ -205,138 +308,164 @@ function NavegandoBrandLogo() {
 }
 
 export function BriefingView() {
-  const { clients, events, updateClient, saveEvent, toast, canManage } = useAgenda();
+  const { clients, events, employees, updateClient, saveEvent, openNewEventModal, toast } = useAgenda();
 
-  const todayIso = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, []);
+  // Filtro de busca e status na tela de cards de compromissos
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'pendentes' | 'feitos'>('todos');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
-  const [selectedEventId, setSelectedEventId] = useState<string>('');
-  const [clientName, setClientName] = useState<string>('24 Print');
-  const [briefingDate, setBriefingDate] = useState<string>(todayIso);
-  const [rawText, setRawText] = useState<string>(DEFAULT_RAW_BRIEFING);
-
-  // Estado que alimenta a pré-visualização A4
-  const [renderedState, setRenderedState] = useState<{
-    client: string;
-    date: string;
-    raw: string;
-  }>({
-    client: '24 Print',
-    date: todayIso,
-    raw: DEFAULT_RAW_BRIEFING,
-  });
+  // Compromisso selecionado ao clicar no card do restaurante
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const [videoDrafts, setVideoDrafts] = useState<EditableVideoDraft[]>([]);
+  const [showPdfPreview, setShowPdfPreview] = useState<boolean>(false);
 
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
-
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
-  const cachedPdfRef = useRef<{ key: string; blob: Blob } | null>(null);
-  const prepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isPreparingRef = useRef<boolean>(false);
 
-  // Gravações vinculadas ao restaurante selecionado
-  const clientEvents = useMemo(() => {
-    if (!selectedClientId) return [];
-    return events
-      .filter((e) => e.client_id === selectedClientId)
-      .sort((a, b) => a.data.localeCompare(b.data));
-  }, [events, selectedClientId]);
-
-  const handleSelectCrmClient = (clientId: string) => {
-    setSelectedClientId(clientId);
-    setSelectedEventId('');
-    if (!clientId) return;
-    const found = clients.find((c) => c.id === clientId);
-    if (!found) return;
-    setClientName(found.nome);
-
-    // Próxima gravação do restaurante na agenda
-    const nextEvt = events
-      .filter((e) => e.client_id === found.id)
-      .sort((a, b) => a.data.localeCompare(b.data))[0];
-
-    const nextDate = nextEvt?.data || briefingDate;
-    if (nextEvt) {
-      setSelectedEventId(nextEvt.id);
-      setBriefingDate(nextEvt.data);
-    }
-
-    const savedScript =
-      nextEvt?.briefing_gravacao?.trim() ||
-      found.briefing_roteiros_modelos?.trim() ||
-      found.briefing?.trim();
-
-    if (savedScript) {
-      setRawText(savedScript);
-      setRenderedState({
-        client: found.nome,
-        date: nextDate,
-        raw: savedScript,
+  // Todos os compromissos de gravação / foto dos restaurantes ordenados por data
+  const recordingEvents = useMemo(() => {
+    return [...events]
+      .filter((ev) => ev.status !== 'cancelado')
+      .sort((a, b) => {
+        const cmp = a.data.localeCompare(b.data);
+        if (cmp !== 0) return cmp;
+        return a.hora_inicio.localeCompare(b.hora_inicio);
       });
-    } else {
-      setRenderedState((prev) => ({
-        ...prev,
-        client: found.nome,
-        date: nextDate,
-      }));
+  }, [events]);
+
+  const counts = useMemo(() => {
+    let feitos = 0;
+    let pendentes = 0;
+    for (const ev of recordingEvents) {
+      if (hasBriefingDone(ev)) feitos++;
+      else pendentes++;
     }
+    return { total: recordingEvents.length, feitos, pendentes };
+  }, [recordingEvents]);
+
+  const filteredEvents = useMemo(() => {
+    return recordingEvents.filter((ev) => {
+      const done = hasBriefingDone(ev);
+      if (statusFilter === 'pendentes' && done) return false;
+      if (statusFilter === 'feitos' && !done) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const clientName = (ev.client?.nome || clients.find((c) => c.id === ev.client_id)?.nome || '').toLowerCase();
+        const local = (ev.local || '').toLowerCase();
+        const dateStr = fmtDate(ev.data).toLowerCase();
+        return clientName.includes(q) || local.includes(q) || dateStr.includes(q);
+      }
+      return true;
+    });
+  }, [recordingEvents, statusFilter, searchQuery, clients]);
+
+  const activeEvent = useMemo(
+    () => recordingEvents.find((e) => e.id === activeEventId) || null,
+    [recordingEvents, activeEventId]
+  );
+
+  const activeClient = useMemo(() => {
+    if (!activeEvent) return null;
+    return activeEvent.client || clients.find((c) => c.id === activeEvent.client_id) || null;
+  }, [activeEvent, clients]);
+
+  // Ao clicar no card de um compromisso de restaurante, abre o editor de vídeos
+  const handleOpenEventBriefing = (ev: EventItem) => {
+    setActiveEventId(ev.id);
+    setVideoDrafts(draftsFromRaw(ev.briefing_gravacao));
+    setStatusMsg('');
   };
 
-  const handleSelectCrmEvent = (eventId: string) => {
-    setSelectedEventId(eventId);
-    const evt = events.find((e) => e.id === eventId);
-    if (!evt) return;
-    setBriefingDate(evt.data);
-    if (evt.briefing_gravacao?.trim()) {
-      setRawText(evt.briefing_gravacao);
-      setRenderedState({
-        client: clientName.trim() || 'Cliente',
-        date: evt.data,
-        raw: evt.briefing_gravacao,
-      });
-    } else {
-      setRenderedState((prev) => ({
-        ...prev,
-        date: evt.data,
-      }));
-    }
+  // Manipulação da lista de vídeos separados
+  const handleAddAnotherVideo = () => {
+    setVideoDrafts((prev) => [
+      ...prev,
+      {
+        id: `video-${prev.length + 1}-${Date.now()}`,
+        titulo: '',
+        formato: 'Automático',
+        roteiro: '',
+        refRotulo: 'Referência',
+        refUrl: '',
+      },
+    ]);
   };
 
-  // Cálculo dos vídeos e páginas A4 (4 vídeos por folha A4)
-  const items = useMemo(() => parseItems(renderedState.raw), [renderedState.raw]);
+  const handleUpdateVideoDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
+    setVideoDrafts((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  };
+
+  const handleRemoveVideoDraft = (id: string) => {
+    setVideoDrafts((prev) => {
+      if (prev.length <= 1) {
+        return [
+          {
+            id: `video-1-${Date.now()}`,
+            titulo: '',
+            formato: 'Automático',
+            roteiro: '',
+            refRotulo: 'Referência',
+            refUrl: '',
+          },
+        ];
+      }
+      return prev.filter((v) => v.id !== id);
+    });
+  };
+
+  //Texto bruto consolidado para o evento e para o PDF A4
+  const serializedRawText = useMemo(() => serializeDraftsToRaw(videoDrafts), [videoDrafts]);
+  const parsedPreviewItems = useMemo(() => parseItems(serializedRawText), [serializedRawText]);
   const formatsCount = useMemo(
-    () => new Set(items.map((i) => inferCategory(i.text))).size,
-    [items]
+    () => new Set(parsedPreviewItems.map((i) => inferCategory(i.text))).size,
+    [parsedPreviewItems]
   );
   const pages = useMemo(() => {
     const list: BriefingVideoItem[][] = [];
-    for (let i = 0; i < items.length; i += 4) {
-      list.push(items.slice(i, i + 4));
+    for (let i = 0; i < parsedPreviewItems.length; i += 4) {
+      list.push(parsedPreviewItems.slice(i, i + 4));
     }
     if (list.length === 0) list.push([]);
     return list;
-  }, [items]);
+  }, [parsedPreviewItems]);
 
-  const currentKey = useCallback(
-    () => JSON.stringify([clientName.trim() || 'Cliente', briefingDate, rawText]),
-    [clientName, briefingDate, rawText]
-  );
+  const handleSaveBriefing = () => {
+    if (!activeEvent) return;
+    const raw = serializeDraftsToRaw(videoDrafts);
 
-  const nomeArquivo = useCallback(() => {
-    const clean = (clientName.trim() || 'Cliente').replace(/[\/\\:*?"<>|]/g, '-');
-    return `Briefing - ${clean}.pdf`;
-  }, [clientName]);
+    saveEvent(
+      {
+        ...activeEvent,
+        briefing_gravacao: raw || null,
+      },
+      true
+    );
 
-  // Monta o PDF A4 com páginas de 210x297mm e anotações de links clicáveis
+    if (activeClient && raw) {
+      updateClient(activeClient.id, {
+        briefing_roteiros_modelos: raw,
+      });
+    }
+
+    const qtd = parseItems(raw).length;
+    if (raw) {
+      toast(`Briefing salvo com ${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'} para ${activeClient?.nome || 'Restaurante'}!`);
+      setStatusMsg(`Salvo com sucesso (${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'}). Status: Briefing Feito.`);
+    } else {
+      toast('Briefing limpo (marcado como Pendente).', 'info');
+      setStatusMsg('Briefing marcado como Pendente.');
+    }
+  };
+
+  // Geração de PDF A4 para o compromisso aberto
   const gerarPdfBlob = useCallback(async (): Promise<Blob> => {
     if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
     const container = previewContainerRef.current;
-    if (!container) throw new Error('Visualização não encontrada.');
+    if (!container) throw new Error('Ative a visualização A4 para gerar o PDF.');
     const paginas = Array.from(container.querySelectorAll<HTMLElement>('.briefing-a4-page'));
     if (!paginas.length) throw new Error('Nada para gerar.');
 
@@ -384,42 +513,6 @@ export function BriefingView() {
     return pdf.output('blob');
   }, []);
 
-  // Sincroniza em tempo real a pré-visualização e pré-gera o PDF em background (para o iOS aceitar navigator.share no toque)
-  useEffect(() => {
-    setRenderedState({
-      client: clientName.trim() || 'Cliente',
-      date: briefingDate,
-      raw: rawText,
-    });
-
-    if (prepTimerRef.current) clearTimeout(prepTimerRef.current);
-    cachedPdfRef.current = null;
-    setStatusMsg('');
-
-    prepTimerRef.current = setTimeout(async () => {
-      if (isPreparingRef.current) return;
-      const k = JSON.stringify([clientName.trim() || 'Cliente', briefingDate, rawText]);
-      isPreparingRef.current = true;
-      setStatusMsg('Preparando PDF...');
-      try {
-        const blob = await gerarPdfBlob();
-        cachedPdfRef.current = { key: k, blob };
-        setStatusMsg('PDF pronto para compartilhar.');
-      } catch (err) {
-        cachedPdfRef.current = null;
-        setStatusMsg(
-          'Falha ao preparar o PDF: ' + (err instanceof Error ? err.message : String(err))
-        );
-      } finally {
-        isPreparingRef.current = false;
-      }
-    }, 900);
-
-    return () => {
-      if (prepTimerRef.current) clearTimeout(prepTimerRef.current);
-    };
-  }, [clientName, briefingDate, rawText, gerarPdfBlob]);
-
   const baixarBlob = (blob: Blob, nome: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -431,279 +524,521 @@ export function BriefingView() {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
-  // Botão "Gerar briefing": atualiza o A4 imediatamente e salva no restaurante/gravação do CRM se vinculado
-  const handleGenerateBriefing = () => {
-    const cleanClient = clientName.trim() || 'Cliente';
-    setRenderedState({
-      client: cleanClient,
-      date: briefingDate,
-      raw: rawText,
-    });
-
-    if (canManage) {
-      const matchedClient =
-        clients.find((c) => c.id === selectedClientId) ||
-        clients.find((c) => c.nome.toLowerCase() === cleanClient.toLowerCase());
-
-      if (matchedClient) {
-        updateClient(matchedClient.id, {
-          briefing_roteiros_modelos: rawText.trim(),
-        });
-      }
-      if (selectedEventId) {
-        const targetEvt = events.find((e) => e.id === selectedEventId);
-        if (targetEvt) {
-          saveEvent({
-            ...targetEvt,
-            briefing_gravacao: rawText.trim(),
-          }, true);
-        }
-      }
-      if (matchedClient || selectedEventId) {
-        toast(`Briefing de ${cleanClient} gerado e salvo na agenda!`);
-        return;
-      }
-    }
-    toast(`Briefing de ${cleanClient} atualizado!`);
-  };
-
-  // Botão "Compartilhar PDF": usa o PDF em cache para abrir o folha nativa de compartilhamento (WhatsApp no celular) sem precisar baixar
-  const handleSharePdf = () => {
-    const nome = nomeArquivo();
-    const k = currentKey();
-
-    const concluirShare = (p: Promise<void>, blob: Blob) => {
-      p.then(() => setStatusMsg('Compartilhado.'))
-        .catch((err) => {
-          if (err && err.name === 'AbortError') {
-            setStatusMsg('');
-          } else {
-            baixarBlob(blob, nome);
-            setStatusMsg('Compartilhamento indisponível - PDF salvo nos downloads.');
-          }
-        });
-    };
-
-    if (cachedPdfRef.current && cachedPdfRef.current.key === k) {
-      const blob = cachedPdfRef.current.blob;
-      const file = new File([blob], nome, { type: 'application/pdf' });
-      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
-        concluirShare(navigator.share({ files: [file], title: nome }), blob);
-      } else {
-        baixarBlob(blob, nome);
-        setStatusMsg('PDF salvo nos downloads.');
-      }
-      return;
-    }
-
-    if (isGeneratingPdf) return;
-    setIsGeneratingPdf(true);
-    setStatusMsg('Gerando...');
-
-    (async () => {
-      try {
-        const blob = await gerarPdfBlob();
-        cachedPdfRef.current = { key: k, blob };
-        const file = new File([blob], nome, { type: 'application/pdf' });
-        if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
-          concluirShare(navigator.share({ files: [file], title: nome }), blob);
-        } else {
-          baixarBlob(blob, nome);
-          setStatusMsg('PDF salvo nos downloads.');
-        }
-      } catch (e) {
-        setStatusMsg('Falha ao gerar o PDF: ' + (e instanceof Error ? e.message : String(e)));
-      } finally {
-        setIsGeneratingPdf(false);
-      }
-    })();
-  };
-
-  const handleDownloadPdf = async () => {
-    const nome = nomeArquivo();
-    const k = currentKey();
-    if (cachedPdfRef.current && cachedPdfRef.current.key === k) {
-      baixarBlob(cachedPdfRef.current.blob, nome);
-      setStatusMsg('PDF salvo nos downloads.');
-      return;
+  const handleDownloadOrSharePdf = async (mode: 'download' | 'share') => {
+    if (!showPdfPreview) {
+      setShowPdfPreview(true);
+      await new Promise((r) => setTimeout(r, 250));
     }
     if (isGeneratingPdf) return;
     setIsGeneratingPdf(true);
-    setStatusMsg('Gerando PDF para download...');
+    setStatusMsg('Gerando PDF A4...');
     try {
       const blob = await gerarPdfBlob();
-      cachedPdfRef.current = { key: k, blob };
-      baixarBlob(blob, nome);
-      setStatusMsg('PDF salvo nos downloads.');
+      const cleanName = (activeClient?.nome || 'Restaurante').replace(/[\/\\:*?"<>|]/g, '-');
+      const fileName = `Briefing - ${cleanName} - ${activeEvent?.data || ''}.pdf`;
+
+      if (mode === 'share') {
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fileName });
+          setStatusMsg('PDF compartilhado!');
+          return;
+        }
+      }
+      baixarBlob(blob, fileName);
+      setStatusMsg('PDF baixado com sucesso!');
     } catch (e) {
-      setStatusMsg('Falha ao gerar o PDF: ' + (e instanceof Error ? e.message : String(e)));
+      setStatusMsg('Erro ao gerar PDF: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
-  const displayClient = renderedState.client.trim() || 'Cliente';
-  const displayDate = fmtDate(renderedState.date);
+  // ============================================================================
+  // VISÃO 1: GRADE DE CARDS DOS COMPROMISSOS DOS RESTAURANTES (PENDENTE / FEITO)
+  // ============================================================================
+  if (!activeEvent) {
+    return (
+      <div className="space-y-6">
+        {/* Cabeçalho e Resumo */}
+        <div className="p-5 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)] mb-1">
+              <Sparkles className="w-4 h-4" />
+              <span>Central de Briefings por Compromisso</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-foreground">
+              Gravações dos Restaurantes
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              Clique no card de um restaurante agendado para abrir a área de escrita e separar os briefings de cada vídeo.
+            </p>
+          </div>
+
+          {/* Indicadores Rápidos */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="px-3.5 py-2 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] flex items-center gap-2.5">
+              <Calendar className="w-4 h-4 text-zinc-400" />
+              <div>
+                <div className="text-[10px] uppercase font-bold text-zinc-400">Compromissos</div>
+                <div className="text-sm font-extrabold text-foreground">{counts.total}</div>
+              </div>
+            </div>
+
+            <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <div>
+                <div className="text-[10px] uppercase font-bold text-amber-300/80">Pendentes</div>
+                <div className="text-sm font-extrabold text-amber-400">{counts.pendentes}</div>
+              </div>
+            </div>
+
+            <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div>
+                <div className="text-[10px] uppercase font-bold text-emerald-300/80">Briefing Feito</div>
+                <div className="text-sm font-extrabold text-emerald-400">{counts.feitos}</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => openNewEventModal()}
+              className="px-3.5 py-2.5 rounded-xl gradient-cta text-foreground font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nova Gravação</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Barra de Filtros */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] self-start">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('todos')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                statusFilter === 'todos'
+                  ? 'bg-[var(--ui-accent)] text-white shadow'
+                  : 'text-zinc-400 hover:text-foreground'
+              }`}
+            >
+              Todos ({counts.total})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('pendentes')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                statusFilter === 'pendentes'
+                  ? 'bg-amber-500 text-zinc-950 shadow'
+                  : 'text-zinc-400 hover:text-amber-300'
+              }`}
+            >
+              Pendentes ({counts.pendentes})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('feitos')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                statusFilter === 'feitos'
+                  ? 'bg-emerald-500 text-zinc-950 shadow'
+                  : 'text-zinc-400 hover:text-emerald-300'
+              }`}
+            >
+              Feitos ({counts.feitos})
+            </button>
+          </div>
+
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar restaurante, data ou local..."
+              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
+            />
+          </div>
+        </div>
+
+        {/* Grid de Cards dos Compromissos dos Restaurantes */}
+        {filteredEvents.length === 0 ? (
+          <div className="p-10 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-center space-y-3">
+            <Building className="w-10 h-10 text-zinc-500 mx-auto" />
+            <div className="text-sm font-bold text-foreground">
+              Nenhum compromisso encontrado para este filtro
+            </div>
+            <p className="text-xs text-zinc-400 max-w-md mx-auto">
+              Agende uma gravação na agenda ou altere o filtro acima para visualizar os restaurantes.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredEvents.map((ev) => {
+              const client = ev.client || clients.find((c) => c.id === ev.client_id);
+              const done = hasBriefingDone(ev);
+              const videoCount = countBriefingVideos(ev);
+              const assignedMembers = (ev.assigned_employee_ids || [])
+                .map((id) => employees.find((emp) => emp.id === id))
+                .filter(Boolean);
+              const parsedPreview = done && ev.briefing_gravacao ? parseItems(ev.briefing_gravacao) : [];
+
+              return (
+                <div
+                  key={ev.id}
+                  onClick={() => handleOpenEventBriefing(ev)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleOpenEventBriefing(ev);
+                    }
+                  }}
+                  className={`group rounded-2xl p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
+                    done
+                      ? 'border-emerald-500/35 hover:border-emerald-400/70'
+                      : 'border-amber-500/35 hover:border-[var(--ui-accent)]'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    {/* Topo do Card: Nome do Restaurante + Status (Pendente ou Feito) */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-[var(--ui-accent)] mb-0.5">
+                          {EVENT_TYPE_LABELS[ev.tipo] || 'Gravação'}
+                        </span>
+                        <h3 className="text-base font-extrabold text-foreground truncate group-hover:text-[var(--ui-accent)] transition-colors">
+                          {client?.nome || 'Restaurante'}
+                        </h3>
+                      </div>
+
+                      {done ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Feito ({videoCount} {videoCount === 1 ? 'vídeo' : 'vídeos'})</span>
+                        </span>
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Pendente</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Data e Horário do Compromisso */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300 bg-[var(--ui-page)] px-3 py-2 rounded-xl border border-[var(--ui-border)]">
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        <Calendar className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
+                        {fmtDate(ev.data)}
+                      </span>
+                      <span className="text-zinc-600">•</span>
+                      <span className="flex items-center gap-1 text-zinc-400">
+                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                        {ev.hora_inicio.slice(0, 5)} às {ev.hora_fim.slice(0, 5)}
+                      </span>
+                    </div>
+
+                    {/* Resumo dos Vídeos ou Chamada para Preencher */}
+                    {done && parsedPreview.length > 0 ? (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                          Vídeos planejados:
+                        </div>
+                        {parsedPreview.slice(0, 2).map((vid) => (
+                          <div
+                            key={vid.n}
+                            className="text-xs text-zinc-300 line-clamp-1 bg-white/[0.02] px-2.5 py-1.5 rounded-lg border border-white/5"
+                          >
+                            <strong className="text-[var(--ui-accent)] mr-1.5">Vídeo {vid.n}:</strong>
+                            {vid.text}
+                          </div>
+                        ))}
+                        {parsedPreview.length > 2 && (
+                          <div className="text-[11px] text-zinc-400 font-medium pl-1">
+                            + {parsedPreview.length - 2} outro(s) vídeo(s)...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 text-xs text-amber-200/90 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Nenhum briefing escrito ainda. Clique para criar os vídeos desta gravação.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rodapé do Card: Equipe + Botão de Abrir */}
+                  <div className="pt-3 border-t border-[var(--ui-border)] flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {assignedMembers.length > 0 ? (
+                        assignedMembers.slice(0, 3).map((emp) =>
+                          emp ? <EmployeeBadge key={emp.id} employee={emp} size="sm" /> : null
+                        )
+                      ) : (
+                        <span className="text-[11px] text-zinc-400">Sem equipe definida</span>
+                      )}
+                      {assignedMembers.length > 3 && (
+                        <span className="text-[10px] text-zinc-400 font-bold">
+                          +{assignedMembers.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[var(--ui-accent)] group-hover:translate-x-0.5 transition-transform">
+                      <span>{done ? 'Editar Vídeos' : 'Escrever Briefing'}</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // VISÃO 2: EDITOR DE BRIEFINGS SEPARADOS POR VÍDEO DO RESTAURANTE SELECIONADO
+  // ============================================================================
+  const displayClient = activeClient?.nome || 'Restaurante';
+  const displayDate = fmtDate(activeEvent.data);
+  const isCurrentlyDone = hasBriefingDone(activeEvent);
 
   return (
-    <div className="w-full rounded-3xl overflow-hidden border border-[rgba(255,116,31,0.22)] bg-[#15100d] text-[#F6F0EA] shadow-2xl">
-      <div className="grid grid-cols-1 xl:grid-cols-[390px_minmax(0,1fr)] min-h-[calc(100vh-7rem)]">
-        {/* PAINEL LATERAL DE CONTROLES (IDÊNTICO AO NAVEGANDOMKT.COM.BR/BRIEFINGS + INTEGRAÇÃO CRM) */}
-        <aside className="p-6 sm:p-7 bg-[#0d0a08] border-b xl:border-b-0 xl:border-r border-white/10 flex flex-col">
-          <h1
-            className="text-[28px] leading-none font-bold m-0 mb-2 text-[#F6F0EA]"
-            style={{ fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif' }}
+    <div className="space-y-6">
+      {/* Barra Superior do Compromisso Selecionado */}
+      <div className="p-4 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <button
+            type="button"
+            onClick={() => setActiveEventId(null)}
+            className="p-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-zinc-300 hover:text-foreground transition-colors cursor-pointer shrink-0"
+            title="Voltar para a lista de restaurantes"
           >
-            Briefing Criativo
-          </h1>
-          <p className="text-[14px] leading-[1.45] text-[rgba(246,240,234,0.76)] m-0 mb-5">
-            Cole o conteúdo, ajuste cliente e data e gere o PDF no padrão Navegando MKT.
-          </p>
+            <ArrowLeft className="w-4 h-4" />
+          </button>
 
-          {/* Atalho opcional para puxar restaurante e gravação direto da Agenda do CRM */}
-          {clients.length > 0 && (
-            <div className="mb-3 p-3 rounded-xl bg-[#120e0b] border border-[rgba(255,116,31,0.22)] space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#FF741F]">
-                <Building className="w-3.5 h-3.5" />
-                <span>Puxar Restaurante da Agenda (Opcional)</span>
-              </div>
-              <select
-                value={selectedClientId}
-                onChange={(e) => handleSelectCrmClient(e.target.value)}
-                className="w-full rounded-lg bg-[#0d0a08] border border-[rgba(255,116,31,0.28)] px-2.5 py-2 text-xs text-[#F6F0EA] focus:outline-none focus:border-[#FF741F]"
-              >
-                <option value="">-- Digitar nome manualmente abaixo --</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-
-              {clientEvents.length > 0 && (
-                <div className="pt-1">
-                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[rgba(246,240,234,0.65)] mb-1">
-                    <Calendar className="w-3 h-3 text-[#FF741F]" />
-                    <span>Vincular à Gravação da Agenda:</span>
-                  </div>
-                  <select
-                    value={selectedEventId}
-                    onChange={(e) => handleSelectCrmEvent(e.target.value)}
-                    className="w-full rounded-lg bg-[#0d0a08] border border-[rgba(255,116,31,0.28)] px-2.5 py-1.5 text-xs text-[#F6F0EA] focus:outline-none focus:border-[#FF741F]"
-                  >
-                    <option value="">Selecionar data de gravação...</option>
-                    {clientEvents.map((ev) => (
-                      <option key={ev.id} value={ev.id}>
-                        {fmtDate(ev.data)} ({ev.hora_inicio} às {ev.hora_fim})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[var(--ui-accent)]/15 text-[var(--ui-accent)]">
+                {EVENT_TYPE_LABELS[activeEvent.tipo] || 'Gravação'}
+              </span>
+              <span className="text-xs text-zinc-400 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
+                {displayDate} ({activeEvent.hora_inicio.slice(0, 5)} às {activeEvent.hora_fim.slice(0, 5)})
+              </span>
+              {isCurrentlyDone ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Briefing Feito
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <Clock className="w-3 h-3" />
+                  Briefing Pendente
+                </span>
               )}
             </div>
-          )}
 
-          <label className="block text-[11px] uppercase tracking-[0.18em] text-[#FF741F] mt-3 mb-2 font-semibold">
-            Cliente
-          </label>
-          <input
-            type="text"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            placeholder="Ex: 24 Print"
-            className="w-full border border-[rgba(255,116,31,0.28)] focus:border-[rgba(255,116,31,0.7)] rounded-xl bg-[#120e0b] text-[#F6F0EA] px-3.5 py-3 text-sm outline-none transition-colors"
-          />
-
-          <label className="block text-[11px] uppercase tracking-[0.18em] text-[#FF741F] mt-4 mb-2 font-semibold">
-            Data
-          </label>
-          <input
-            type="date"
-            value={briefingDate}
-            onChange={(e) => setBriefingDate(e.target.value)}
-            className="w-full border border-[rgba(255,116,31,0.28)] focus:border-[rgba(255,116,31,0.7)] rounded-xl bg-[#120e0b] text-[#F6F0EA] px-3.5 py-3 text-sm outline-none transition-colors"
-          />
-
-          <div className="flex items-center justify-between mt-4 mb-2">
-            <label className="block text-[11px] uppercase tracking-[0.18em] text-[#FF741F] font-semibold">
-              Conteúdo dos vídeos
-            </label>
-            <span className="text-[11px] text-[rgba(246,240,234,0.58)]">
-              {items.length} {items.length === 1 ? 'vídeo' : 'vídeos'} • {formatsCount}{' '}
-              {formatsCount === 1 ? 'formato' : 'formatos'}
-            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
+              {displayClient}
+            </h2>
           </div>
-          <textarea
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            placeholder={`Separe cada vídeo com uma linha em branco ou numere (1 -, 2 -).\n\nUse "Referência: https://..." ou "Exemplo: https://..." para anexar links clicáveis.`}
-            className="w-full min-h-[320px] resize-y leading-[1.45] border border-[rgba(255,116,31,0.28)] focus:border-[rgba(255,116,31,0.7)] rounded-xl bg-[#120e0b] text-[#F6F0EA] p-3.5 text-sm outline-none transition-colors"
-          />
+        </div>
 
-          <div className="grid grid-cols-2 gap-2.5 mt-4">
-            <button
-              type="button"
-              onClick={handleGenerateBriefing}
-              className="border-0 rounded-xl py-3.5 px-3.5 font-semibold text-sm bg-[#FF741F] hover:bg-[#ff853a] text-[#120903] cursor-pointer transition-all flex items-center justify-center gap-1.5"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Gerar briefing</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSharePdf}
-              disabled={isGeneratingPdf}
-              className="rounded-xl py-3.5 px-3.5 font-semibold text-sm bg-transparent hover:bg-[rgba(255,116,31,0.1)] border border-[rgba(255,116,31,0.4)] text-[#F6F0EA] cursor-pointer transition-all flex items-center justify-center gap-1.5 disabled:opacity-60"
-            >
-              <Share2 className="w-4 h-4 text-[#FF741F]" />
-              <span>{isGeneratingPdf ? 'Gerando...' : 'Compartilhar PDF'}</span>
-            </button>
-          </div>
+        {/* Ações Principais do Briefing */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowPdfPreview((v) => !v)}
+            className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Eye className="w-4 h-4 text-[var(--ui-accent)]" />
+            <span>{showPdfPreview ? 'Ocultar Folha A4' : 'Ver Folha A4'}</span>
+          </button>
 
           <button
             type="button"
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
-            className="mt-2.5 w-full rounded-xl py-2.5 px-3.5 font-semibold text-xs bg-[#120e0b] hover:bg-[rgba(255,116,31,0.12)] border border-[rgba(255,116,31,0.25)] text-[rgba(246,240,234,0.85)] cursor-pointer transition-all flex items-center justify-center gap-1.5"
+            onClick={() => handleDownloadOrSharePdf('download')}
+            disabled={isGeneratingPdf || parsedPreviewItems.length === 0}
+            className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5 text-[#FF741F]" />
-            <span>Baixar PDF no dispositivo ({nomeArquivo()})</span>
+            <Download className="w-4 h-4 text-[var(--ui-accent)]" />
+            <span>Baixar PDF</span>
           </button>
 
-          {statusMsg && (
+          <button
+            type="button"
+            onClick={() => handleDownloadOrSharePdf('share')}
+            disabled={isGeneratingPdf || parsedPreviewItems.length === 0}
+            className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <Share2 className="w-4 h-4 text-[var(--ui-accent)]" />
+            <span>Compartilhar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveBriefing}
+            className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>Salvar Briefing ({videoDrafts.length} {videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})</span>
+          </button>
+        </div>
+      </div>
+
+      {statusMsg && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{statusMsg}</span>
+        </div>
+      )}
+
+      {/* Lista de Cards de Vídeo Separados */}
+      <div className="space-y-4">
+        {videoDrafts.map((video, index) => {
+          const detectedCategory =
+            video.formato !== 'Automático'
+              ? video.formato
+              : video.roteiro.trim()
+                ? inferCategory(video.roteiro)
+                : 'Conteúdo';
+
+          return (
             <div
-              className="text-xs text-[#FF741F] mt-3 leading-[1.45] flex items-center gap-1.5 font-medium"
-              aria-live="polite"
+              key={video.id}
+              className="p-5 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] space-y-4 shadow-md"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span>{statusMsg}</span>
+              {/* Cabeçalho do Vídeo */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--ui-border)]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--ui-accent)]/15 border border-[var(--ui-accent)]/40 text-[var(--ui-accent)] font-extrabold text-sm flex items-center justify-center">
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+                  <div>
+                    <div className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                      <Video className="w-4 h-4 text-[var(--ui-accent)]" />
+                      <span>Briefing do Vídeo {index + 1}</span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400">
+                      Formato identificado: <strong className="text-[var(--ui-accent)]">{detectedCategory}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={video.formato}
+                    onChange={(e) => handleUpdateVideoDraft(video.id, { formato: e.target.value })}
+                    className="px-3 py-1.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
+                    title="Formato do vídeo"
+                  >
+                    {VIDEO_FORMATS.map((fmt) => (
+                      <option key={fmt} value={fmt}>
+                        Formato: {fmt}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveVideoDraft(video.id)}
+                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
+                    title="Remover este vídeo"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Campos do Vídeo */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                    Título / Ideia Principal do Vídeo {index + 1} (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={video.titulo}
+                    onChange={(e) => handleUpdateVideoDraft(video.id, { titulo: e.target.value })}
+                    placeholder={`Ex: Produção ASMR da Linha Oriental, Desafio com Cliente, Prato Carro-Chefe...`}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs sm:text-sm text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ui-accent)] mb-1.5">
+                    Roteiro / Cenas / Falas do Vídeo {index + 1} *
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={video.roteiro}
+                    onChange={(e) => handleUpdateVideoDraft(video.id, { roteiro: e.target.value })}
+                    placeholder={`Descreva exatamente como deve ser gravado o Vídeo ${index + 1} (gancho inicial, takes de cozinha, falas, transição)...`}
+                    className="w-full p-3.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs sm:text-sm text-foreground leading-relaxed focus:outline-none focus:border-[var(--ui-accent)] resize-y"
+                  />
+                </div>
+
+                {/* Link de Referência / Exemplo */}
+                <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-2.5 items-center">
+                  <select
+                    value={video.refRotulo}
+                    onChange={(e) =>
+                      handleUpdateVideoDraft(video.id, {
+                        refRotulo: e.target.value as 'Referência' | 'Exemplo',
+                      })
+                    }
+                    className="px-3 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs font-semibold text-zinc-300 focus:outline-none focus:border-[var(--ui-accent)]"
+                  >
+                    <option value="Referência">Link de Referência</option>
+                    <option value="Exemplo">Link de Exemplo</option>
+                  </select>
+
+                  <div className="relative">
+                    <LinkIcon className="w-3.5 h-3.5 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="url"
+                      value={video.refUrl}
+                      onChange={(e) => handleUpdateVideoDraft(video.id, { refUrl: e.target.value })}
+                      placeholder="https://instagram.com/reel/... ou TikTok de referência (opcional)"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          );
+        })}
 
-          <div className="text-xs text-[rgba(246,240,234,0.58)] mt-3 leading-[1.45] space-y-1.5">
-            <p className="m-0">
-              A categoria de cada vídeo (<strong>POV</strong>, <strong>Situação</strong>,{' '}
-              <strong>ASMR</strong>, <strong>Foodporn</strong>, <strong>Entrevista</strong>,{' '}
-              <strong>Trend</strong>, <strong>Tutorial</strong>, <strong>Preparo</strong>,{' '}
-              <strong>Falado</strong>) é inferida automaticamente.
-            </p>
-            <p className="m-0">
-              • Separe 2 linhas com um espaço em branco (ou use <code>1 -</code>, <code>2 -</code>)
-              para trocar de vídeo.
-            </p>
-            <p className="m-0">
-              • Use <code>Referência:</code> ou <code>Exemplo:</code> antes de um link para destacar
-              como referência clicável no PDF.
-            </p>
-            <p className="m-0">
-              • <strong>&ldquo;Compartilhar PDF&rdquo;</strong> monta o A4 aqui mesmo e abre o
-              compartilhamento direto para o WhatsApp no celular — sem precisar baixar.
-            </p>
-          </div>
-        </aside>
+        {/* Botão Intuitivo e Destacado para Fazer Briefing do Próximo Vídeo */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleAddAnotherVideo}
+            className="flex-1 py-4 px-5 rounded-2xl border-2 border-dashed border-[var(--ui-accent)]/50 hover:border-[var(--ui-accent)] bg-[var(--ui-accent)]/10 hover:bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Fazer Briefing de Outro Vídeo (+ Adicionar Vídeo {videoDrafts.length + 1})</span>
+          </button>
 
-        {/* PREVIEW DAS PÁGINAS A4 (794x1123px EXATOS) */}
-        <main className="p-4 sm:p-8 overflow-x-auto bg-[#15100d] flex justify-center">
+          <button
+            type="button"
+            onClick={handleSaveBriefing}
+            className="py-4 px-7 rounded-2xl gradient-cta text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>Salvar Todos os Vídeos</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Pré-visualização Folha A4 (Opcional / Sob Demanda) */}
+      {showPdfPreview && (
+        <div className="p-4 sm:p-8 rounded-3xl overflow-x-auto bg-[#15100d] border border-[rgba(255,116,31,0.25)] flex justify-center">
           <div
             ref={previewContainerRef}
             className="flex flex-col gap-7 items-center"
@@ -722,24 +1057,6 @@ export function BriefingView() {
                   boxShadow: '0 20px 70px rgba(0,0,0,.4)',
                 }}
               >
-                {/* Brilho radial laranja idêntico ao original */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: 460,
-                    height: 460,
-                    borderRadius: '50%',
-                    background:
-                      'radial-gradient(circle, rgba(255,116,31,0.20) 0%, rgba(255,116,31,0.11) 42%, rgba(255,116,31,0) 72%)',
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                    ...(idx % 2 === 0
-                      ? { right: -120, top: 120 }
-                      : { left: -130, bottom: 40 }),
-                  }}
-                />
-
-                {/* Header A4 */}
                 <div
                   style={{
                     position: 'relative',
@@ -777,7 +1094,6 @@ export function BriefingView() {
                   </div>
                 </div>
 
-                {/* Hero A4 (Página 1 completa, Páginas seguintes compactas) */}
                 {idx === 0 ? (
                   <div
                     style={{
@@ -807,7 +1123,7 @@ export function BriefingView() {
                       <h2
                         style={{
                           fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                          fontSize: 56,
+                          fontSize: 52,
                           lineHeight: 0.92,
                           letterSpacing: '-0.04em',
                           fontWeight: 700,
@@ -817,9 +1133,7 @@ export function BriefingView() {
                         }}
                       >
                         Roteiro de vídeos
-                        <span style={{ color: '#FF741F', display: 'block' }}>
-                          {displayClient}.
-                        </span>
+                        <span style={{ color: '#FF741F', display: 'block' }}>{displayClient}.</span>
                       </h2>
                     </div>
 
@@ -829,17 +1143,16 @@ export function BriefingView() {
                           style={{
                             fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
                             color: '#FF741F',
-                            fontSize: 64,
+                            fontSize: 56,
                             lineHeight: 0.9,
                             fontWeight: 700,
-                            letterSpacing: '-0.04em',
                           }}
                         >
-                          {items.length}
+                          {parsedPreviewItems.length}
                         </div>
                         <div
                           style={{
-                            fontSize: 14,
+                            fontSize: 13,
                             color: 'rgba(246,240,234,0.76)',
                             marginTop: 8,
                             textTransform: 'uppercase',
@@ -854,17 +1167,16 @@ export function BriefingView() {
                           style={{
                             fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
                             color: '#FF741F',
-                            fontSize: 64,
+                            fontSize: 56,
                             lineHeight: 0.9,
                             fontWeight: 700,
-                            letterSpacing: '-0.04em',
                           }}
                         >
                           {formatsCount}
                         </div>
                         <div
                           style={{
-                            fontSize: 14,
+                            fontSize: 13,
                             color: 'rgba(246,240,234,0.76)',
                             marginTop: 8,
                             textTransform: 'uppercase',
@@ -876,35 +1188,8 @@ export function BriefingView() {
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div
-                    style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-end',
-                      paddingTop: 16,
-                      paddingBottom: 14,
-                      borderBottom: '1px solid rgba(255,116,31,0.30)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '11.5px',
-                        letterSpacing: '0.24em',
-                        textTransform: 'uppercase',
-                        color: '#FF741F',
-                        fontWeight: 600,
-                        margin: 0,
-                      }}
-                    >
-                      Briefing criativo • {displayClient}
-                    </div>
-                  </div>
-                )}
+                ) : null}
 
-                {/* Grade 2x2 de Cards de Vídeo */}
                 <div
                   style={{
                     position: 'relative',
@@ -936,41 +1221,36 @@ export function BriefingView() {
                           flexDirection: 'column',
                         }}
                       >
-                        <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
                           <div
                             style={{
                               fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                              fontSize: 54,
+                              fontSize: 48,
                               lineHeight: 0.88,
                               color: '#FF741F',
                               fontWeight: 600,
-                              letterSpacing: '-0.04em',
-                              minWidth: 58,
                             }}
                           >
                             {String(item.n).padStart(2, '0')}
                           </div>
-                          <div style={{ paddingTop: 2, minWidth: 0 }}>
+                          <div>
                             <span
                               style={{
                                 display: 'inline-block',
                                 border: '1px solid rgba(255,116,31,0.45)',
                                 borderRadius: 999,
-                                padding: '5px 11px',
-                                fontSize: 13,
-                                lineHeight: 1,
+                                padding: '4px 10px',
+                                fontSize: 12,
                                 color: '#F6F0EA',
-                                whiteSpace: 'nowrap',
                               }}
                             >
                               {cat}
                             </span>
                             <div
                               style={{
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: 'rgba(246,240,234,0.55)',
-                                marginTop: 7,
-                                lineHeight: 1.3,
+                                marginTop: 6,
                               }}
                             >
                               {sub}
@@ -980,13 +1260,11 @@ export function BriefingView() {
 
                         <div
                           style={{
-                            fontSize: '17.5px',
+                            fontSize: '16px',
                             lineHeight: 1.45,
                             color: '#F6F0EA',
-                            marginTop: 13,
+                            marginTop: 12,
                             whiteSpace: 'pre-line',
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'break-word',
                           }}
                         >
                           {bodyParts.map((part, pIdx) =>
@@ -996,12 +1274,7 @@ export function BriefingView() {
                                 href={part.href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                  color: '#FF741F',
-                                  fontSize: 14,
-                                  wordBreak: 'break-all',
-                                  textDecoration: 'none',
-                                }}
+                                style={{ color: '#FF741F', fontSize: 13 }}
                               >
                                 {part.display}
                               </a>
@@ -1012,14 +1285,13 @@ export function BriefingView() {
                         </div>
 
                         {item.refs.map((r, rIdx) => (
-                          <div key={rIdx} style={{ marginTop: 12 }}>
+                          <div key={rIdx} style={{ marginTop: 10 }}>
                             <div
                               style={{
-                                fontSize: '11.5px',
-                                letterSpacing: '0.24em',
+                                fontSize: '10.5px',
+                                letterSpacing: '0.2em',
                                 textTransform: 'uppercase',
                                 color: 'rgba(246,240,234,0.55)',
-                                marginBottom: 5,
                               }}
                             >
                               {r.rotulo}
@@ -1028,12 +1300,7 @@ export function BriefingView() {
                               href={r.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{
-                                color: '#FF741F',
-                                fontSize: 14,
-                                wordBreak: 'break-all',
-                                textDecoration: 'none',
-                              }}
+                              style={{ color: '#FF741F', fontSize: 13, wordBreak: 'break-all' }}
                             >
                               {exibirUrl(r.url)}
                             </a>
@@ -1042,45 +1309,12 @@ export function BriefingView() {
                       </article>
                     );
                   })}
-
-                  {Array.from({ length: Math.max(0, 4 - chunk.length) }).map((_, emptyIdx) => (
-                    <div
-                      key={`empty-${emptyIdx}`}
-                      style={{
-                        border: '1px dashed rgba(255,116,31,0.25)',
-                        background: 'rgba(255,116,31,0.045)',
-                        borderRadius: 16,
-                        padding: 20,
-                        opacity: 0.35,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {/* Rodapé A4 */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 44,
-                    right: 44,
-                    bottom: 24,
-                    zIndex: 1,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    color: 'rgba(246,240,234,0.55)',
-                    fontSize: '10.5px',
-                  }}
-                >
-                  <span>Navegando MKT • Briefing criativo {displayClient}</span>
-                  <span>
-                    {idx + 1} / {pages.length}
-                  </span>
                 </div>
               </section>
             ))}
           </div>
-        </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
