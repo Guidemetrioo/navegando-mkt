@@ -2,7 +2,7 @@
 import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import { IS_DEMO } from '@/lib/app-mode';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { PontoTipo, PontoStatus, PontoRegistro, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -294,9 +294,21 @@ export function PontoModal() {
     );
   }, []);
 
+  // Track whether the modal has already been initialized to prevent
+  // re-running the reset logic when events/clients arrays change while
+  // the modal is open (which was wiping the captured photo).
+  const modalInitializedRef = useRef(false);
+
+  // Stable references to events and clients for the initialization lookup
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  const clientsRef = useRef(clients);
+  clientsRef.current = clients;
+
   // Inicializar dados ao abrir modal
   useEffect(() => {
-    if (isPontoModalOpen) {
+    if (isPontoModalOpen && !modalInitializedRef.current) {
+      modalInitializedRef.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the evidence draft on opening and synchronize camera lifecycle.
       setEmployeeId(loggedEmployeeId);
       setTipo(pontoModalConfig?.tipo || 'entrada');
@@ -306,7 +318,7 @@ export function PontoModal() {
 
       // Descobrir gravação de hoje para este membro
       const todayIso = todayInSaoPaulo();
-      const scheduledEvent = events.find(
+      const scheduledEvent = eventsRef.current.find(
         (ev) =>
           ev.data === todayIso &&
           (ev.assigned_employee_ids || []).includes(loggedEmployeeId)
@@ -314,7 +326,7 @@ export function PontoModal() {
 
       const targetClientId =
         pontoModalConfig?.preselectedClientId ||
-        (scheduledEvent ? scheduledEvent.client_id : clients[0]?.id || '');
+        (scheduledEvent ? scheduledEvent.client_id : clientsRef.current[0]?.id || '');
 
       setClientId(targetClientId);
       setEventId(pontoModalConfig?.preselectedEventId || (scheduledEvent ? scheduledEvent.id : null));
@@ -322,7 +334,8 @@ export function PontoModal() {
       // Iniciar câmera e obter localização automaticamente
       startCamera();
       requestGeolocation();
-    } else {
+    } else if (!isPontoModalOpen) {
+      modalInitializedRef.current = false;
       stopCamera();
     }
     return () => {
@@ -332,8 +345,6 @@ export function PontoModal() {
     isPontoModalOpen,
     pontoModalConfig,
     loggedEmployeeId,
-    events,
-    clients,
     startCamera,
     requestGeolocation,
     stopCamera,

@@ -135,6 +135,8 @@ interface AgendaContextType {
   currentDate: Date;
   currentView: AgendaView;
   setCurrentView: (view: AgendaView) => void;
+  goBackView: () => void;
+  canGoBackView: boolean;
   navigate: (direction: 'prev' | 'next' | 'today') => void;
   setDate: (date: Date) => void;
   
@@ -286,7 +288,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // Visão e Data (Inicia na Central de Boas-Vindas)
   const [currentDate, setCurrentDate] = useState<Date>(()=>new Date(0));
   useEffect(()=>{queueMicrotask(()=>setCurrentDate(parseDateIso(todayInSaoPaulo())));},[]);
-  const [currentView, setCurrentView] = useState<AgendaView>('home');
+  const [viewHistory, setViewHistory] = useState<AgendaView[]>(['home']);
+  const currentView = viewHistory[viewHistory.length - 1];
 
   // Papel e usuário atual
   const [loggedEmployeeId, setLoggedEmployeeId] = useState<string>('usr-felipe');
@@ -543,7 +546,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     setLastLoginPonto(novoPonto);
     setLoggedEmployeeId(employeeId);
     setIsAuthenticated(true);
-    setCurrentView('home');
+    setViewHistory(['home']);
 
     saveToStorage('navegando_mkt_auth_session', {
       isAuth: true,
@@ -567,7 +570,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
       setLoggedEmployeeId(employeeId);
       setIsAuthenticated(true);
-      setCurrentView('home');
+      setViewHistory(['home']);
       saveToStorage('navegando_mkt_auth_session', {
         isAuth: true,
         employeeId,
@@ -1636,7 +1639,18 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         deleteMention: guarded(canManage, deleteMention),
         currentDate,
         currentView:canUserAccessView(memberRole,currentView) ? currentView : 'home',
-        setCurrentView:(view)=>{if(canUserAccessView(memberRole,view)) setCurrentView(view);else toast('Módulo não permitido para seu perfil.','error');},
+        setCurrentView: (view) => {
+          if (!canUserAccessView(memberRole, view)) {
+            toast('Módulo não permitido para seu perfil.', 'error');
+            return;
+          }
+          setViewHistory(history => history[history.length - 1] === view ? history : [...history, view]);
+        },
+        canGoBackView: viewHistory.length > 1,
+        goBackView: () => setViewHistory(history => {
+          const previous = history.slice(0, -1).filter(view => canUserAccessView(memberRole, view));
+          return previous.length ? previous : ['home'];
+        }),
         navigate,
         setDate: setCurrentDate,
         toggleEmployeeFilter,

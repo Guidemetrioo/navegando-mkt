@@ -199,6 +199,10 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       )}
 
       <aside
+        id="workspace-navigation"
+        role={isMobileOpen ? 'dialog' : undefined}
+        aria-label={isMobileOpen ? 'Menu do sistema' : undefined}
+        aria-modal={isMobileOpen || undefined}
         data-collapsed={isCollapsed}
         data-mobile-open={isMobileOpen}
         className={`crm-sidebar fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen flex flex-col justify-between bg-[var(--ui-surface)] border-r border-[var(--ui-border)] transition-all duration-300 z-50 lg:z-30 shrink-0 ${
@@ -234,6 +238,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
              data-text-action="true"><span className="text-action-label">{isCollapsed ? 'Expandir' : 'Recolher'}</span></button>
             {onCloseMobile && (
               <button
+                id="close-workspace-navigation"
                 type="button"
                 onClick={onCloseMobile}
                 className="flex lg:hidden p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
@@ -295,7 +300,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
       </div>
 
       {/* 3. NAVEGAÇÃO AGRUPADA COM CONTROLE RIGOROSO DE ACESSO */}
-      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
+      <nav aria-label="Navegação principal" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 space-y-1.5 custom-scrollbar">
         {controlGroups.map((group) => {
           const accessibleItems = group.items.filter((item) =>
             canUserAccessView(currentMember?.funcao, item.id)

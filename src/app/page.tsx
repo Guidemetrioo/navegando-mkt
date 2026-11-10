@@ -36,7 +36,6 @@ import { PontoModal } from '@/components/modals/PontoModal';
 import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
-import { PageTutorialModal } from '@/components/tutorial/PageTutorialModal';
 import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Search, Building, FolderOpen, ChevronDown } from 'lucide-react';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
@@ -45,6 +44,8 @@ function AgendaMainContent() {
   const {
     currentView,
     setCurrentView,
+    goBackView,
+    canGoBackView,
     isAuthenticated,
     isDataSaved,
     syncStatus,
@@ -60,18 +61,52 @@ function AgendaMainContent() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
+  const menuTrigger = React.useRef<HTMLElement | null>(null);
+
+  const openMobileMenu = () => {
+    menuTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setIsQuickActionOpen(false);
+    setIsMobileNavOpen(true);
+  };
+
+  React.useEffect(() => {
+    if (!isMobileNavOpen) return;
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const closeMenu = () => setIsMobileNavOpen(false);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMenu();
+    };
+    const handleResize = () => {
+      if (desktop.matches) closeMenu();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('close-workspace-navigation')?.focus();
+    window.addEventListener('keydown', handleEscape);
+    desktop.addEventListener('change', handleResize);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEscape);
+      desktop.removeEventListener('change', handleResize);
+      if (!desktop.matches) menuTrigger.current?.focus();
+    };
+  }, [isMobileNavOpen]);
+
+  React.useEffect(() => {
+    if (window.matchMedia('(width < 1024px)').matches) window.scrollTo(0, 0);
+  }, [currentView]);
 
   // Atalho global Ctrl+K / Cmd+K
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if (!isMobileNavOpen && (e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isMobileNavOpen]);
 
   const currentMember = employees.find((e) => e.id === loggedEmployeeId) || employees[0];
 
@@ -98,20 +133,30 @@ function AgendaMainContent() {
       />
 
       {/* 2. Área de Trabalho Principal */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10">
+      <div className="crm-content flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10" inert={isMobileNavOpen}>
         {/* Barra Superior de Status & Breadcrumb com Glassmorphism */}
         <header className="crm-header h-14 border-b border-[var(--ui-border)] bg-[var(--ui-page)]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-2 text-xs min-w-0">
-            <button
-              type="button"
-              onClick={() => setIsMobileNavOpen(true)}
-              className="lg:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-foreground hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer shrink-0"
-              title="Abrir menu lateral"
-             data-text-action="true"><span className="text-action-label">{"Menu"}</span></button>
-            <NavegandoLogo variant="symbol" size="sm" />
+          <div className="crm-breadcrumb flex items-center gap-2 text-xs min-w-0">
+            {canGoBackView ? (
+              <button type="button" onClick={goBackView} className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-[var(--ui-accent)]">
+                Voltar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openMobileMenu}
+                aria-controls="workspace-navigation"
+                aria-expanded={isMobileNavOpen}
+                className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-zinc-400 hover:text-foreground"
+                title="Abrir menu lateral"
+              >
+                Menu
+              </button>
+            )}
+            <NavegandoLogo className="crm-header-logo" variant="symbol" size="sm" />
             <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
-            <span className="font-bold text-foreground capitalize truncate text-xs sm:text-sm">
+            <span className="crm-current-view font-bold text-foreground truncate text-xs sm:text-sm">
               {currentView === 'home' && 'Visão geral'}
               {currentView === 'dashboard' && 'Indicadores'}
               {currentView === 'mes' && 'Agenda Mensal'}
@@ -151,10 +196,11 @@ function AgendaMainContent() {
               <button
                 type="button"
                 onClick={() => userRole==='admin' ? setIsQuickActionOpen(!isQuickActionOpen) : openPontoModal()}
+                aria-expanded={userRole === 'admin' ? isQuickActionOpen : undefined}
                 className="gradient-cta flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-foreground font-bold text-xs shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span className="hidden sm:inline">{userRole==='admin' ? 'Criar' : 'Ponto'}</span>
+                <span>{userRole==='admin' ? 'Criar' : 'Bater ponto'}</span>
                 <ChevronDown className="w-3 h-3 text-foreground/80" />
               </button>
 
@@ -247,8 +293,6 @@ function AgendaMainContent() {
         <WorkspaceStatus />
         {/* Conteúdo Central */}
         <main className="crm-workspace p-3 sm:p-6 md:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto flex flex-col gap-4 sm:gap-5 flex-1">
-          {/* Guia de Uso Interativo & Pop-up de Primeira Visita / Exemplo Preenchido */}
-          {currentView !== 'home' && <PageTutorialModal />}
 
           {/* Sub-header de Navegação de Datas se estiver nas abas de agenda */}
           {isCalendarView && (
@@ -322,6 +366,7 @@ function AgendaMainContent() {
             {currentView === 'escala' && <RosterView />}
             {currentView === 'minha-agenda' && <MyAgendaView />}
             {currentView === 'ponto' && <PontoView />}
+            {currentView === 'banco-horas' && <BancoDeHorasView />}
             {currentView === 'relatorios' && <ProductionReportsView />}
             {currentView === 'briefing' && <BriefingView />}
             {currentView === 'reembolsos' && <ReembolsosView />}
@@ -334,7 +379,7 @@ function AgendaMainContent() {
       </div>
 
       {/* 3. Barra de Navegação Inferior Fixa para Mobile (polegar fácil) */}
-      <MobileBottomNav onOpenMenu={() => setIsMobileNavOpen(true)} />
+      <MobileBottomNav onOpenMenu={openMobileMenu} menuOpen={isMobileNavOpen} />
 
       {/* Modais Globais do Sistema */}
       <DayDetailModal />

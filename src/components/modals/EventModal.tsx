@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client, DespesaGravacao, CategoriaDespesa } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -158,12 +158,9 @@ export function EventModal() {
   };
 
   // Outros compromissos já marcados nesta mesma data
-  const sameDayEvents = useMemo(() => {
-    if (!date) return [];
-    return events
-      .filter((e) => e.data === date && e.id !== editingEvent?.id && e.status !== 'cancelado')
-      .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
-  }, [events, date, editingEvent?.id]);
+  const sameDayEvents = date ? events
+    .filter((e) => e.data === date && e.id !== editingEvent.id && e.status !== 'cancelado')
+    .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio)) : [];
 
   const handleSubmit = (allowOverride = false, keepOpenForSameDay = false) => {
     setErrorMessage('');
@@ -328,7 +325,15 @@ export function EventModal() {
 
         {/* Cabeçalho */}
         <div className="flex items-center justify-between pb-3 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
-          <div>
+          <button
+            type="button"
+            onClick={closeEventModal}
+            className="min-h-11 shrink-0 rounded-lg px-2 text-xs font-semibold text-[var(--ui-accent)] sm:hidden"
+            aria-label="Voltar do agendamento"
+          >
+            Voltar
+          </button>
+          <div className="min-w-0 flex-1 max-sm:ml-2">
             <h3 className="text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
               {isEditing ? (currentClient?.nome || 'Detalhes da Gravação') : 'Nova Gravação'}
             </h3>
@@ -340,7 +345,7 @@ export function EventModal() {
           <button
             type="button"
             onClick={closeEventModal}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
+            className="hidden sm:inline-flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
            data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 

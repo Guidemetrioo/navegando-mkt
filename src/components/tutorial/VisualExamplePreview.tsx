@@ -490,10 +490,10 @@ export function VisualExamplePreview({ view }: VisualExamplePreviewProps) {
               </label>
               <div className="flex flex-wrap gap-2 p-2.5 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)]">
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-                   Victor (Filmmaker Gastronômico)
+                  Victor (Filmmaker Gastronômico)
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-bold">
-                   Isa (Apresentadora & Modelo)
+                  Isa (Apresentadora & Modelo)
                 </span>
               </div>
             </div>
