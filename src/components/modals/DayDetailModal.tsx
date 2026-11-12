@@ -91,11 +91,11 @@ export function DayDetailModal() {
                     ))}
                 </div>
               )}
-              {freeEmployees.some((e) => e.funcao === 'criadora') && (
+              {freeEmployees.some((e) => e.funcao === 'modelo' || e.funcao === 'criadora') && (
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10px] font-bold text-[#f472b6] uppercase">Modelos:</span>
                   {freeEmployees
-                    .filter((e) => e.funcao === 'criadora')
+                    .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
                     .map((emp) => (
                       <EmployeeBadge key={emp.id} employee={emp} size="sm" />
                     ))}
