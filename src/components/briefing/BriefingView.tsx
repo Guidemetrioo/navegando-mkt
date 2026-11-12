@@ -244,7 +244,7 @@ export function parseItems(raw: string): BriefingVideoItem[] {
   });
 }
 
-function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
+export function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
   if (!raw || !raw.trim()) {
     return [
       {
@@ -294,7 +294,22 @@ function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
   });
 }
 
-function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
+export function loadEventBriefingDrafts(ev: Partial<EventItem>, mode: BriefingCategoryMode): EditableVideoDraft[] {
+  const sourceVideos = mode === 'edicao' ? ev.briefing_edicao_videos : ev.briefing_videos;
+  const sourceRaw = mode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
+
+  if (sourceVideos && sourceVideos.length > 0) {
+    return sourceVideos.map((video, index) => ({
+      ...video,
+      formato: 'Automático',
+      roteiro: stripLegacyFormatPrefix(video.roteiro || ''),
+      id: `video-${index + 1}-${crypto.randomUUID()}`,
+    }));
+  }
+  return draftsFromRaw(sourceRaw);
+}
+
+export function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
   const valid = drafts.filter((d) => d.roteiro.trim() || d.titulo.trim() || d.refUrl.trim());
   if (valid.length === 0) return '';
 
@@ -613,17 +628,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   // Carrega os drafts do evento conforme o modo ('video' ou 'edicao')
   const loadDraftsForEventAndMode = useCallback(
     (ev: EventItem, mode: BriefingCategoryMode) => {
-      const sourceVideos = mode === 'edicao' ? ev.briefing_edicao_videos : ev.briefing_videos;
-      const sourceRaw = mode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
-
-      const structured = sourceVideos?.map((video, index) => ({
-        ...video,
-        id: `video-${index + 1}-${crypto.randomUUID()}`,
-      }));
-      const drafts =
-        structured?.length && serializeDraftsToRaw(structured) === (sourceRaw || '')
-          ? structured
-          : draftsFromRaw(sourceRaw);
+      const drafts = loadEventBriefingDrafts(ev, mode);
 
       const defaultModel = resolveEventEditorModel(ev);
       setSelectedEditorModelId(ev.modelo_editora_id || defaultModel?.id || '');

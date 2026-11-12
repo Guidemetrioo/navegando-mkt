@@ -4,7 +4,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus } from 'lucide-react';
+import {
+  EditableVideoDraft,
+  BriefingCategoryMode,
+  loadEventBriefingDrafts,
+  serializeDraftsToRaw,
+  normalizarUrl,
+  exibirUrl,
+} from '../briefing/BriefingView';
+import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus, Scissors, Save, Lock } from 'lucide-react';
 
 export function EventModal() {
   const {
@@ -53,7 +61,9 @@ export function EventModal() {
   const [tipo, setTipo] = useState<EventTipo>('gravacao');
   const [local, setLocal] = useState('');
   const [observacoes, setObservacoes] = useState('');
-  const [briefingGravacao, setBriefingGravacao] = useState('');
+  const [modalBriefingMode, setModalBriefingMode] = useState<BriefingCategoryMode>('video');
+  const [videoDrafts, setVideoDrafts] = useState<EditableVideoDraft[]>([]);
+  const [edicaoDrafts, setEdicaoDrafts] = useState<EditableVideoDraft[]>([]);
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [status, setStatus] = useState<EventStatus>('agendado');
   const [tempoAntecedenciaSelect, setTempoAntecedenciaSelect] = useState<string>('-1');
@@ -100,7 +110,9 @@ export function EventModal() {
     setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
     setLocal(editingEvent.local || '');
     setObservacoes(editingEvent.observacoes || '');
-    setBriefingGravacao(editingEvent.briefing_gravacao || '');
+    setModalBriefingMode('video');
+    setVideoDrafts(loadEventBriefingDrafts(editingEvent, 'video'));
+    setEdicaoDrafts(loadEventBriefingDrafts(editingEvent, 'edicao'));
     setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
     setStatus(editingEvent.status || 'agendado');
     const savedMin =
@@ -213,6 +225,32 @@ export function EventModal() {
         ? Math.max(1, Number(customTempoValor) || 1) * (customTempoUnidade === 'horas' ? 60 : 1)
         : Number(tempoAntecedenciaSelect);
 
+    const rawVideoBriefing = serializeDraftsToRaw(videoDrafts);
+    const rawEdicaoBriefing = serializeDraftsToRaw(edicaoDrafts);
+
+    const mappedVideoBriefings = videoDrafts
+      .filter((v) => v.roteiro.trim() || v.titulo.trim() || v.refUrl.trim())
+      .map((v) => ({
+        titulo: v.titulo,
+        formato: v.formato || 'Automático',
+        roteiro: v.roteiro,
+        refRotulo: v.refRotulo,
+        refUrl: v.refUrl,
+        refsExtras: v.refsExtras,
+      }));
+
+    const mappedEdicaoBriefings = edicaoDrafts
+      .filter((v) => v.roteiro.trim() || v.titulo.trim() || v.refUrl.trim())
+      .map((v) => ({
+        titulo: v.titulo,
+        formato: v.formato || 'Automático',
+        roteiro: v.roteiro,
+        refRotulo: v.refRotulo,
+        refUrl: v.refUrl,
+        modeloEditoraId: v.modeloEditoraId || editingEvent.modelo_editora_id || undefined,
+        refsExtras: v.refsExtras,
+      }));
+
     const payload = {
       id: editingEvent.id || undefined,
       client_id: clientId,
@@ -222,7 +260,11 @@ export function EventModal() {
       hora_fim: endTime,
       local: local || undefined,
       observacoes: observacoes || undefined,
-      briefing_gravacao: briefingGravacao.trim() || undefined,
+      briefing_videos: mappedVideoBriefings.length > 0 ? mappedVideoBriefings : undefined,
+      briefing_gravacao: rawVideoBriefing.trim() || undefined,
+      briefing_edicao_videos: mappedEdicaoBriefings.length > 0 ? mappedEdicaoBriefings : undefined,
+      briefing_edicao: rawEdicaoBriefing.trim() || undefined,
+      modelo_editora_id: editingEvent.modelo_editora_id || undefined,
       tempo_antecedencia_minutos: resolvedMinutos,
       status,
       assigned_employee_ids: selectedEmpIds,
@@ -250,7 +292,8 @@ export function EventModal() {
         setClientSearch('');
         setLocal('');
         setObservacoes('');
-        setBriefingGravacao('');
+        setVideoDrafts(loadEventBriefingDrafts({}, 'video'));
+        setEdicaoDrafts(loadEventBriefingDrafts({}, 'edicao'));
         setSelectedEmpIds([]);
       }, 30);
     }
@@ -339,7 +382,9 @@ export function EventModal() {
       onClick={closeEventModal}
     >
       <div
-        className="relative w-full max-w-xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6"
+        className={`relative w-full ${
+          activeTab === 'briefing' ? 'max-w-4xl' : 'max-w-xl'
+        } bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6 transition-all`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
@@ -943,50 +988,272 @@ export function EventModal() {
         )}
 
         {/* ==========================================
-            ABA BRIEFING: DIRETRIZES DO CLIENTE & ROTEIRO DA SESSÃO
+            ABA BRIEFING: SEPARADO POR CARDS IGUAL À CATEGORIA DE BRIEFING
             ========================================== */}
-        {activeTab === 'briefing' && (
-          <div className="flex flex-col gap-4 animate-in fade-in">
-            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Briefing Fixo do Restaurante ({currentClient?.nome || 'Cliente'})
-                </span>
-              </div>
-              <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-line">
-                {currentClient?.briefing ||
-                  'Nenhuma diretriz fixa cadastrada na ficha deste restaurante ainda. Você pode cadastrar na aba "Briefing & Roteiros" do menu lateral.'}
-              </p>
-              {currentClient?.briefing_pratos_foco && (
-                <div className="pt-2 border-t border-purple-500/20 text-xs text-zinc-300">
-                  <strong className="text-purple-300">Pratos / Produtos Foco:</strong> {currentClient.briefing_pratos_foco}
-                </div>
-              )}
-              {currentClient?.briefing_restricoes && (
-                <div className="text-xs text-rose-300">
-                  <strong>Restrições / O que evitar:</strong> {currentClient.briefing_restricoes}
-                </div>
-              )}
-            </div>
+        {activeTab === 'briefing' && (() => {
+          const currentMember = employees.find((e) => e.id === loggedEmployeeId);
+          const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
+          const isBriefingReadOnly = modalBriefingMode === 'video' ? isModelMember : false;
+          const activeDrafts = modalBriefingMode === 'edicao' ? edicaoDrafts : videoDrafts;
+          const setActiveDrafts = modalBriefingMode === 'edicao' ? setEdicaoDrafts : setVideoDrafts;
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-foreground">
-                Roteiro & Briefing Específico desta Gravação
-              </label>
-              <p className="text-[11px] text-zinc-400">
-                Liste os Reels que serão gravados nesta diária, ganchos (hooks) iniciais para a modelo falar, pratos que a cozinha deve preparar e referências de câmera.
-              </p>
-              <textarea
-                rows={6}
-                placeholder="Ex:&#10;Vídeo 1: Finalização do Fettuccine na roda de queijo Grana Padano (close-up 60fps).&#10;Vídeo 2: Gancho 'Descobrimos o almoço executivo mais completo de Pinheiros...'&#10;Vídeo 3: Preparo do Negroni defumado no balcão."
-                value={briefingGravacao}
-                onChange={(e) => setBriefingGravacao(e.target.value)}
-                className="w-full rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] p-3.5 text-xs text-foreground focus:outline-none focus:border-purple-500 leading-relaxed"
-              />
+          const updateDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
+            if (isBriefingReadOnly) return;
+            setActiveDrafts((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+          };
+
+          const addAnotherDraft = () => {
+            if (isBriefingReadOnly) return;
+            setActiveDrafts((prev) => [
+              ...prev,
+              {
+                id: `video-${prev.length + 1}-${Date.now()}`,
+                titulo: '',
+                formato: 'Automático',
+                roteiro: '',
+                refRotulo: 'Referência',
+                refUrl: '',
+              },
+            ]);
+          };
+
+          const removeDraft = (id: string) => {
+            if (isBriefingReadOnly) return;
+            setActiveDrafts((prev) => {
+              if (prev.length <= 1) {
+                return [
+                  {
+                    id: `video-1-${Date.now()}`,
+                    titulo: '',
+                    formato: 'Automático',
+                    roteiro: '',
+                    refRotulo: 'Referência',
+                    refUrl: '',
+                  },
+                ];
+              }
+              return prev.filter((v) => v.id !== id);
+            });
+          };
+
+          return (
+            <div className="flex flex-col gap-4 animate-in fade-in">
+              {/* Diretriz fixa do restaurante */}
+              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Briefing Fixo do Restaurante ({currentClient?.nome || 'Cliente'})
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-line">
+                  {currentClient?.briefing ||
+                    'Nenhuma diretriz fixa cadastrada na ficha deste restaurante ainda. Você pode cadastrar na aba "Briefing & Roteiros" do menu lateral.'}
+                </p>
+                {currentClient?.briefing_pratos_foco && (
+                  <div className="pt-2 border-t border-purple-500/20 text-xs text-zinc-300">
+                    <strong className="text-purple-300">Pratos / Produtos Foco:</strong> {currentClient.briefing_pratos_foco}
+                  </div>
+                )}
+                {currentClient?.briefing_restricoes && (
+                  <div className="text-xs text-rose-300">
+                    <strong>Restrições / O que evitar:</strong> {currentClient.briefing_restricoes}
+                  </div>
+                )}
+              </div>
+
+              {/* Seletor entre Briefing do Vídeo e Briefing de Edição */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="inline-flex rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setModalBriefingMode('video')}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                      modalBriefingMode === 'video'
+                        ? 'bg-[var(--ui-accent)] text-black shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Briefing do Vídeo (Gravação)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalBriefingMode('edicao')}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                      modalBriefingMode === 'edicao'
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    <Scissors className="w-3.5 h-3.5" />
+                    <span>Briefing de Edição (Modelos)</span>
+                  </button>
+                </div>
+
+                {isBriefingReadOnly && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <Lock className="w-3 h-3" />
+                    <span>Modo Visualização (Modelos editam apenas o Briefing de Edição)</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Grid de Cards Separados por Vídeo (idêntico à aba de Briefing) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                {activeDrafts.map((video, index) => (
+                  <article
+                    key={video.id}
+                    aria-label={
+                      modalBriefingMode === 'edicao'
+                        ? `Briefing de Edição do Vídeo ${index + 1}`
+                        : `Briefing do Vídeo ${index + 1}`
+                    }
+                    className={`min-w-0 rounded-2xl border bg-[var(--ui-raised)] p-4 flex flex-col gap-3 ${
+                      modalBriefingMode === 'edicao' ? 'border-purple-500/30' : 'border-[var(--ui-border)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-2.5">
+                      <h4
+                        className={`text-base sm:text-lg font-bold ${
+                          modalBriefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
+                        }`}
+                      >
+                        {modalBriefingMode === 'edicao'
+                          ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
+                          : `Vídeo ${String(index + 1).padStart(2, '0')}`}
+                      </h4>
+
+                      {!isBriefingReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
+                              !window.confirm('Remover este vídeo e seu briefing?')
+                            )
+                              return;
+                            removeDraft(video.id);
+                          }}
+                          className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+
+                    <label className="text-xs font-semibold flex flex-col gap-1.5">
+                      Título do vídeo (opcional)
+                      <input
+                        readOnly={isBriefingReadOnly}
+                        disabled={isBriefingReadOnly}
+                        value={video.titulo}
+                        onChange={(e) => updateDraft(video.id, { titulo: e.target.value })}
+                        placeholder={
+                          modalBriefingMode === 'edicao'
+                            ? `Ex: Reel ${index + 1} - Cortes dinâmicos do prato`
+                            : `Ideia do vídeo ${index + 1}`
+                        }
+                        className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2 text-sm text-foreground read-only:opacity-80"
+                      />
+                    </label>
+
+                    <label className="text-xs font-semibold flex flex-col gap-1.5 flex-1">
+                      {modalBriefingMode === 'edicao'
+                        ? 'Briefing de Edição (Cortes, Gancho, Áudio/Trilha, Legenda e CTA)'
+                        : 'Briefing de Gravação'}
+                      <textarea
+                        readOnly={isBriefingReadOnly}
+                        disabled={isBriefingReadOnly}
+                        rows={6}
+                        value={video.roteiro}
+                        onChange={(e) => updateDraft(video.id, { roteiro: e.target.value })}
+                        placeholder={
+                          modalBriefingMode === 'edicao'
+                            ? 'Descreva como a modelo deve editar este vídeo: gancho nos 3 primeiros segundos, ritmo dos cortes, música/áudio em alta…'
+                            : 'O que gravar, cenas e falas…'
+                        }
+                        className="w-full min-w-0 flex-1 resize-y rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2.5 text-sm text-foreground leading-relaxed read-only:opacity-85"
+                      />
+                    </label>
+
+                    <label className="text-xs font-semibold flex flex-col gap-1.5">
+                      {modalBriefingMode === 'edicao'
+                        ? 'Link de referência ou pasta de brutos'
+                        : 'Link de referência'}
+                      <input
+                        readOnly={isBriefingReadOnly}
+                        disabled={isBriefingReadOnly}
+                        type="url"
+                        value={video.refUrl}
+                        onChange={(e) => updateDraft(video.id, { refUrl: e.target.value })}
+                        placeholder="https://…"
+                        className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2 text-sm text-foreground read-only:opacity-80"
+                      />
+                    </label>
+
+                    {video.refUrl.trim() && (
+                      <a
+                        href={normalizarUrl(video.refUrl.trim())}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-[var(--ui-accent)] hover:underline break-all"
+                      >
+                        Abrir link: {exibirUrl(video.refUrl.trim())}
+                      </a>
+                    )}
+
+                    {(video.refsExtras || []).map((ref, i) => (
+                      <a
+                        key={i}
+                        href={normalizarUrl(ref.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[var(--ui-accent)] break-all"
+                      >
+                        {ref.rotulo}: {exibirUrl(ref.url)}
+                      </a>
+                    ))}
+                  </article>
+                ))}
+              </div>
+
+              {!isBriefingReadOnly && (
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={addAnotherDraft}
+                    className={`flex-1 min-w-[220px] rounded-xl border border-dashed px-4 py-3 text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                      modalBriefingMode === 'edicao'
+                        ? 'border-purple-500/40 text-purple-300 hover:bg-purple-500/10'
+                        : 'border-[var(--ui-border)] text-[var(--ui-accent)] hover:bg-[var(--ui-raised)]'
+                    }`}
+                  >
+                    {modalBriefingMode === 'edicao'
+                      ? `+ Fazer Briefing de Edição do Vídeo ${activeDrafts.length + 1}`
+                      : `+ Fazer Briefing do Vídeo ${activeDrafts.length + 1}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit(false, false)}
+                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-bold cursor-pointer transition-all ${
+                      modalBriefingMode === 'edicao'
+                        ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                        : 'bg-[#d9ff3f] text-[#05080d] hover:brightness-95'
+                    }`}
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>
+                      {modalBriefingMode === 'edicao'
+                        ? 'Salvar briefings de edição'
+                        : 'Salvar todos os briefings'}
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ==========================================
             ABA 3: CUSTOS & DESPESAS DA GRAVAÇÃO
