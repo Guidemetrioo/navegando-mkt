@@ -6,11 +6,11 @@ export function MobileBottomNav({ onOpenMenu, menuOpen }: { onOpenMenu: () => vo
   const { currentView, setCurrentView, canManage, employees, loggedEmployeeId } = useAgenda();
   const role = employees.find(employee => employee.id === loggedEmployeeId)?.funcao;
   const agendaView = canManage ? 'mes' : 'minha-agenda';
-  const shortcuts: { view: AgendaView; label: string; active: boolean }[] = [
-    { view: 'relatorios', label: 'Relatórios', active: currentView === 'relatorios' },
-    { view: agendaView, label: 'Agenda', active: ['mes', 'semana', 'escala', 'minha-agenda'].includes(currentView) },
-    { view: 'ponto', label: 'Ponto', active: currentView === 'ponto' },
-    { view: 'reembolsos', label: 'Reembolsos', active: currentView === 'reembolsos' },
+  const shortcuts: { view: AgendaView; label: string; emoji: string; active: boolean }[] = [
+    { view: 'relatorios', label: 'Relatórios', emoji: '📄', active: currentView === 'relatorios' },
+    { view: agendaView, label: 'Agenda', emoji: '📅', active: ['mes', 'semana', 'escala', 'minha-agenda'].includes(currentView) },
+    { view: 'ponto', label: 'Ponto', emoji: '📍', active: currentView === 'ponto' },
+    { view: 'reembolsos', label: 'Reembolsos', emoji: '💰', active: currentView === 'reembolsos' },
   ];
   const allowed = shortcuts.filter(item => canUserAccessView(role, item.view));
 
@@ -33,7 +33,8 @@ export function MobileBottomNav({ onOpenMenu, menuOpen }: { onOpenMenu: () => vo
             WebkitTextFillColor: item.active ? '#55c4d5' : '#eef7fa',
           }}
         >
-          {item.label}
+          <span className="mobile-nav-emoji" aria-hidden="true">{item.emoji}</span>
+          <span className="mobile-nav-label">{item.label}</span>
         </button>
       ))}
       <button
@@ -47,7 +48,8 @@ export function MobileBottomNav({ onOpenMenu, menuOpen }: { onOpenMenu: () => vo
           WebkitTextFillColor: menuOpen ? '#55c4d5' : '#eef7fa',
         }}
       >
-        Menu
+        <span className="mobile-nav-emoji" aria-hidden="true">☰</span>
+        <span className="mobile-nav-label">Menu</span>
       </button>
     </nav>
   );

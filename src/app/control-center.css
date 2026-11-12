@@ -117,7 +117,7 @@
 :root[data-design="control"] .crm-sidebar > div:first-child { flex-wrap:wrap; gap:8px; }
 
 /* Shared safe area for the fixed mobile navigation, page content and notices. */
-:root { --workspace-mobile-nav-height: calc(61px + env(safe-area-inset-bottom)); }
+:root { --workspace-mobile-nav-height: calc(64px + env(safe-area-inset-bottom)); }
 .text-mobile-nav {
   position:fixed;
   inset:auto 0 0;
@@ -126,7 +126,7 @@
   grid-auto-flow:column;
   grid-auto-columns:minmax(0,1fr);
   gap:4px;
-  padding:8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  padding:6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background-color:#101f2c !important;
   color:#eef7fa !important;
   border-top:1px solid #244052;
@@ -135,15 +135,33 @@
 }
 .text-mobile-nav button {
   min-width:0;
-  min-height:44px;
+  min-height:48px;
   padding:4px 2px;
-  font-size:clamp(10px, 3vw, 13px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:clamp(10px, 2.7vw, 12px);
   font-weight:700;
+  line-height:1.1;
   border-radius:7px;
   background-color:transparent !important;
   color:#d4e4ed !important;
   -webkit-text-fill-color:#d4e4ed !important;
   cursor:pointer;
+}
+.text-mobile-nav .mobile-nav-emoji {
+  font-size:16px;
+  line-height:1;
+  -webkit-text-fill-color:initial !important;
+}
+.text-mobile-nav .mobile-nav-label {
+  display:block;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .text-mobile-nav button:is([aria-current="page"], [aria-expanded="true"]) {
   color:#55c4d5 !important;
