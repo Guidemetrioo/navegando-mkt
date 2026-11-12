@@ -84,7 +84,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
         {
           id: 'escala',
-          label: 'Escalas (Auto & CLT)',
+          label: 'Escalas',
           icon: Users,
         },
         {
@@ -102,8 +102,6 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           id: 'banco-horas',
           label: 'Banco de Horas',
           icon: Clock,
-          badge: '42h',
-          badgeColor: 'bg-[#38bdf8]/15 text-[#38bdf8]',
         },
         {
           id: 'relatorios',
@@ -122,8 +120,6 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           id: 'briefing-edicao',
           label: 'Briefing de Edição',
           icon: Scissors,
-          badge: 'Modelos',
-          badgeColor: 'bg-purple-500/20 text-purple-300',
         },
         {
           id: 'reembolsos',
