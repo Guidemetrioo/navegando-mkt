@@ -13,10 +13,19 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     checkOrigin(request);
-    const {supabase,user} = await requireMember();
+    const {supabase,user,schemaVersion,snapshot} = await requireMember();
     const body = await readJson(request) as {changes?:unknown; requestId?:unknown};
     if (typeof body?.requestId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) throw new ApiError(400,'Identificador da operação inválido.');
     try { validateChanges(body.changes); } catch (error) { throw new ApiError(400,error instanceof Error ? error.message : 'Dados inválidos.'); }
+    const inputHash=createHash('sha256').update(JSON.stringify(body.changes)).digest('hex');
+    if (schemaVersion >= 3) {
+      const previous=await supabase.rpc('agency_request_result',{p_request:body.requestId,p_input_hash:inputHash});
+      if(previous.error) {
+        if(previous.error.code==='22023') throw new ApiError(409,'Esta operação já foi utilizada com outro conteúdo. Preserve o rascunho e confira os registros.');
+        throw new ApiError(503,'Não foi possível conferir a confirmação anterior. Tente novamente sem duplicar o cadastro.');
+      }
+      if(previous.data) return Response.json(await signEvidence(previous.data as CloudSnapshot,supabase),{headers:privateHeaders});
+    }
     for (const row of body.changes) {
       if (row.kind !== 'pontos' || !row.data) continue;
       const photo = String(row.data.foto_url || '');
@@ -36,9 +45,15 @@ export async function POST(request: Request) {
       if(address) {row.data.rua=address.street;row.data.endereco=address.address;row.data.endereco_fonte=address.provider;}
       row.data.evidence_sha256 = createHash('sha256').update(bytes).digest('hex');
     }
-    const result = await supabase.rpc('agency_commit',{p_changes:body.changes,p_request:body.requestId});
+    const effectiveChanges = schemaVersion >= 3 ? body.changes : body.changes.filter(row => row.kind !== 'banco_horas');
+    if (effectiveChanges.length === 0) {
+      return Response.json(await signEvidence(snapshot,supabase),{headers:privateHeaders});
+    }
+    const result = schemaVersion >= 3
+      ? await supabase.rpc('agency_commit_checked',{p_changes:effectiveChanges,p_request:body.requestId,p_input_hash:inputHash})
+      : await supabase.rpc('agency_commit',{p_changes:effectiveChanges,p_request:body.requestId});
     if (result.error) {
-      const conflict = ['40001','23505','23514'].includes(result.error.code);
+      const conflict = ['40001','23505','23514','22023'].includes(result.error.code);
       if (result.error.code==='42501') throw new ApiError(403,'Você não tem permissão para esta alteração.');
       if (conflict) throw new ApiError(409,result.error.message);
       // Business validation messages are authored in the RPC, never return raw SQL internals.

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);require('./load-ts.cjs');
-const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges}=require('../src/lib/workspace.ts');
+const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges,validateCloudSnapshot}=require('../src/lib/workspace.ts');
 const {saveToStorage,loadFromStorage,validateBackup}=require('../src/lib/storage-backup.ts');
 const {todayInSaoPaulo}=require('../src/lib/date-utils.ts');
 const base={member:{employee_id:'usr-felipe',user_id:'test',role:'dono'},records:[{kind:'clients',id:'c1',revision:2,data:{id:'c1',nome:'Original'}}]};
@@ -20,3 +20,14 @@ test('backup rejects duplicates and broken relationships',()=>{const w=workspace
 test('business day uses agency timezone around midnight UTC',()=>{assert.equal(todayInSaoPaulo(new Date('2026-10-23T01:00:00Z')),'2026-10-22');});
 test('invalid URLs, times and record identifiers are rejected',()=>{for(const changes of [[{kind:'clients',id:'x',expected:0,data:{id:'x',nome:'A',drive_folder_url:'javascript:alert(1)'}}],[{kind:'events',id:'e',expected:0,data:{id:'e',data:'2026-10-22',hora_inicio:'12:00',hora_fim:'09:00'}}],[{kind:'employees',id:'usr',expected:0,data:{id:'usr',funcao:'dono'}}]]) assert.throws(()=>validateChanges(changes));});
 test('a registration cannot smuggle a second change to the same ID',()=>{const c={kind:'clients',id:'c',expected:0,data:{id:'c',nome:'A'}};assert.throws(()=>validateChanges([c,c]));});
+
+test('partial or duplicate cloud responses cannot become a baseline',()=>{
+ const member={employee_id:'usr',user_id:'u',role:'gerente'};
+ const employee={kind:'employees',id:'usr',revision:1,data:{id:'usr'}};
+ assert.doesNotThrow(()=>validateCloudSnapshot({member,records:[employee]}));
+ for(const value of [null,{member,records:[]},{member,records:[employee,employee]},{member,records:[{...employee,revision:0}]},{member,records:[{...employee,data:{id:'other'}}]}])assert.throws(()=>validateCloudSnapshot(value));
+});
+test('bank of hours is part of the versioned shared workspace',()=>{
+ const w=workspaceFrom(base);w.banco_horas.push({id:'hours-1',employee_id:'usr',minutos:30});
+ assert.equal(diffWorkspace(base,w).find(row=>row.kind==='banco_horas').id,'hours-1');
+});

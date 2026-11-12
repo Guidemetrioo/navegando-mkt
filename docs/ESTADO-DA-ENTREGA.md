@@ -1,3 +1,11 @@
+# Atualização de 12/11/2026
+
+As informações abaixo de 22/10 são históricas. A atualização atual adiciona a migração 007 (versão 3), remove preenchimento demonstrativo em leituras de produção, compartilha banco de horas, isola rascunhos por sessão, preserva pendências após erro, protege repetições com fingerprint do conteúdo original e prepara backup a cada seis horas com ensaio de restauração isolado. O arquivo `docs/IMPLANTACAO.md`, seção Atualização de confiabilidade, contém a ativação.
+
+Ainda NÃO foi confirmada ativação no Supabase/GitHub, não foi criado backup da base real e não houve commit/deploy. A chave administrativa local segue pendente de preenchimento pelo responsável. Não há garantia de perda zero.
+
+---
+
 # Estado da base central — 22/10/2026
 
 ## Implementado no código

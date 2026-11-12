@@ -70,7 +70,7 @@ export function ClientsView() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground font-heading">
-                CRM de Restaurantes ({clients.length})
+                Restaurantes ({clients.length})
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 {activeCount} Ativos
@@ -179,7 +179,7 @@ export function ClientsView() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="restaurant-grid grid grid-cols-2 gap-3 sm:gap-5">
           {filteredClients.map((client) => {
             const clientEvents = events.filter((e) => e.client_id === client.id);
             const clientDeliverables = deliverables.filter((d) => d.client_id === client.id);
@@ -194,15 +194,15 @@ export function ClientsView() {
             return (
               <div
                 key={client.id}
-                className="bg-[var(--ui-surface)] rounded-3xl border border-[var(--ui-border)] p-5 shadow-sm hover:border-[var(--ui-accent)]/40 transition-all flex flex-col justify-between gap-4 group"
+                className="bg-[var(--ui-surface)] min-w-0 rounded-2xl border border-[var(--ui-border)] p-3 sm:p-5 shadow-sm hover:border-[var(--ui-accent)]/40 transition-all flex flex-col justify-between gap-4 group"
               >
                 {/* Header do Card */}
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col xl:flex-row items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3
                         onClick={() => setDossierClient(client)}
-                        className="font-bold text-base text-foreground truncate font-heading hover:text-[var(--ui-accent)] transition-colors cursor-pointer"
+                        className="font-bold text-sm sm:text-base text-foreground break-words font-heading hover:text-[var(--ui-accent)] transition-colors cursor-pointer"
                         title="Ver Dossiê 360º"
                       >
                         {client.nome}

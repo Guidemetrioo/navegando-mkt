@@ -140,3 +140,56 @@ O pacote criptografado inclui membros, registros, auditoria, recibos de operaç�
 - Os clientes reais, quando estiverem prontos.
 
 As chaves serão configuradas por conexão autorizada ou diretamente no ambiente protegido. A partir disso, ainda será necessário concluir a conexão real, os testes em dois computadores e a validação de recuperação para liberar o sistema.
+
+
+## Atualização de confiabilidade — 12/11/2026
+
+O código preparado exige a versão 3 da base. Não publique esta versão antes de aplicar a migração 007. Não execute novamente o instalador completo em um banco que já tem dados.
+
+### Configurar a chave administrativa local
+
+1. Abra o projeto da agência no Supabase: Settings → API Keys.
+2. Copie a chave administrativa existente `service_role` na seção de chaves legadas. Se utilizar uma chave nova `sb_secret_...`, ela também pode ser fornecida ao cliente administrativo do script. Não use `anon`, `sb_publishable_...` nem JWT Secret para backups.
+3. Abra `.env.admin.local` na raiz do projeto, em um editor local.
+4. Substitua somente o valor da linha `SUPABASE_SERVICE_ROLE_KEY=` pela chave administrativa. Não envie a chave em chat ou prints, não use prefixo NEXT_PUBLIC_, não a coloque no `.env.local` nem na aplicação Vercel.
+5. Preserve SUPABASE_URL e a BACKUP_ENCRYPTION_KEY existente. A chave de criptografia deve ter 32 bytes em Base64. Guarde uma cópia dela em um gerenciador de senhas: perder essa chave impede recuperar os arquivos .backup.
+6. A configuração local habilita a execução administrativa neste computador. Ela não configura os Secrets do GitHub automaticamente.
+
+Referência: https://supabase.com/docs/guides/getting-started/api-keys
+
+### Ativar a migração e conferir o banco
+
+1. Antes da migração, faça o backup disponível no provedor e confira a possibilidade de restauração. Exporte também qualquer rascunho pendente e ajustes de horas ainda apenas locais. Não feche sessões com alterações não confirmadas.
+2. Em Supabase → SQL Editor, execute somente o conteúdo de `supabase/migrations/007_durability.sql`. O script não apaga registros ou fotos; adiciona persistência do banco de horas, recibos reforçados e a função privada de backup.
+3. Execute `select public.agency_workspace_version();`. O resultado esperado é 3.
+4. Só depois publique o código correspondente. Até então a proteção nova permanece local; nenhum commit/deploy foi realizado por esta alteração.
+5. Em um ambiente administrativo com a chave configurada, execute:
+
+```powershell
+npm run backup -- --out backup-output
+npm run backup:drill -- "backup-output/NOME-DO-ARQUIVO.backup"
+```
+
+O ensaio usa PostgreSQL embarcado isolado e arquivos temporários. Não grava no Supabase. Ele restaura as quatro tabelas operacionais, preserva revisões, auditoria e os bytes das evidências e confere o bloqueio de acesso direto. Não restaura contas/senhas reais do Auth, configurações de infraestrutura, SMTP ou integrações.
+
+### Ativar a rotina externa de backup
+
+1. No GitHub do repositório, crie o Environment `production-backup` em Settings → Environments.
+2. Nesse Environment, configure os Secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `BACKUP_ENCRYPTION_KEY` com os valores administrativos. Não os coloque no código.
+3. Depois do envio do workflow para a branch principal, abra Actions → Encrypted operational backup → Run workflow.
+4. Confira o sucesso tanto da cópia quanto do ensaio de restauração e baixe o artefato criptografado. Faça uma segunda cópia em armazenamento controlado pela agência, fora desse computador e da mesma conta Supabase.
+5. O workflow foi preparado para cada 6 horas, com retenção de 30 dias. Agendamentos do GitHub podem atrasar e dependem das permissões, limites e configurações do repositório. Confira o primeiro disparo agendado antes de considerar a rotina ativa. Habilite as notificações de falha de Actions na conta dos responsáveis.
+6. Ative os backups/PITR do banco no Supabase conforme plano e orçamento. Nenhuma contratação foi feita automaticamente. O backup periódico tem uma janela de possível perda entre cópias; não promete perda zero.
+
+Os backups do PostgreSQL/Supabase não incluem os bytes do Storage. O script complementar inclui todas as fotos do bucket `ponto-evidencias`, valida a presença das fotos referenciadas e confere seus hashes. Comprovantes gravados dentro dos registros JSON também são preservados. Não cobre outros buckets, contas Auth completas ou o gateway WhatsApp. Referência: https://supabase.com/docs/guides/platform/backups
+
+### Critérios antes da operação exclusiva
+
+- Executar primeiro a migração e os novos fluxos em homologação.
+- Obter um backup real e um ensaio real bem-sucedidos; os testes com fixtures locais não substituem isso.
+- Testar dois dispositivos com contas diferentes, alteração simultânea no mesmo registro, perda de conexão depois de enviar uma foto, sessão expirada e recuperação do rascunho.
+- Só considerar uma alteração gravada quando a sincronização da base central confirmar. Um aviso local do módulo não é um recibo do banco.
+- Se houver conflito ou recuperação pendente, baixar o rascunho. Recarregar arquiva a cópia local; não faz uma mesclagem automática de conflitos. Nunca limpar os dados do navegador antes de exportar pendências.
+- Guardar acesso de recuperação da organização Supabase, do GitHub e da chave de criptografia com responsáveis definidos.
+
+Situação desta entrega: migração, rotina e ensaio preparados e testados localmente. Ativação do banco real, Secrets, primeiro backup real, restauração em Supabase de homologação e publicação ainda precisam ser confirmados.

@@ -1,5 +1,6 @@
 'use client';
 
+import { MobileMonthCalendar } from './MobileMonthCalendar';
 import React, { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import {
@@ -31,7 +32,9 @@ export function MonthView() {
   const todayIso = todayInSaoPaulo();
 
   return (
-    <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-sm relative">
+    <>
+    <MobileMonthCalendar />
+    <div className="hidden sm:block w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-sm relative">
       {/* Cabeçalho dos dias da semana (Seg..Dom) */}
       <div className="grid grid-cols-7 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-50 text-xs font-semibold text-zinc-400 dark:text-zinc-400 text-zinc-600 text-center py-2.5 rounded-t-2xl">
         {WEEKDAYS_SHORT.map((day) => (
@@ -377,5 +380,7 @@ export function MonthView() {
         ))}
       </div>
     </div>
+    </>
+
   );
 }

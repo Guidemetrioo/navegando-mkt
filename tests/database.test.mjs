@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
+import {drillBackup} from '../scripts/recovery-drill.mjs';
 import {PGlite} from '@electric-sql/pglite';
 
 test('database migrations, authorization and atomic commits',async(t)=>{
@@ -88,6 +89,32 @@ test('database migrations, authorization and atomic commits',async(t)=>{
   await t.test('every successful business mutation has a protected audit record',async()=>{await db.exec('reset role');const {rows}=await db.query('select count(*)::integer as count from public.agency_audit');assert(rows[0].count>=6);await as('film');await assert.rejects(db.query('select * from public.agency_audit'),/permission denied/);});
   await t.test('audit RPC denies staff and returns only metadata to management',async()=>{await as('film');await assert.rejects(db.query('select public.agency_audit_page()'),/gestão/);await as('manager');const {rows}=await db.query('select public.agency_audit_page() as result');assert(rows[0].result.length>0);assert.equal(rows[0].result[0].before_data,undefined);});
   await t.test('public health check reveals availability, not business data',async()=>{await as('anon');const {rows}=await db.query('select public.agency_health() as ok');assert.equal(rows[0].ok,true);});
+  await t.test('original payload fingerprint makes retries safe despite changed enrichment',async()=>{
+    await as('manager');const id=randomUUID(),hash='a'.repeat(64);
+    const first=[change('clients','safe-retry',{nome:'Original',endereco:'Resolved on first request'})];
+    const result=await db.query('select public.agency_commit_checked($1::jsonb,$2::uuid,$3) as result',[JSON.stringify(first),id,hash]);
+    assert(result.rows[0].result.records.some(row=>row.id==='safe-retry'));
+    const second=[change('clients','safe-retry',{nome:'Original',endereco:'Provider changed during retry'})];
+    const replay=(await db.query('select public.agency_commit_checked($1::jsonb,$2::uuid,$3) as result',[JSON.stringify(second),id,hash])).rows[0].result;
+    assert.equal(replay.records.find(row=>row.id==='safe-retry').revision,1);
+    assert.equal(replay.records.find(row=>row.id==='safe-retry').data.endereco,'Resolved on first request');
+    await assert.rejects(db.query('select public.agency_request_result($1::uuid,$2)',[id,'b'.repeat(64)]),/outro conteúdo/);
+  });
+  await t.test('bank of hours persists centrally, enforces roles and rejects stale writes',async()=>{
+    await as('manager');await commit([change('banco_horas','hours-test',{employee_id:'usr-carol',data:'2026-11-11',tipo:'abono_horas',minutos:30,motivo:'Ajuste de teste',registrado_por:'forged'})]);
+    await as('internal');const own=(await snapshot()).records.find(row=>row.id==='hours-test');assert.equal(own.data.registrado_por,'usr-alexandre');
+    await assert.rejects(commit([change('banco_horas','hours-forged',{...own.data,id:'hours-forged'})]),/gestão/);
+    await as('film');assert(!(await snapshot()).records.some(row=>row.id==='hours-test'));
+    await as('manager');await assert.rejects(commit([change('banco_horas','hours-test',{...own.data,minutos:50},0)]),/alterado/);
+  });
+  await t.test('backup snapshot is private and encrypted export can be restored offline',async()=>{
+    await as('manager');await assert.rejects(db.query('select public.agency_backup_snapshot()'),/permission denied/);
+    await db.exec('reset role');const tables=(await db.query('select public.agency_backup_snapshot() as backup')).rows[0].backup.tables;
+    const {sha256}=await import('../scripts/backup-codec.mjs');
+    const paths=new Set(tables.agency_records.filter(row=>row.kind==='pontos').map(row=>row.data.foto_url.slice('private:ponto-evidencias/'.length)));
+    const files=[...paths].map(path=>{const bytes=Buffer.from('evidence-fixture');return {path,base64:bytes.toString('base64'),sha256:sha256(bytes)};});
+    const report=await drillBackup({version:1,schemaVersion:3,createdAt:new Date().toISOString(),tables,files});assert.equal(report.restored,true);
+  });
   await t.test('restoring a database snapshot recovers records and access rules',async()=>{
     await db.exec('reset role');
     const image=await db.dumpDataDir();

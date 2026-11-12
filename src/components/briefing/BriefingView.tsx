@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
+import { todayInSaoPaulo } from '@/lib/date-utils';
 import { EventItem, EVENT_TYPE_LABELS } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
@@ -13,10 +14,6 @@ import {
   Calendar,
   Clock,
   Plus,
-  Trash2,
-  ArrowLeft,
-  Video,
-  Link as LinkIcon,
   FileText,
   AlertCircle,
   Search,
@@ -50,6 +47,7 @@ export interface EditableVideoDraft {
   roteiro: string;
   refRotulo: 'Referência' | 'Exemplo';
   refUrl: string;
+  refsExtras?: BriefingRefItem[];
 }
 
 const VIDEO_FORMATS = [
@@ -174,7 +172,7 @@ export function parseItems(raw: string): BriefingVideoItem[] {
   const normalized = raw.replace(/\r/g, '').trim();
   if (!normalized) return [];
 
-  const starts = [...normalized.matchAll(/(?:^|\n)\s*(\d{1,2})\s*[-.)]\s*/g)];
+  const starts = [...normalized.matchAll(/(?:^|\n)\s*(\d+)\s*[-.)]\s*/g)];
   const montar = (bruto: string, n: number): BriefingVideoItem => {
     const { texto, refs } = extrairRefs(bruto.trim());
     return { n, text: texto, refs };
@@ -254,6 +252,7 @@ function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
       roteiro: text,
       refRotulo: item.refs[0]?.rotulo || 'Referência',
       refUrl: item.refs[0]?.url || '',
+      refsExtras: item.refs.slice(1),
     };
   });
 }
@@ -265,11 +264,11 @@ function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
   return valid
     .map((d, idx) => {
       const num = idx + 1;
-      const prefixFormat = d.formato && d.formato !== 'Automático' ? `[${d.formato}] ` : '';
+      const prefixFormat = `[${d.formato || 'Automático'}] `;
       const prefixTitle = d.titulo.trim() ? `${d.titulo.trim()}: ` : '';
       const mainBody = `${num} - ${prefixFormat}${prefixTitle}${d.roteiro.trim()}`.trim();
       const refLine = d.refUrl.trim() ? `\n${d.refRotulo}: ${normalizarUrl(d.refUrl.trim())}` : '';
-      return `${mainBody}${refLine}`;
+      return `${mainBody}${refLine}${(d.refsExtras || []).map(ref => `\n${ref.rotulo}: ${ref.url}`).join('')}`;
     })
     .join('\n\n');
 }
@@ -279,6 +278,7 @@ function hasBriefingDone(event: EventItem): boolean {
 }
 
 function countBriefingVideos(event: EventItem): number {
+  if (event.briefing_videos?.length) return event.briefing_videos.length;
   if (!event.briefing_gravacao || !event.briefing_gravacao.trim()) return 0;
   return parseItems(event.briefing_gravacao).filter((i) => i.text.trim().length > 0).length;
 }
@@ -317,16 +317,36 @@ export function BriefingView() {
   // Compromisso selecionado ao clicar no card do restaurante
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [videoDrafts, setVideoDrafts] = useState<EditableVideoDraft[]>([]);
+  const [videoQuantity, setVideoQuantity] = useState('1');
+  const editorHeading = useRef<HTMLHeadingElement | null>(null);
+  const videoInputs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+  const focusVideoId = useRef<string | null>(null);
+  const [savedDrafts, setSavedDrafts] = useState('[]');
+  useEffect(() => {
+    if (focusVideoId.current) { videoInputs.current[focusVideoId.current]?.focus(); focusVideoId.current = null; }
+  }, [videoDrafts]);
   const [showPdfPreview, setShowPdfPreview] = useState<boolean>(false);
 
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (!activeEventId) return;
+    const frame = requestAnimationFrame(() => { editorHeading.current?.focus(); editorHeading.current?.scrollIntoView({block:'start'}); });
+    return () => cancelAnimationFrame(frame);
+  }, [activeEventId]);
+  useEffect(() => {
+    if (!activeEventId || JSON.stringify(videoDrafts) === savedDrafts) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [activeEventId, videoDrafts, savedDrafts]);
+
   // Todos os compromissos de gravação / foto dos restaurantes ordenados por data
   const recordingEvents = useMemo(() => {
     return [...events]
-      .filter((ev) => ev.status !== 'cancelado')
+      .filter((ev) => ev.status !== 'cancelado' && (ev.tipo === 'gravacao' || ev.tipo === 'foto'))
       .sort((a, b) => {
         const cmp = a.data.localeCompare(b.data);
         if (cmp !== 0) return cmp;
@@ -361,6 +381,13 @@ export function BriefingView() {
     });
   }, [recordingEvents, statusFilter, searchQuery, clients]);
 
+  const restaurantEvents = useMemo(() => {
+    const groups = new Map<string, EventItem[]>();
+    for (const event of filteredEvents) groups.set(event.client_id, [...(groups.get(event.client_id) || []), event]);
+    const today = todayInSaoPaulo();
+    return [...groups.values()].map(group => group.find(event => event.data >= today) || group[group.length - 1]);
+  }, [filteredEvents]);
+
   const activeEvent = useMemo(
     () => recordingEvents.find((e) => e.id === activeEventId) || null,
     [recordingEvents, activeEventId]
@@ -374,23 +401,38 @@ export function BriefingView() {
   // Ao clicar no card de um compromisso de restaurante, abre o editor de vídeos
   const handleOpenEventBriefing = (ev: EventItem) => {
     setActiveEventId(ev.id);
-    setVideoDrafts(draftsFromRaw(ev.briefing_gravacao));
+    const structured = ev.briefing_videos?.map((video, index) => ({ ...video, id: `video-${index + 1}-${crypto.randomUUID()}` }));
+    const drafts = structured?.length && serializeDraftsToRaw(structured) === (ev.briefing_gravacao || '') ? structured : draftsFromRaw(ev.briefing_gravacao);
+    setVideoDrafts(drafts);
+    setVideoQuantity(String(drafts.length));
+    setSavedDrafts(JSON.stringify(drafts));
+    setShowPdfPreview(false);
     setStatusMsg('');
   };
 
   // Manipulação da lista de vídeos separados
+  const createVideo = (): EditableVideoDraft => ({ id: crypto.randomUUID(), titulo: '', formato: 'Automático', roteiro: '', refRotulo: 'Referência', refUrl: '' });
   const handleAddAnotherVideo = () => {
-    setVideoDrafts((prev) => [
-      ...prev,
-      {
-        id: `video-${prev.length + 1}-${Date.now()}`,
-        titulo: '',
-        formato: 'Automático',
-        roteiro: '',
-        refRotulo: 'Referência',
-        refUrl: '',
-      },
-    ]);
+    const video = createVideo();
+    setVideoDrafts(prev => [...prev, video]);
+    setVideoQuantity(String(videoDrafts.length + 1));
+    focusVideoId.current = video.id;
+  };
+  const advanceVideo = (index: number) => {
+    if (index + 1 < videoDrafts.length) videoInputs.current[videoDrafts[index + 1].id]?.focus();
+    else handleAddAnotherVideo();
+  };
+  const applyQuantity = () => {
+    const quantity = Number(videoQuantity);
+    if (!Number.isSafeInteger(quantity) || quantity < 1) { toast('Informe uma quantidade inteira maior que zero.', 'error'); return; }
+    if (quantity < videoDrafts.length && videoDrafts.slice(quantity).some(video => video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim() || video.refsExtras?.length)) {
+      toast('Há vídeos preenchidos nessa redução. Remova os cards desejados individualmente.', 'error'); return;
+    }
+    setVideoDrafts(prev => quantity <= prev.length ? prev.slice(0, quantity) : [...prev, ...Array.from({length: quantity - prev.length}, createVideo)]);
+  };
+  const leaveEditor = () => {
+    if (JSON.stringify(videoDrafts) !== savedDrafts && !window.confirm('Existem alterações não salvas. Deseja sair sem salvar?')) return;
+    setActiveEventId(null);
   };
 
   const handleUpdateVideoDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
@@ -435,27 +477,35 @@ export function BriefingView() {
     if (!activeEvent) return;
     const raw = serializeDraftsToRaw(videoDrafts);
 
-    saveEvent(
+    for (const video of videoDrafts) {
+      if (!video.refUrl.trim()) continue;
+      try { const url = new URL(normalizarUrl(video.refUrl.trim())); if (!['https:', 'http:'].includes(url.protocol)) throw new Error(); }
+      catch { toast('Confira o link de referência antes de salvar.', 'error'); return; }
+    }
+    const result = saveEvent(
       {
         ...activeEvent,
+        briefing_videos: videoDrafts.map(video => ({titulo:video.titulo, formato:video.formato, roteiro:video.roteiro, refRotulo:video.refRotulo, refUrl:video.refUrl, refsExtras:video.refsExtras})),
         briefing_gravacao: raw || null,
       },
       true
     );
 
+    if (!result?.success) { toast('Não foi possível salvar o briefing.', 'error'); return; }
+    setSavedDrafts(JSON.stringify(videoDrafts));
     if (activeClient && raw) {
       updateClient(activeClient.id, {
         briefing_roteiros_modelos: raw,
       });
     }
 
-    const qtd = parseItems(raw).length;
+    const qtd = videoDrafts.length;
     if (raw) {
       toast(`Briefing salvo com ${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'} para ${activeClient?.nome || 'Restaurante'}!`);
       setStatusMsg(`Salvo com sucesso (${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'}). Status: Briefing Feito.`);
     } else {
-      toast('Briefing limpo (marcado como Pendente).', 'info');
-      setStatusMsg('Briefing marcado como Pendente.');
+      toast('Cards salvos. Preencha os briefings para concluir.', 'info');
+      setStatusMsg(`${qtd} cards salvos. Briefings ainda pendentes.`);
     }
   };
 
@@ -674,11 +724,12 @@ export function BriefingView() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredEvents.map((ev) => {
+          <div className="briefing-restaurants grid grid-cols-2 gap-3 sm:gap-4">
+            {restaurantEvents.map((ev) => {
               const client = ev.client || clients.find((c) => c.id === ev.client_id);
               const done = hasBriefingDone(ev);
-              const videoCount = countBriefingVideos(ev);
+              const restaurantRecordings = recordingEvents.filter(event => event.client_id === ev.client_id);
+              const videoCount = restaurantRecordings.reduce((sum, event) => sum + countBriefingVideos(event), 0);
               const assignedMembers = (ev.assigned_employee_ids || [])
                 .map((id) => employees.find((emp) => emp.id === id))
                 .filter(Boolean);
@@ -696,7 +747,7 @@ export function BriefingView() {
                       handleOpenEventBriefing(ev);
                     }
                   }}
-                  className={`group rounded-2xl p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
+                  className={`group min-w-0 rounded-2xl p-3 sm:p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
                     done
                       ? 'border-emerald-500/35 hover:border-emerald-400/70'
                       : 'border-amber-500/35 hover:border-[var(--ui-accent)]'
@@ -704,12 +755,12 @@ export function BriefingView() {
                 >
                   <div className="space-y-3">
                     {/* Topo do Card: Nome do Restaurante + Status (Pendente ou Feito) */}
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="min-w-0">
                         <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-[var(--ui-accent)] mb-0.5">
                           {EVENT_TYPE_LABELS[ev.tipo] || 'Gravação'}
                         </span>
-                        <h3 className="text-base font-extrabold text-foreground truncate group-hover:text-[var(--ui-accent)] transition-colors">
+                        <h3 className="text-sm sm:text-base font-extrabold text-foreground break-words group-hover:text-[var(--ui-accent)] transition-colors">
                           {client?.nome || 'Restaurante'}
                         </h3>
                       </div>
@@ -717,7 +768,7 @@ export function BriefingView() {
                       {done ? (
                         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Feito ({videoCount} {videoCount === 1 ? 'vídeo' : 'vídeos'})</span>
+                          <span>Briefing feito</span>
                         </span>
                       ) : (
                         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">
@@ -727,6 +778,7 @@ export function BriefingView() {
                       )}
                     </div>
 
+                    <p className="text-xs text-zinc-400">{restaurantRecordings.length} gravações · {videoCount} vídeos gerados</p>
                     {/* Data e Horário do Compromisso */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300 bg-[var(--ui-page)] px-3 py-2 rounded-xl border border-[var(--ui-border)]">
                       <span className="flex items-center gap-1.5 font-semibold">
@@ -770,7 +822,7 @@ export function BriefingView() {
                   </div>
 
                   {/* Rodapé do Card: Equipe + Botão de Abrir */}
-                  <div className="pt-3 border-t border-[var(--ui-border)] flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-[var(--ui-border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1 flex-wrap">
                       {assignedMembers.length > 0 ? (
                         assignedMembers.slice(0, 3).map((emp) =>
@@ -814,11 +866,11 @@ export function BriefingView() {
         <div className="flex items-start sm:items-center gap-3.5">
           <button
             type="button"
-            onClick={() => setActiveEventId(null)}
+            onClick={leaveEditor}
             className="p-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-zinc-300 hover:text-foreground transition-colors cursor-pointer shrink-0"
             title="Voltar para a lista de restaurantes"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar</span>
           </button>
 
           <div>
@@ -843,7 +895,7 @@ export function BriefingView() {
               )}
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
+            <h2 ref={editorHeading} tabIndex={-1} className="scroll-mt-24 text-xl sm:text-2xl font-extrabold text-foreground">
               {displayClient}
             </h2>
           </div>
@@ -883,6 +935,7 @@ export function BriefingView() {
           <button
             type="button"
             onClick={handleSaveBriefing}
+            aria-label="Salvar briefings"
             className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
           >
             <Save className="w-4 h-4" />
@@ -898,142 +951,53 @@ export function BriefingView() {
         </div>
       )}
 
-      {/* Lista de Cards de Vídeo Separados */}
-      <div className="space-y-4">
-        {videoDrafts.map((video, index) => {
-          const detectedCategory =
-            video.formato !== 'Automático'
-              ? video.formato
-              : video.roteiro.trim()
-                ? inferCategory(video.roteiro)
-                : 'Conteúdo';
-
-          return (
-            <div
-              key={video.id}
-              className="p-5 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] space-y-4 shadow-md"
-            >
-              {/* Cabeçalho do Vídeo */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--ui-border)]">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[var(--ui-accent)]/15 border border-[var(--ui-accent)]/40 text-[var(--ui-accent)] font-extrabold text-sm flex items-center justify-center">
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
-                  <div>
-                    <div className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                      <Video className="w-4 h-4 text-[var(--ui-accent)]" />
-                      <span>Briefing do Vídeo {index + 1}</span>
-                    </div>
-                    <div className="text-[11px] text-zinc-400">
-                      Formato identificado: <strong className="text-[var(--ui-accent)]">{detectedCategory}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <select
-                    value={video.formato}
-                    onChange={(e) => handleUpdateVideoDraft(video.id, { formato: e.target.value })}
-                    className="px-3 py-1.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
-                    title="Formato do vídeo"
-                  >
-                    {VIDEO_FORMATS.map((fmt) => (
-                      <option key={fmt} value={fmt}>
-                        Formato: {fmt}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveVideoDraft(video.id)}
-                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
-                    title="Remover este vídeo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Campos do Vídeo */}
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
-                    Título / Ideia Principal do Vídeo {index + 1} (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={video.titulo}
-                    onChange={(e) => handleUpdateVideoDraft(video.id, { titulo: e.target.value })}
-                    placeholder={`Ex: Produção ASMR da Linha Oriental, Desafio com Cliente, Prato Carro-Chefe...`}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs sm:text-sm text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ui-accent)] mb-1.5">
-                    Roteiro / Cenas / Falas do Vídeo {index + 1} *
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={video.roteiro}
-                    onChange={(e) => handleUpdateVideoDraft(video.id, { roteiro: e.target.value })}
-                    placeholder={`Descreva exatamente como deve ser gravado o Vídeo ${index + 1} (gancho inicial, takes de cozinha, falas, transição)...`}
-                    className="w-full p-3.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs sm:text-sm text-foreground leading-relaxed focus:outline-none focus:border-[var(--ui-accent)] resize-y"
-                  />
-                </div>
-
-                {/* Link de Referência / Exemplo */}
-                <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-2.5 items-center">
-                  <select
-                    value={video.refRotulo}
-                    onChange={(e) =>
-                      handleUpdateVideoDraft(video.id, {
-                        refRotulo: e.target.value as 'Referência' | 'Exemplo',
-                      })
-                    }
-                    className="px-3 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs font-semibold text-zinc-300 focus:outline-none focus:border-[var(--ui-accent)]"
-                  >
-                    <option value="Referência">Link de Referência</option>
-                    <option value="Exemplo">Link de Exemplo</option>
-                  </select>
-
-                  <div className="relative">
-                    <LinkIcon className="w-3.5 h-3.5 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="url"
-                      value={video.refUrl}
-                      onChange={(e) => handleUpdateVideoDraft(video.id, { refUrl: e.target.value })}
-                      placeholder="https://instagram.com/reel/... ou TikTok de referência (opcional)"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
-                    />
-                  </div>
-                </div>
-              </div>
+      <label className="flex flex-col gap-2 text-xs font-semibold">
+        Gravação deste restaurante
+        <select aria-label="Gravação do restaurante" value={activeEvent.id} onChange={event => {
+          if (JSON.stringify(videoDrafts) !== savedDrafts && !window.confirm('Há alterações não salvas. Trocar de gravação sem salvar?')) return;
+          const selected = recordingEvents.find(item => item.id === event.target.value);
+          if (selected) handleOpenEventBriefing(selected);
+        }} className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-3 text-base">
+          {recordingEvents.filter(event => event.client_id === activeEvent.client_id).map(event => <option key={event.id} value={event.id}>{fmtDate(event.data)} · {event.hora_inicio.slice(0,5)} · {countBriefingVideos(event)} vídeos</option>)}
+        </select>
+      </label>
+      <section className="rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-4 space-y-3">
+        <form onSubmit={event => { event.preventDefault(); applyQuantity(); }} className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-2 text-sm font-semibold">
+            Quantos vídeos serão?
+            <input aria-label="Quantidade de vídeos" type="number" min="1" step="1" value={videoQuantity} onChange={event => setVideoQuantity(event.target.value)} className="w-24 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
+          </label>
+          <button type="submit" className="rounded-xl border border-[var(--ui-border)] px-4 py-2 text-sm font-semibold">Gerar cards</button>
+          <span className="text-xs text-zinc-400 pb-2">{videoDrafts.length} vídeos · {videoDrafts.filter(video => video.roteiro.trim()).length} briefings preenchidos</span>
+        </form>
+        <p className="text-xs text-zinc-400">Um card por vídeo. Enter avança para o próximo; Shift+Enter cria uma nova linha. Salve ao finalizar.</p>
+      </section>
+      <div className="briefing-videos grid grid-cols-2 gap-3 sm:gap-4">
+        {videoDrafts.map((video, index) => (
+          <article key={video.id} aria-label={`Briefing do Vídeo ${index + 1}`} className="min-w-0 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 sm:p-5 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
+              <h3 className="text-base sm:text-xl font-bold text-[var(--ui-accent)]">Vídeo {String(index + 1).padStart(2, '0')}</h3>
+              <button type="button" aria-label={`Remover vídeo ${index + 1}`} onClick={() => { if ((video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) && !window.confirm('Remover este vídeo e seu briefing?')) return; handleRemoveVideoDraft(video.id); setVideoQuantity(String(Math.max(1, videoDrafts.length - 1))); }} className="text-xs text-zinc-400 py-2">Remover</button>
             </div>
-          );
-        })}
-
-        {/* Botão Intuitivo e Destacado para Fazer Briefing do Próximo Vídeo */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-          <button
-            type="button"
-            onClick={handleAddAnotherVideo}
-            className="flex-1 py-4 px-5 rounded-2xl border-2 border-dashed border-[var(--ui-accent)]/50 hover:border-[var(--ui-accent)] bg-[var(--ui-accent)]/10 hover:bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Fazer Briefing de Outro Vídeo (+ Adicionar Vídeo {videoDrafts.length + 1})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSaveBriefing}
-            className="py-4 px-7 rounded-2xl gradient-cta text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>Salvar Todos os Vídeos</span>
-          </button>
-        </div>
+            <label className="text-xs font-semibold flex flex-col gap-2">
+              Título (opcional)
+              <input aria-label={`Título do vídeo ${index + 1}`} value={video.titulo} onChange={event => handleUpdateVideoDraft(video.id, {titulo: event.target.value})} onKeyDown={event => { if(event.key === 'Enter') {event.preventDefault(); videoInputs.current[video.id]?.focus();} }} placeholder={`Ideia do vídeo ${index + 1}`} className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
+            </label>
+            <label className="text-xs font-semibold flex flex-col gap-2 flex-1">
+              Briefing
+              <textarea ref={element => {videoInputs.current[video.id] = element;}} aria-label={`Briefing do vídeo ${index + 1}`} rows={7} value={video.roteiro} onChange={event => handleUpdateVideoDraft(video.id, {roteiro:event.target.value})} onKeyDown={event => {if(event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {event.preventDefault(); advanceVideo(index);} }} placeholder="O que gravar, cenas e falas…" className="w-full min-w-0 flex-1 resize-y rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-3 text-base leading-relaxed" />
+            </label>
+            <label className="text-xs font-semibold flex flex-col gap-2">
+              Link de referência
+              <input aria-label={`Referência do vídeo ${index + 1}`} type="url" value={video.refUrl} onChange={event => handleUpdateVideoDraft(video.id, {refUrl:event.target.value})} onKeyDown={event => { if(event.key === 'Enter') {event.preventDefault(); advanceVideo(index);} }} placeholder="https://…" className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
+            </label>
+            {(video.refsExtras || []).map((ref, i) => <a key={i} href={normalizarUrl(ref.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--ui-accent)] break-all">{ref.rotulo}: {exibirUrl(ref.url)}</a>)}
+          </article>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" aria-label={`Adicionar vídeo ${videoDrafts.length + 1}`} onClick={handleAddAnotherVideo} className="flex-1 rounded-xl border border-dashed border-[var(--ui-accent)] py-3 px-4 text-sm font-semibold text-[var(--ui-accent)]">Adicionar vídeo {videoDrafts.length + 1}</button>
+        <button type="button" onClick={handleSaveBriefing} className="gradient-cta rounded-xl py-3 px-5 text-sm font-bold">Salvar todos os briefings</button>
       </div>
 
       {/* Pré-visualização Folha A4 (Opcional / Sob Demanda) */}

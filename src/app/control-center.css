@@ -196,3 +196,74 @@
 }
 
 @media (min-width:1024px) { .text-mobile-nav { display:none; } }
+
+/* Mobile calendar: generous day numbers, horizontal week rules and compact event labels. */
+.mobile-month { min-width:0; }
+.mobile-calendar-tools,.mobile-calendar-tools > div { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.mobile-calendar-tools > span { color:var(--ui-muted); font-size:15px; }
+.mobile-calendar-tools button { min-height:44px; padding:7px 10px; border-radius:24px; border:1px solid var(--ui-border); font-size:12px; }
+.mobile-month > h1 { font-size:clamp(30px,9vw,42px); font-weight:750; letter-spacing:-.045em; margin:14px 0 20px; line-height:1.1; }
+.mobile-calendar-weekdays,.mobile-calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+.mobile-calendar-weekdays { text-align:center; color:var(--ui-muted); font-size:12px; padding-bottom:12px; }
+.mobile-calendar-day,.mobile-calendar-blank { min-width:0; min-height:108px; border-top:1px solid var(--ui-border); }
+.mobile-calendar-day { display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 2px 9px; cursor:pointer; text-align:center; }
+.calendar-day-number { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; font-size:21px; font-weight:600; }
+.mobile-calendar-day[data-weekend="true"] .calendar-day-number { color:var(--ui-muted); }
+.mobile-calendar-day[data-today="true"] .calendar-day-number { background:var(--ui-accent); color:var(--ui-page); }
+.mobile-calendar-day[data-selected="true"]:not([data-today="true"]) .calendar-day-number { outline:1px solid var(--ui-accent); color:var(--ui-accent); }
+.calendar-day-events { display:flex; flex-direction:column; width:100%; min-width:0; gap:3px; }
+.calendar-event-pill { display:block; min-width:0; width:100%; padding:2px 3px; border-radius:5px; background:#1a4650; color:#82deea; font-size:10px; line-height:1.5; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+.calendar-event-pill[data-type="edicao"] { background:#30294c; color:#c6b9ed; }
+.calendar-event-pill[data-type="reuniao"] { background:#433c21; color:#edda90; }
+.calendar-more { font-size:10px; color:var(--ui-muted); }
+.mobile-day-agenda { margin-top:14px; padding-top:16px; border-top:1px solid var(--ui-border); }
+.mobile-day-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.mobile-day-heading h2 { font-size:18px; font-weight:700; }
+.mobile-day-heading button { min-height:44px; color:var(--ui-accent); font-size:12px; }
+.mobile-day-agenda > p { color:var(--ui-muted); font-size:13px; padding:16px 0; }
+.mobile-day-event { display:flex; width:100%; min-width:0; gap:14px; padding:16px 0; text-align:left; border-top:1px solid var(--ui-border); }
+.mobile-day-event time { flex:0 0 42px; color:var(--ui-accent); font-size:14px; }
+.mobile-day-event > span { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.mobile-day-event strong { font-size:14px; }
+.mobile-day-event small { display:block; color:var(--ui-muted); font-size:11px; overflow-wrap:anywhere; }
+.mobile-calendar-add { width:100%; min-height:44px; margin-top:12px; border-radius:10px; background:var(--ui-action); color:#13202a; font-size:14px; font-weight:700; }
+.restaurant-grid > div { overflow-wrap:anywhere; }
+@media (width < 640px) {
+  .restaurant-grid > div > div { min-width:0; }
+  .restaurant-grid h3 { white-space:normal; font-size:14px; }
+  .restaurant-grid a { min-width:0; overflow-wrap:anywhere; }
+  .restaurant-grid > div > div:last-child { flex-wrap:wrap; }
+  .restaurant-grid > div > div:last-child > div { flex-wrap:wrap; min-width:0; }
+}
+
+.finance-insights { display:flex; flex-direction:column; gap:16px; min-width:0; }
+.finance-insights-heading { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px; }
+.finance-insights-heading p { color:var(--ui-accent); font-size:10px; font-weight:700; letter-spacing:.1em; }
+.finance-insights-heading h2 { font-size:24px; font-weight:750; margin-block:4px; }
+.finance-insights-heading span,.finance-chart-note { font-size:12px; color:var(--ui-muted); line-height:1.6; }
+.finance-insights-heading label { display:flex; flex-direction:column; gap:6px; font-size:12px; }
+.finance-insights-heading input { background:var(--ui-surface); border:1px solid var(--ui-border); padding:10px; border-radius:10px; font-size:16px; }
+.finance-view-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; padding:4px; background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:12px; }
+.finance-view-tabs button { min-width:0; min-height:44px; padding:8px 3px; font-size:12px; border-radius:8px; color:var(--ui-muted); }
+.finance-view-tabs [aria-selected="true"] { color:var(--ui-page); background:var(--ui-accent); font-weight:700; }
+.finance-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.finance-metric { min-width:0; padding:14px; border:1px solid var(--ui-border); background:var(--ui-surface); border-radius:12px; display:flex; flex-direction:column; gap:8px; }
+.finance-metric > span { color:var(--ui-muted); font-size:12px; }
+.finance-metric strong { font-size:clamp(17px,4.8vw,27px); overflow-wrap:anywhere; line-height:1.2; }
+.finance-metric small { font-size:11px; color:var(--ui-muted); }
+.finance-chart { padding:18px; border:1px solid var(--ui-border); border-radius:14px; background:var(--ui-surface); min-width:0; }
+.finance-chart h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+.finance-trend { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+.finance-trend > div { min-width:0; text-align:center; }
+.finance-trend-bars { display:flex; height:140px; align-items:end; justify-content:center; gap:4px; border-bottom:1px solid var(--ui-border); }
+.finance-trend-bars span { width:16px; background:var(--ui-accent); border-radius:4px 4px 0 0; }
+.finance-trend-bars span + span { background:#e7c46d; }
+.finance-trend small { font-size:11px; color:var(--ui-muted); }
+.finance-chart-legend { color:var(--ui-muted); font-size:11px; margin-block:12px; }
+.finance-trend-values { display:flex; flex-direction:column; gap:6px; }
+.finance-trend-values p { display:flex; justify-content:space-between; gap:8px; font-size:11px; }
+.finance-breakdown { display:flex; flex-direction:column; gap:16px; }
+.finance-breakdown > div > div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; font-size:12px; }
+.finance-breakdown progress { width:100%; height:7px; accent-color:var(--ui-accent); }
+.finance-empty { padding:24px 0; font-size:13px; color:var(--ui-muted); }
+@media(min-width:1024px) { .finance-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); } }

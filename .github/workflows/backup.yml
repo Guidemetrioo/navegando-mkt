@@ -1,13 +1,18 @@
 name: Encrypted operational backup
 on:
   workflow_dispatch:
-# Daily scheduling is intentionally not enabled until the infrastructure and retention are configured.
+  schedule:
+    - cron: '17 */6 * * *'
+concurrency:
+  group: operational-backup
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
   backup:
     runs-on: ubuntu-latest
     environment: production-backup
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,9 +25,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      - name: Test operational restoration in isolated PostgreSQL
+        run: npm run backup:drill -- backup-output/*.backup
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: navegando-encrypted-backup
           path: backup-output/*.backup
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30

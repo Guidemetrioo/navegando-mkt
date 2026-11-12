@@ -26,7 +26,7 @@ export function validateBackup(value:unknown):SystemBackupPayload {
       ids.add(row.id);
     }
   }
-  for(const kind of ['despesas','transacoes','salarios'] as const) {
+  for(const kind of ['despesas','transacoes','salarios','banco_horas'] as const) {
     if(backup.data[kind]===undefined) (backup.data[kind] as unknown[])=[];
     if(!Array.isArray(backup.data[kind])) throw new Error(`Lista ${kind} inválida.`);
   }

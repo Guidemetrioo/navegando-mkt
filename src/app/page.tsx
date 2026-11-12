@@ -36,7 +36,7 @@ import { PontoModal } from '@/components/modals/PontoModal';
 import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
-import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Search, Building, FolderOpen, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Building, FolderOpen, ChevronDown } from 'lucide-react';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
 
@@ -44,8 +44,6 @@ function AgendaMainContent() {
   const {
     currentView,
     setCurrentView,
-    goBackView,
-    canGoBackView,
     isAuthenticated,
     isDataSaved,
     syncStatus,
@@ -58,6 +56,7 @@ function AgendaMainContent() {
     openDeliverableModal,
     openClientModal,
   } = useAgenda();
+  const [showAgendaFilters, setShowAgendaFilters] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
@@ -137,22 +136,7 @@ function AgendaMainContent() {
         {/* Barra Superior de Status & Breadcrumb com Glassmorphism */}
         <header className="crm-header h-14 border-b border-[var(--ui-border)] bg-[var(--ui-page)]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="crm-breadcrumb flex items-center gap-2 text-xs min-w-0">
-            {canGoBackView ? (
-              <button type="button" onClick={goBackView} className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-[var(--ui-accent)]">
-                Voltar
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={openMobileMenu}
-                aria-controls="workspace-navigation"
-                aria-expanded={isMobileNavOpen}
-                className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-zinc-400 hover:text-foreground"
-                title="Abrir menu lateral"
-              >
-                Menu
-              </button>
-            )}
+            <button type="button" onClick={() => setCurrentView('home')} className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-[var(--ui-accent)]" aria-label="Ir para o início">Início</button>
             <NavegandoLogo className="crm-header-logo" variant="symbol" size="sm" />
             <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
@@ -177,20 +161,6 @@ function AgendaMainContent() {
 
           <div className="crm-header-actions flex items-center gap-2 sm:gap-3">
             <DesignSelector />
-            {/* Botão de Busca Global (Ctrl+K) */}
-            <button
-              type="button"
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[var(--ui-surface)] hover:bg-[var(--ui-hover)] border border-[var(--ui-border)] text-zinc-400 hover:text-zinc-100 text-xs transition-colors cursor-pointer"
-              title="Buscar clientes, vídeos, equipe (Ctrl+K)"
-            >
-              <Search className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
-              <span className="text-zinc-400">Buscar</span>
-              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-[var(--ui-page)] text-zinc-400 rounded border border-[var(--ui-border)]">
-                Ctrl K
-              </kbd>
-            </button>
-
             {/* Menu de Ação Rápida: + Criar com gradiente Navegando */}
             <div className="relative">
               <button
@@ -346,13 +316,13 @@ function AgendaMainContent() {
                   </button>
                 </div>
 
-                <DateNavigator />
+                <div className={currentView === 'mes' ? 'hidden sm:block' : ''}><DateNavigator /></div>
               </div>
 
               {/* Filtro por Funcionário e Legenda */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[var(--ui-border)]/60">
-                <EmployeeFilter />
-                <TypeLegend />
+              <div className="pt-2 border-t border-[var(--ui-border)]/60">
+                <button type="button" className="sm:hidden min-h-11 text-xs text-[var(--ui-accent)]" aria-expanded={showAgendaFilters} aria-controls="agenda-team-filters" onClick={() => setShowAgendaFilters(value => !value)}>{showAgendaFilters ? 'Ocultar filtros' : 'Filtrar equipe e tipos'}</button>
+                <div id="agenda-team-filters" className={`${showAgendaFilters ? 'flex' : 'hidden'} sm:flex flex-col gap-2`}><EmployeeFilter /><TypeLegend /></div>
               </div>
             </div>
           )}

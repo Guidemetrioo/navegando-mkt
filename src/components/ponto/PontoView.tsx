@@ -89,39 +89,6 @@ export function PontoView() {
       {/* 0. Radar de Localização Real com Permissão do Dispositivo & Mapa */}
       {!isManagerOrOwner && <LiveLocationRadar />}
 
-      {/* 0.1 Banner de Normas configurada pela agência & Cargas Horárias */}
-      <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
-                Norma configurada pela agência
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">
-                Regime Interno vs Externo
-              </span>
-            </div>
-            <h3 className="text-base font-bold text-foreground">
-              Carga Horária & Normas de Ponto da Agência Navegando MKT
-            </h3>
-            <p className="text-xs text-zinc-300 max-w-3xl leading-relaxed">
-              <strong>Equipe Interna (Segunda a Sexta):</strong> Carga horária máxima CLT de <strong>8h48min/dia (44h semanais)</strong> com registro de apenas <strong>3 batidas</strong> (Entrada, Almoço de 1h a 2h, Saída).<br />
-              <strong>Equipe Externa (Filmmakers & Modelos):</strong> Sem jornada fixa diária. Bate ponto no restaurante na Entrada e Saída com foto e GPS, contabilizando horas totais na semana.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => openPontoModal()}
-          className="gradient-cta flex items-center gap-2 px-4 py-2.5 rounded-xl text-foreground font-bold text-xs shadow-lg transition-all shrink-0 cursor-pointer self-start md:self-auto"
-        >
-          <Camera className="w-4 h-4" />
-          <span>Bater Ponto Agora</span>
-        </button>
-      </div>
-
       {/* 1. Header com KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* KPI 1 */}

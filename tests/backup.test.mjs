@@ -7,3 +7,13 @@ test('encrypted backup round trip preserves all tables and binary files',()=>{co
 test('wrong encryption key cannot recover a backup',()=>{assert.throws(()=>decryptBackup(encryptBackup(bundle,key),randomBytes(32).toString('base64')));});
 test('modified backup is rejected instead of partially restored',()=>{const data=encryptBackup(bundle,key);data[data.length-1]^=1;assert.throws(()=>decryptBackup(data,key));});
 test('missing tables and corrupted files are rejected',()=>{assert.throws(()=>verifyBundle({...bundle,tables:{}}));assert.throws(()=>verifyBundle({...bundle,files:[{...bundle.files[0],sha256:'wrong'}]}));});
+
+test('a backup fails when a referenced evidence photo is missing or mismatched',()=>{
+ const record={kind:'pontos',data:{foto_url:'private:ponto-evidencias/test.jpg',evidence_sha256:sha256(bytes)}};
+ const b={...bundle,tables:{...bundle.tables,agency_records:[record]}};
+ assert.doesNotThrow(()=>verifyBundle(b));assert.throws(()=>verifyBundle({...b,files:[]}));
+ assert.throws(()=>verifyBundle({...b,files:[{...bundle.files[0],base64:Buffer.from('different').toString('base64'),sha256:sha256(Buffer.from('different'))}]}));
+});
+test('restoration paths cannot escape the isolated folder',()=>{
+ for(const path of ['../escape','/absolute','C:/escape','a/../../b','a\\b'])assert.throws(()=>verifyBundle({...bundle,files:[{...bundle.files[0],path}]}));
+});

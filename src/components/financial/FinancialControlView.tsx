@@ -1,5 +1,6 @@
 'use client';
 
+import { FinancialInsights } from './FinancialInsights';
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
@@ -109,9 +110,9 @@ export function FinancialControlView() {
     const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
     return {
-      filmmaker: { media: avg(groups.filmmaker, 3000), total: sum(groups.filmmaker), qtd: groups.filmmaker.length || 3 },
-      modelo: { media: avg(groups.modelo, 3500), total: sum(groups.modelo), qtd: groups.modelo.length || 4 },
-      interno: { media: avg(groups.interno, 5000), total: sum(groups.interno), qtd: groups.interno.length || 6 },
+      filmmaker: { media: avg(groups.filmmaker, 0), total: sum(groups.filmmaker), qtd: groups.filmmaker.length },
+      modelo: { media: avg(groups.modelo, 0), total: sum(groups.modelo), qtd: groups.modelo.length },
+      interno: { media: avg(groups.interno, 0), total: sum(groups.interno), qtd: groups.interno.length },
     };
   }, [salarios, employees]);
 
@@ -538,6 +539,8 @@ export function FinancialControlView() {
 
       {/* ABA 1: VISÃO GERAL & GRÁFICOS */}
       {activeTab === 'dashboard' && (
+        <>
+        <FinancialInsights transactions={visibleTransacoes} reimbursements={visibleDespesas} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico 1: Composição das Despesas por Categoria */}
           <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
@@ -636,6 +639,7 @@ export function FinancialControlView() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* ABA 2: CONTAS A PAGAR & RECEBER */}

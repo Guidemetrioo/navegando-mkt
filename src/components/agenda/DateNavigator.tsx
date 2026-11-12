@@ -91,21 +91,21 @@ export function DateNavigator() {
   };
 
   return (
-    <div className="relative inline-flex items-center gap-2" ref={popoverRef}>
+    <div className="relative flex w-full min-w-0 items-center gap-2 sm:inline-flex sm:w-auto" ref={popoverRef}>
       {/* Controles Principais */}
-      <div className="flex items-center gap-1.5 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-100 p-1 rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 shadow-sm">
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5 sm:flex-none bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-100 p-1 rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 shadow-sm">
         <button
           type="button"
           onClick={() => navigate('prev')}
           aria-label="Período anterior"
-          className="p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
+          className="min-w-[64px] shrink-0 p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
          data-text-action="true"><span className="text-action-label">{"Anterior"}</span></button>
 
         {/* Botão Central que abre o Seletor de Período Completo */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-1 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 transition-all cursor-pointer group"
+          className="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:px-3 py-1 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 transition-all cursor-pointer group"
           title="Clique para abrir o seletor completo de 2 meses"
         >
           <Calendar className="w-4 h-4 text-[var(--ui-accent)] group-hover:scale-110 transition-transform" />
@@ -118,7 +118,7 @@ export function DateNavigator() {
           type="button"
           onClick={() => navigate('next')}
           aria-label="Próximo período"
-          className="p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
+          className="min-w-[64px] shrink-0 p-1.5 rounded-xl hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
          data-text-action="true"><span className="text-action-label">{"Próximo"}</span></button>
       </div>
 
@@ -126,7 +126,7 @@ export function DateNavigator() {
       <button
         type="button"
         onClick={() => navigate('today')}
-        className="px-3 py-2 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-100 hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer shadow-sm"
+        className="shrink-0 px-3 py-2 rounded-2xl bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-slate-100 hover:bg-[var(--ui-hover)] dark:hover:bg-[var(--ui-hover)] hover:bg-slate-200 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer shadow-sm"
       >
         Hoje
       </button>

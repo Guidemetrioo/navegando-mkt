@@ -7,7 +7,7 @@ export function MobileBottomNav({ onOpenMenu, menuOpen }: { onOpenMenu: () => vo
   const role = employees.find(employee => employee.id === loggedEmployeeId)?.funcao;
   const agendaView = canManage ? 'mes' : 'minha-agenda';
   const shortcuts: { view: AgendaView; label: string; active: boolean }[] = [
-    { view: 'home', label: 'Início', active: currentView === 'home' },
+    { view: 'relatorios', label: 'Relatórios', active: currentView === 'relatorios' },
     { view: agendaView, label: 'Agenda', active: ['mes', 'semana', 'escala', 'minha-agenda'].includes(currentView) },
     { view: 'ponto', label: 'Ponto', active: currentView === 'ponto' },
     { view: 'reembolsos', label: 'Reembolsos', active: currentView === 'reembolsos' },

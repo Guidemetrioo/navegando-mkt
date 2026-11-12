@@ -257,6 +257,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const toast = useCallback((message: string, type: ToastType = 'success') => {
+    if (!IS_DEMO && type === 'success' && /salv|registrad|atualizad|adicionad|removid/i.test(message)) { message += ' Aguarde a confirmação da base central.'; type = 'info'; }
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -300,7 +301,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
 
   // State Ponto Eletrônico & Geolocalização
-  const [pontos, setPontos] = useState<PontoRegistro[]>(INITIAL_PONTOS);
+  const [pontos, setPontos] = useState<PontoRegistro[]>(IS_DEMO ? INITIAL_PONTOS : []);
   const [isPontoModalOpen, setIsPontoModalOpen] = useState(false);
   const [pontoModalConfig, setPontoModalConfig] = useState<{
     preselectedClientId?: string;
@@ -316,7 +317,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
-  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(INITIAL_BANCO_HORAS_LANCAMENTOS);
+  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(IS_DEMO ? INITIAL_BANCO_HORAS_LANCAMENTOS : []);
 
   const [localHydrated,setLocalHydrated] = useState(false);
   const mergeInitialClients = useCallback((list: Client[]): Client[] => {
@@ -334,18 +335,16 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
   const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
   const mergeInitialBancoHoras = useCallback((list: BancoHorasLancamento[]): BancoHorasLancamento[] => { const real = (list || []).filter((b) => !isSimulatedBancoHorasRecord(b.id)); const byId = new Set(real.map((b) => b.id)); return [...real, ...INITIAL_BANCO_HORAS_LANCAMENTOS.filter((b) => !byId.has(b.id))]; }, []);
-  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id}))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios]);
+  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions,despesas:extraDespesas,transacoes,salarios:salarios.map(s=>({...s,id:s.employee_id})),banco_horas:bancoHorasLancamentos}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios,bancoHorasLancamentos]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
-    const managerSeed = isManager(member?.role);
-    setEmployees(data.employees);
-    setClients(managerSeed ? mergeInitialClients(data.clients) : data.clients);
-    setEvents(managerSeed ? mergeInitialEvents(data.events) : data.events);
-    setPontos(mergeInitialPontos(data.pontos, member?.employee_id, managerSeed));
-    setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
-    setExtraDespesas(mergeInitialDespesas(data.despesas, member?.employee_id, managerSeed));setTransacoes(managerSeed ? mergeInitialTransacoes(data.transacoes) : data.transacoes);setSalarios(managerSeed ? mergeInitialSalarios(data.salarios) : data.salarios);
+    // Confirmed production records must never be enriched or replaced by fixtures.
+    setEmployees(data.employees); setClients(data.clients); setEvents(data.events);
+    setPontos(data.pontos); setDeliverables(data.deliverables); setReels(data.reels); setMentions(data.mentions);
+    setExtraDespesas(data.despesas); setTransacoes(data.transacoes); setSalarios(data.salarios);
+    setBancoHorasLancamentos(data.banco_horas);
     setIsAuthenticated(Boolean(member));
-    if(member) {setLoggedEmployeeId(member.employee_id);}
-  },[mergeInitialClients,mergeInitialEvents,mergeInitialPontos,mergeInitialDespesas,mergeInitialTransacoes,mergeInitialSalarios]);
+    if(member) setLoggedEmployeeId(member.employee_id);
+  },[]);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
   const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao;
   const canManage=isManager(memberRole);
@@ -439,7 +438,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
       setBancoHorasLancamentos((prev) => [item, ...prev]);
-      toast(`Compensação/ajuste no Banco de Horas de ${item.employee_nome} salvo com segurança!`, 'success');
+      toast(`Compensação/ajuste no Banco de Horas de ${item.employee_nome} adicionado. Aguarde a confirmação da sincronização.`, 'success');
       return item;
     },
     [toast]
@@ -721,7 +720,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         pontos,
         deliverables,
         reels,
-        mentions, despesas:extraDespesas, transacoes, salarios:salarios.map(s=>({...s,id:s.employee_id})),
+        mentions, despesas:extraDespesas, transacoes, salarios:salarios.map(s=>({...s,id:s.employee_id})), banco_horas:bancoHorasLancamentos,
       },
     });
     if(exported) toast('Dados operacionais exportados. Esta exportação não substitui o backup do banco e dos arquivos privados.','info');
@@ -1453,7 +1452,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
             ev.id === eventId
               ? {
                   ...ev,
-                  status: 'confirmado',
+                  status: ev.status === 'cancelado' ? 'agendado' : ev.status,
                   confirmacao_whatsapp: {
                     enviado: true,
                     enviado_em: ev.confirmacao_whatsapp?.enviado_em || new Date().toISOString(),

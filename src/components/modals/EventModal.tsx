@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { EventTipo, EventStatus, ConflictRecord, Client, DespesaGravacao, CategoriaDespesa } from '@/types/database';
+import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, MessageCircle, Send, Check, Plus } from 'lucide-react';
+import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus } from 'lucide-react';
 
 export function EventModal() {
   const {
@@ -22,8 +22,6 @@ export function EventModal() {
     addClient,
     userRole,
     addDespesaGravacao,
-    sendManualWhatsAppConfirmation,
-    whatsappConfig,
   } = useAgenda();
 
   // Aba ativa: 'agenda', 'briefing', 'relatorio' ou 'despesas'
@@ -53,7 +51,7 @@ export function EventModal() {
   const [briefingGravacao, setBriefingGravacao] = useState('');
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [status, setStatus] = useState<EventStatus>('agendado');
-  const [tempoAntecedenciaSelect, setTempoAntecedenciaSelect] = useState<string>('1440');
+  const [tempoAntecedenciaSelect, setTempoAntecedenciaSelect] = useState<string>('-1');
   const [customTempoValor, setCustomTempoValor] = useState<string>('2');
   const [customTempoUnidade, setCustomTempoUnidade] = useState<'minutos' | 'horas'>('horas');
 
@@ -84,7 +82,7 @@ export function EventModal() {
       const savedMin =
         editingEvent.tempo_antecedencia_minutos !== undefined && editingEvent.tempo_antecedencia_minutos !== null
           ? editingEvent.tempo_antecedencia_minutos
-          : whatsappConfig.tempo_antecedencia_minutos ?? 1440;
+          : -1;
       const presets = ['-1', '0', '15', '30', '60', '120', '240', '360', '720', '1440', '2880'];
       if (presets.includes(String(savedMin))) {
         setTempoAntecedenciaSelect(String(savedMin));
@@ -800,7 +798,7 @@ export function EventModal() {
           </div>
 
           {/* Status do Evento & Confirmação WhatsApp */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
+          <div className="grid grid-cols-1 gap-3 p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
             <div>
               <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
                 Status da Gravação
@@ -817,100 +815,7 @@ export function EventModal() {
               </select>
             </div>
 
-            {/* Status WhatsApp */}
-            <div className="flex flex-col justify-between">
-              <span className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Confirmação via WhatsApp
-              </span>
-              <div className="flex items-center gap-2">
-                {status === 'confirmado' ? (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold w-full justify-center">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Confirmado pelo Cliente
-                  </span>
-                ) : editingEvent?.confirmacao_whatsapp?.enviado ? (
-                  <div className="flex items-center justify-between w-full gap-2">
-                    <span className="flex items-center gap-1 text-[11px] text-amber-400 font-medium truncate">
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      Aguardando Resposta
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => sendManualWhatsAppConfirmation(editingEvent.id)}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
-                      title="Reenviar mensagem de confirmação"
-                    >
-                      <Send className="w-3 h-3" />
-                      Reenviar
-                    </button>
-                  </div>
-                ) : editingEvent?.id ? (
-                  <button
-                    type="button"
-                    onClick={() => sendManualWhatsAppConfirmation(editingEvent.id)}
-                    className="w-full py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Enviar Confirmação Agora
-                  </button>
-                ) : (
-                  <span className="text-[11px] text-emerald-400 font-medium py-1.5 px-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center w-full block">
-                    Envio automático ativado
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {/* Campo: Envie mensagem de confirmação a (tempo escolhido) */}
-            <div className="sm:col-span-2 pt-2 border-t border-[var(--ui-border)] flex flex-col gap-2">
-              <label className="block text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Envie mensagem de confirmação a (tempo escolhido antes do horário marcado):</span>
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <select
-                  value={tempoAntecedenciaSelect}
-                  onChange={(e) => setTempoAntecedenciaSelect(e.target.value)}
-                  className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
-                >
-                  <option value="0">Imediatamente ao salvar a gravação</option>
-                  <option value="15">15 minutos antes do horário marcado</option>
-                  <option value="30">30 minutos antes do horário marcado</option>
-                  <option value="60">1 hora antes do horário marcado</option>
-                  <option value="120">2 horas antes do horário marcado</option>
-                  <option value="240">4 horas antes do horário marcado</option>
-                  <option value="360">6 horas antes do horário marcado</option>
-                  <option value="720">12 horas antes do horário marcado</option>
-                  <option value="1440">24 horas (1 dia) antes do horário marcado</option>
-                  <option value="2880">48 horas (2 dias) antes do horário marcado</option>
-                  <option value="custom">Digitar outro tempo personalizado...</option>
-                  <option value="-1">Não enviar automaticamente</option>
-                </select>
-
-                {tempoAntecedenciaSelect === 'custom' && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={10000}
-                      value={customTempoValor}
-                      onChange={(e) => setCustomTempoValor(e.target.value)}
-                      placeholder="Ex: 3"
-                      className="w-24 bg-[var(--ui-surface)] border border-emerald-500/40 rounded-xl px-3 py-2 text-xs text-foreground font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                    <select
-                      value={customTempoUnidade}
-                      onChange={(e) => setCustomTempoUnidade(e.target.value as 'minutos' | 'horas')}
-                      className="flex-1 bg-[var(--ui-surface)] border border-emerald-500/40 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
-                    >
-                      <option value="minutos">minutos antes</option>
-                      <option value="horas">horas antes</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Observações */}

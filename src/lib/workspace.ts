@@ -1,6 +1,8 @@
+import type { BancoHorasLancamento } from './clt-roster-engine';
 import type { Employee, Client, EventItem, PontoRegistro, MediaDeliverable, ReelMetric, ClientMention, TeamRole, DespesaGravacao, TransacaoFinanceira, FuncionarioSalario } from '../types/database';
 
 export interface Workspace {
+  banco_horas: BancoHorasLancamento[];
   employees: Employee[];
   clients: Client[];
   events: EventItem[];
@@ -12,13 +14,13 @@ export interface Workspace {
   transacoes: TransacaoFinanceira[];
   salarios: (FuncionarioSalario & {id:string})[];
 }
-export const ENTITY_KEYS = ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions', 'despesas', 'transacoes', 'salarios'] as const;
+export const ENTITY_KEYS = ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions', 'despesas', 'transacoes', 'salarios', 'banco_horas'] as const;
 export type Entity = typeof ENTITY_KEYS[number];
 export interface Member { employee_id: string; role: TeamRole; user_id: string; }
 export interface CloudRecord { kind: Entity; id: string; data: Record<string, unknown>; revision: number; }
 export interface CloudSnapshot { member: Member; records: CloudRecord[]; }
 export interface Change { kind: Entity; id: string; expected: number; data: Record<string, unknown> | null; }
-export const emptyWorkspace = (): Workspace => ({ employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [], despesas: [], transacoes: [], salarios: [] });
+export const emptyWorkspace = (): Workspace => ({ banco_horas: [], employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [], despesas: [], transacoes: [], salarios: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
 const modules: Record<TeamRole, readonly string[]> = {
   dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
@@ -113,6 +115,10 @@ export function validateChanges(value: unknown): asserts value is Change[] {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.data)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_inicio)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_fim)) || String(d.hora_fim) <= String(d.hora_inicio)) throw new Error('Data ou intervalo da gravação inválido.');
       if (!['gravacao','foto','edicao','reuniao'].includes(String(d.tipo)) || !['agendado','realizado','cancelado'].includes(String(d.status)) || !Array.isArray(d.assigned_employee_ids)) throw new Error('Dados da gravação inválidos.');
     }
+    if(row.kind === 'banco_horas') {
+      const d=row.data;
+      if(typeof d.employee_id!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(String(d.data)) || !Number.isSafeInteger(d.minutos) || typeof d.motivo!=='string' || !d.motivo.trim() || !['compensacao_folga','abono_horas','acrescimo_horas','desconto_horas','pagamento_he'].includes(String(d.tipo))) throw new Error('Confira funcionário, data, minutos e motivo do ajuste de horas.');
+    }
     if (row.kind === 'despesas') {
       const d = row.data;
       if (typeof d.valor !== 'number' || !Number.isFinite(d.valor) || d.valor <= 0 || !String(d.descricao || '').trim() || !['pendente','aprovado','reembolsado','recusado'].includes(String(d.status))) throw new Error('Reembolso inválido.');
@@ -124,4 +130,17 @@ export function validateChanges(value: unknown): asserts value is Change[] {
     }
     if (row.kind === 'deliverables' && (!['captado_raw','em_edicao','aguardando_aprovacao','ajustes_solicitados','aprovado','publicado'].includes(String(row.data.status)) || !String(row.data.titulo || '').trim())) throw new Error('Entregável inválido.');
   }
+}
+
+/** Reject partial/malformed responses before they can become a destructive baseline. */
+export function validateCloudSnapshot(value: unknown): asserts value is CloudSnapshot {
+  const s = value as CloudSnapshot | null;
+  if (!s || !s.member || typeof s.member.user_id !== 'string' || !s.member.user_id || typeof s.member.employee_id !== 'string' || !s.member.employee_id || !Object.hasOwn(modules,s.member.role) || !Array.isArray(s.records)) throw new Error('Resposta incompleta da base central. Alterações locais preservadas.');
+  const seen = new Set<string>();
+  for (const record of s.records) {
+    const key = `${record.kind}/${record.id}`;
+    if (!ENTITY_KEYS.includes(record.kind) || typeof record.id !== 'string' || !record.id || !Number.isSafeInteger(record.revision) || record.revision < 1 || !record.data || typeof record.data !== 'object' || Array.isArray(record.data) || record.data.id !== record.id || seen.has(key)) throw new Error('Registros inválidos na resposta da base central.');
+    seen.add(key);
+  }
+  if (!s.records.some(record => record.kind === 'employees' && record.id === s.member.employee_id)) throw new Error('Equipe incompleta na resposta da base central.');
 }

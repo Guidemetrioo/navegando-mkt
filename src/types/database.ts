@@ -99,6 +99,7 @@ export interface EventItem {
   hora_fim: string; // HH:mm or HH:mm:ss
   local?: string | null;
   observacoes?: string | null;
+  briefing_videos?: { titulo: string; formato: string; roteiro: string; refRotulo: 'Referência' | 'Exemplo'; refUrl: string; refsExtras?: { rotulo: 'Referência' | 'Exemplo'; url: string }[] }[];
   briefing_gravacao?: string | null; // Roteiro específico, ganchos e lista de cenas da diária
   tempo_antecedencia_minutos?: number | null; // Ex: 0 = imediato ao agendar, 60 = 1h antes, 1440 = 24h antes, -1 = desativado
   status: EventStatus;

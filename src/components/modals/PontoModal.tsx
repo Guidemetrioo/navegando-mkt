@@ -13,7 +13,7 @@ import {
   MAX_GEOFENCE_RADIUS_METERS,
   DEFAULT_CLIENT_COORDINATES,
 } from '@/lib/geo-utils';
-import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw, Clock, Building, Upload, Compass, Check, ShieldCheck } from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw, Clock, Building, Compass, Check, ShieldCheck } from 'lucide-react';
 
 export function PontoModal() {
   const {
@@ -85,7 +85,7 @@ export function PontoModal() {
     try {
       setCameraError(null);
       if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-        setCameraError('Câmera não disponível no navegador. Selecione ou tire uma foto pelo botão abaixo.');
+        setCameraError('Câmera indisponível. Abra o sistema em HTTPS ou localhost e use um navegador com acesso à câmera.');
         setIsCameraActive(false);
         return;
       }
@@ -106,7 +106,7 @@ export function PontoModal() {
       setIsCameraActive(true);
     } catch (err: unknown) {
       console.warn('Câmera indisponível ou permissão negada:', err);
-      setCameraError('Câmera não permitida ou indisponível. Carregue uma foto da pessoa pelo botão abaixo.');
+      setCameraError('Não foi possível acessar a câmera. Autorize o acesso nas configurações do navegador e tente novamente.');
       setIsCameraActive(false);
     }
   }, [cameraFacing]);
@@ -136,101 +136,25 @@ export function PontoModal() {
     setIsCameraActive(false);
   }, []);
 
-  // Capturar foto real da webcam da pessoa ou gerar comprovação de identificação
+  // A evidência só pode vir de um quadro atual da câmera ativa.
   const capturePhoto = () => {
+    const video = videoRef.current;
+    const liveTrack = streamRef.current?.getVideoTracks().some(track => track.readyState === 'live');
+    if (!isCameraActive || !liveTrack || !video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+      setCameraError('Aguarde a imagem da câmera antes de tirar a foto.');
+      return;
+    }
     const canvas = canvasRef.current || document.createElement('canvas');
     const width = 640;
-    const height = 480;
+    const height = Math.round(width * video.videoHeight / video.videoWidth);
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const video = videoRef.current;
-    if (video && video.videoWidth > 0 && isCameraActive) {
-      ctx.save();
-      if (cameraFacing === 'user') {
-        ctx.translate(width, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(video, 0, 0, width, height);
-      ctx.restore();
-    } else {
-      // Fallback de alta fidelidade visual corporativa caso o dispositivo não possua hardware de webcam
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, width, height);
-
-      // Gradiente suave
-      const grad = ctx.createLinearGradient(0, 0, width, height);
-      grad.addColorStop(0, '#1e293b');
-      grad.addColorStop(1, '#0f172a');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Círculo com inicial do colaborador
-      const emp = currentMember;
-      const hue = emp?.cor || 200;
-      ctx.fillStyle = `hsl(${hue}, 70%, 45%)`;
-      ctx.beginPath();
-      ctx.arc(width / 2, height / 2 - 35, 75, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Iniciais
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 52px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const initials = (emp?.nome || 'NK')
-        .split(' ')
-        .map((w) => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
-      ctx.fillText(initials, width / 2, height / 2 - 35);
-
-      // Nome do colaborador
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillText(emp?.nome || 'Colaborador', width / 2, height / 2 + 75);
-
-      // Cargo / Função
-      ctx.font = '14px sans-serif';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(emp?.cargo_detalhado || (emp?.funcao === 'filmmaker' ? 'Filmmaker Gastronômico' : 'Equipe Navegando MKT'), width / 2, height / 2 + 105);
-
-      // Barra de carimbo temporal
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(0, height - 45, width, 45);
-
-      ctx.font = 'bold 12px monospace';
-      ctx.fillStyle = '#10b981';
-      ctx.textAlign = 'left';
-      ctx.fillText(`VALIDAÇÃO DIGITAL • ${new Date().toLocaleTimeString('pt-BR')}`, 20, height - 18);
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(selectedClient?.nome || 'Sede Navegando MKT', width - 20, height - 18);
-    }
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-    setPhotoDataUrl(dataUrl);
+    if (!ctx) { setCameraError('Não foi possível capturar a foto. Tente novamente.'); return; }
+    if (cameraFacing === 'user') { ctx.translate(width, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, 0, 0, width, height);
+    setPhotoDataUrl(canvas.toDataURL('image/jpeg', 0.92));
     stopCamera();
-  };
-
-  // Upload de foto real do colaborador
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        if (result) {
-          setPhotoDataUrl(result);
-          stopCamera();
-        }
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleUseOfficialCoords = () => {
@@ -301,9 +225,8 @@ export function PontoModal() {
 
   // Stable references to events and clients for the initialization lookup
   const eventsRef = useRef(events);
-  eventsRef.current = events;
   const clientsRef = useRef(clients);
-  clientsRef.current = clients;
+  useEffect(() => { eventsRef.current = events; clientsRef.current = clients; }, [events, clients]);
 
   // Inicializar dados ao abrir modal
   useEffect(() => {
@@ -720,7 +643,7 @@ export function PontoModal() {
                     <div className="absolute bottom-2 left-2 right-2 py-1 px-2.5 rounded-lg bg-black/75 backdrop-blur-sm text-[10px] text-white font-mono flex items-center justify-between">
                       <span>{currentTime}</span>
                       <span className="text-emerald-400 font-bold flex items-center gap-1">
-                        <Check className="w-3 h-3 stroke-[3]" /> Foto validada
+                        <Check className="w-3 h-3 stroke-[3]" /> Foto capturada
                       </span>
                     </div>
                   </div>
@@ -737,17 +660,6 @@ export function PontoModal() {
                       <RefreshCw className="w-3.5 h-3.5" />
                       Tirar Outra Foto
                     </button>
-                    <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--ui-border)] hover:bg-slate-200 dark:hover:bg-zinc-800 text-foreground text-xs font-semibold shadow-sm cursor-pointer transition-all">
-                      <Upload className="w-3.5 h-3.5" />
-                      Trocar Arquivo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="user"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
               ) : (
@@ -796,23 +708,12 @@ export function PontoModal() {
                     <button
                       type="button"
                       onClick={capturePhoto}
+                      disabled={!isCameraActive}
                       className="flex items-center gap-2 brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-[var(--ui-accent)]/20 transition-all cursor-pointer active:scale-95"
                     >
                       <Camera className="w-4 h-4" />
-                      <span>{isCameraActive ? 'Tirar Foto / Selfie' : 'Capturar Foto da Pessoa'}</span>
+                      <span>Tirar foto</span>
                     </button>
-
-                    <label className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[var(--ui-border)] hover:bg-slate-200 dark:hover:bg-zinc-800 text-foreground text-xs font-semibold cursor-pointer transition-colors shadow-sm">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Carregar Foto / Arquivo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="user"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
               )}
@@ -841,10 +742,10 @@ export function PontoModal() {
 
               {/* Se o GPS foi negado ou houve erro */}
               {(permissionState === 'denied' || geoError || (latitude === null && !isLocating)) && (
-                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                  <div className="flex items-start gap-2">
+                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-200 text-xs flex flex-col items-center justify-center gap-3 text-center">
+                  <div className="flex w-full items-center justify-center gap-2">
                     <MapPin className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex min-w-0 flex-col items-center gap-1">
                       <span className="font-bold text-foreground">Localização do Estabelecimento</span>
                       <span className="text-[11px] text-zinc-300">
                         {geoError || 'Utilize as coordenadas oficiais cadastradas para o local selecionado.'}
@@ -854,7 +755,7 @@ export function PontoModal() {
                   <button
                     type="button"
                     onClick={handleUseOfficialCoords}
-                    className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-black font-bold text-xs transition-all shadow shrink-0 cursor-pointer self-start sm:self-auto"
+                    className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-black font-bold text-xs transition-all shadow shrink-0 cursor-pointer self-center"
                   >
                     Confirmar Local Selecionado
                   </button>

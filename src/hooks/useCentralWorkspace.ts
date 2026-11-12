@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IS_DEMO, HAS_CLOUD_CONFIG } from '@/lib/app-mode';
 import { createClient } from '@/lib/supabase/client';
-import { canonical, diffWorkspace, emptyWorkspace, mergeWorkspace, workspaceFrom } from '@/lib/workspace';
+import { validateCloudSnapshot, diffWorkspace, emptyWorkspace, mergeWorkspace, workspaceFrom } from '@/lib/workspace';
+import { readPendingDrafts, archivePendingDrafts, makePendingDraft } from '@/lib/pending-drafts';
 import type { Change, CloudSnapshot, Member, Workspace } from '@/lib/workspace';
 
 export type SyncStatus = 'loading' | 'saved' | 'pending' | 'error' | 'conflict' | 'recovery' | 'signed-out' | 'setup';
@@ -17,6 +18,7 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
   const [status,setStatus] = useState<SyncStatus>(IS_DEMO ? 'saved' : HAS_CLOUD_CONFIG ? 'loading' : 'setup');
   const [message,setMessage] = useState('');
   const [tick,setTick] = useState(0);
+  const draftSlot = useRef('');
   const base = useRef<CloudSnapshot|null>(null);
   const latest = useRef(data);
   const pending = useRef<RequestBatch|null>(null);
@@ -27,12 +29,13 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
   const loading = useRef(false);
   const refreshRequested = useRef(false);
   useEffect(()=>{latest.current=data;},[data]);
-  const draftKey = () => base.current ? `navegando-pending:${base.current.member.user_id}` : null;
+  const draftKey = () => base.current ? `navegando-pending:${base.current.member.user_id}:${draftSlot.current}` : null;
   const saveDraft = useCallback(()=>{
-    const key=draftKey(); if (!key) return;
-    try { localStorage.setItem(key,JSON.stringify({data:latest.current,request:pending.current,exportedAt:new Date().toISOString()})); }
+    if (!draftSlot.current) draftSlot.current=crypto.randomUUID();
+    const key=base.current ? `navegando-pending:${base.current.member.user_id}:${draftSlot.current}` : null; if (!key) return;
+    try { localStorage.setItem(key,JSON.stringify(makePendingDraft(base.current!,latest.current,pending.current))); }
     catch { setMessage('O navegador não conseguiu preservar o rascunho. Baixe uma cópia antes de fechar esta página.'); }
-  },[]);
+  },[draftSlot]);
   const load = useCallback(async():Promise<void>=>{
     if (IS_DEMO || !HAS_CLOUD_CONFIG || paused.current) return;
     if (loading.current || busy.current) {refreshRequested.current=true;return;}
@@ -52,7 +55,8 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
         setStatus('signed-out'); setMessage(result.error || 'Entre para continuar.'); return;
       }
       if (!response.ok) throw new Error(result.error || 'Base central indisponível.');
-      const snapshot=result as CloudSnapshot;
+      validateCloudSnapshot(result);
+      const snapshot=result;
       const remote=workspaceFrom(snapshot);
       const sameUser=previous?.member.user_id===snapshot.member.user_id;
       if(previous && !sameUser) {saveDraft();pending.current=null;recovery.current=null;}
@@ -60,7 +64,7 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
       const next=sameUser ? mergeWorkspace(observed,latest.current,remote) : remote;
       latest.current=next; apply(next,snapshot.member);
       if (!sameUser) {
-        try { recovery.current=localStorage.getItem(`navegando-pending:${snapshot.member.user_id}`); } catch { /* No browser cache available. */ }
+        try { const drafts=readPendingDrafts(localStorage,snapshot.member.user_id); recovery.current=drafts.length ? JSON.stringify({drafts}) : null; } catch { /* No browser cache available. */ }
         if (recovery.current) { paused.current=true; setStatus('recovery'); setMessage('Há um rascunho de uma sessão anterior. Baixe-o antes de recarregar a base.'); return; }
       }
       setStatus(diffWorkspace(snapshot,next).length ? 'pending' : 'saved'); setMessage(''); setTick(t=>t+1);
@@ -98,7 +102,8 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
         setStatus([400,403,409,413,422].includes(response.status) ? 'conflict' : 'error');
         setMessage(result.error || 'A alteração não foi confirmada.'); saveDraft(); return;
       }
-      const snapshot=result as CloudSnapshot;
+      validateCloudSnapshot(result);
+      const snapshot=result;
       if (snapshot.member.user_id!==session.user_id) throw new Error('A sessão mudou. Recarregue a base.');
       const next=mergeWorkspace(batch.sent,latest.current,workspaceFrom(snapshot));
       base.current=snapshot; pending.current=null; latest.current=next; apply(next,snapshot.member);
@@ -108,9 +113,9 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
       else saveDraft();
       setTick(t=>t+1);
     } catch {
-      if (version===epoch.current) { paused.current=true; setStatus('error'); setMessage('Sem confirmação do servidor. O rascunho foi preservado; tente novamente sem duplicar a operação.'); saveDraft(); }
+      if (version===epoch.current) { paused.current=true; setStatus('error'); setMessage('Sem confirmação do servidor. A operação segue pendente; confira os avisos de armazenamento e tente novamente sem duplicar o cadastro.'); saveDraft(); }
     } finally { busy.current=false; if(refreshRequested.current){refreshRequested.current=false;queueMicrotask(()=>{void load();});} }
-  },[apply,saveDraft,load]);
+  },[apply,saveDraft,load,draftSlot]);
   useEffect(()=>{
     if (IS_DEMO || !HAS_CLOUD_CONFIG) return;
     void load();
@@ -120,23 +125,29 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
         saveDraft();epoch.current++;base.current=null;pending.current=null;paused.current=false;recovery.current=null;latest.current=emptyWorkspace();apply(latest.current,null);
       }
       if (event==='SIGNED_IN' || event==='TOKEN_REFRESHED') queueMicrotask(()=>{void load();});
-      if (event==='SIGNED_OUT') { epoch.current++; base.current=null; pending.current=null; paused.current=false; recovery.current=null; latest.current=emptyWorkspace(); apply(latest.current,null); setStatus('signed-out'); }
+      if (event==='SIGNED_OUT') { saveDraft(); epoch.current++; base.current=null; pending.current=null; paused.current=false; recovery.current=null; latest.current=emptyWorkspace(); apply(latest.current,null); setStatus('signed-out'); }
     });
     const online=()=>{ if (!paused.current) void load(); };
     window.addEventListener('online',online);
     window.addEventListener('focus',online);
     const poll=setInterval(()=>{if (base.current && !diffWorkspace(base.current,latest.current).length && !pending.current) void load();},3000);
     const beforeUnload=(event:BeforeUnloadEvent)=>{
-      if (pending.current || recovery.current || base.current && diffWorkspace(base.current,latest.current).length) {event.preventDefault();saveDraft();}
+      if (pending.current || recovery.current || base.current && diffWorkspace(base.current,latest.current).length) {event.preventDefault(); event.returnValue=''; saveDraft();}
     };
+    const preserve=()=>{if(base.current && (pending.current || diffWorkspace(base.current,latest.current).length)) saveDraft();};
+    const visibility=()=>{if(document.visibilityState==='hidden') preserve();};
+    window.addEventListener('pagehide',preserve);
+    document.addEventListener('visibilitychange',visibility);
     window.addEventListener('beforeunload',beforeUnload);
-    return ()=>{subscription.unsubscribe();clearInterval(poll);window.removeEventListener('online',online);window.removeEventListener('focus',online);window.removeEventListener('beforeunload',beforeUnload);};
+    return ()=>{subscription.unsubscribe();clearInterval(poll);window.removeEventListener('online',online);window.removeEventListener('focus',online);window.removeEventListener('beforeunload',beforeUnload);window.removeEventListener('pagehide',preserve);document.removeEventListener('visibilitychange',visibility);};
   },[apply,load,saveDraft]);
   useEffect(()=>{
-    if (IS_DEMO || !base.current || paused.current) return;
+    if (IS_DEMO || !base.current) return;
     const changes=diffWorkspace(base.current,data);
     if (!changes.length) return;
-    setStatus('pending'); saveDraft();
+    saveDraft();
+    if (paused.current) return;
+    setStatus('pending');
     const timer=setTimeout(()=>{void flush();},350);
     return ()=>clearTimeout(timer);
   },[data,tick,flush,saveDraft]);
@@ -148,7 +159,9 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
   };
   const reload=()=>{
     if (!window.confirm('Baixe o rascunho antes de continuar. Recarregar descarta as alterações locais que ainda não foram confirmadas. Continuar?')) return;
-    const key=draftKey(); if (key) try {localStorage.removeItem(key);} catch { /* Keep any preserved copy. */ }
+    try {
+      if(base.current) archivePendingDrafts(localStorage,readPendingDrafts(localStorage,base.current.member.user_id));
+    } catch { setMessage('Não foi possível arquivar os rascunhos. Baixe uma cópia e libere espaço antes de recarregar.'); return; }
     epoch.current++; paused.current=false; recovery.current=null; pending.current=null;
     if (base.current) {latest.current=workspaceFrom(base.current); apply(latest.current,base.current.member);}
     void load();
