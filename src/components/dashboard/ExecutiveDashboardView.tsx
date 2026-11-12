@@ -35,6 +35,26 @@ export function ExecutiveDashboardView() {
   const totalDeliverablesCount = deliverables.length;
   const approvedCount = deliverables.filter((d) => d.status === 'aprovado' || d.status === 'publicado').length;
 
+  // Métricas de Performance de Briefings para o Gestor
+  const activeRecordingEvents = events.filter(
+    (e) => e.status !== 'cancelado' && (e.tipo === 'gravacao' || e.tipo === 'foto' || e.tipo === 'edicao')
+  );
+  const videoBriefingsDoneCount = activeRecordingEvents.filter(
+    (e) => Boolean(e.briefing_gravacao && e.briefing_gravacao.trim().length > 0)
+  ).length;
+  const videoBriefingsPendingCount = Math.max(0, activeRecordingEvents.length - videoBriefingsDoneCount);
+  const edicaoBriefingsDoneCount = activeRecordingEvents.filter(
+    (e) => Boolean(e.briefing_edicao && e.briefing_edicao.trim().length > 0)
+  ).length;
+  const edicaoBriefingsPendingCount = Math.max(0, activeRecordingEvents.length - edicaoBriefingsDoneCount);
+  const totalBriefedVideosCount = activeRecordingEvents.reduce(
+    (sum, e) =>
+      sum +
+      (e.briefing_videos?.length ||
+        (e.briefing_gravacao ? e.briefing_gravacao.split(/\n\s*\n+/).filter((b) => b.trim()).length : 0)),
+    0
+  );
+
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">
       {/* 1. BANNER PRINCIPAL COM BOAS-VINDAS E STATUS DA AGÊNCIA */}
@@ -129,15 +149,15 @@ export function ExecutiveDashboardView() {
           className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] hover:border-amber-500/40 transition-all cursor-pointer flex flex-col justify-between"
         >
           <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold">
-            <span>Briefing & Roteiros</span>
+            <span>Análise de Performance · Briefings</span>
 
           </div>
           <div className="mt-2">
             <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading">
-              {events.length}
+              {videoBriefingsDoneCount} <span className="text-sm font-normal text-zinc-400">/ {activeRecordingEvents.length}</span>
             </div>
             <div className="text-[11px] text-zinc-400 mt-0.5">
-              <span>Gravações na agenda com suporte a PDF</span>
+              <span className="text-emerald-400 font-bold">{totalBriefedVideosCount} vídeos roteirizados</span> · {edicaoBriefingsDoneCount} edições
             </div>
           </div>
         </div>
@@ -271,33 +291,52 @@ export function ExecutiveDashboardView() {
           </div>
         </div>
 
-        {/* Coluna Direita (5 cols): Atalho para Briefing Criativo & Relatórios */}
+        {/* Coluna Direita (5 cols): Análise de Performance de Briefings */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-foreground font-heading flex items-center gap-2">
               <FolderOpen className="w-4 h-4 text-amber-400" />
-              <span>Briefing Criativo & PDF</span>
+              <span>Análise de Performance · Briefings</span>
             </h3>
             <button
               type="button"
               onClick={() => setCurrentView('briefing')}
               className="text-xs font-semibold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>Abrir Gerador</span>
+              <span>Abrir Briefings</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-3">
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Gere roteiros A4 no padrão oficial da Navegando MKT com categorização automática (POV, Situação, ASMR, Foodporn) e envie direto no WhatsApp.
-            </p>
+          <div className="p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)]">
+                <span className="text-[10px] font-bold uppercase text-zinc-400">Briefings de Vídeo</span>
+                <div className="text-xl font-extrabold text-emerald-400 mt-1">
+                  {videoBriefingsDoneCount} feitos
+                </div>
+                <span className="text-[11px] text-amber-300">{videoBriefingsPendingCount} pendentes</span>
+              </div>
+              <div className="p-3 rounded-xl bg-[var(--ui-page)] border border-purple-500/30">
+                <span className="text-[10px] font-bold uppercase text-purple-300">Briefings de Edição</span>
+                <div className="text-xl font-extrabold text-purple-300 mt-1">
+                  {edicaoBriefingsDoneCount} feitos
+                </div>
+                <span className="text-[11px] text-zinc-400">{edicaoBriefingsPendingCount} pendentes</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] flex items-center justify-between text-xs">
+              <span className="text-zinc-300 font-semibold">Total de Vídeos Roteirizados:</span>
+              <strong className="text-sm font-extrabold text-[var(--ui-accent)]">{totalBriefedVideosCount} vídeos</strong>
+            </div>
+
             <button
               type="button"
               onClick={() => setCurrentView('briefing')}
               className="w-full py-2.5 px-4 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Gerar Briefing Criativo</span>
+              <span>Ver Análise Completa de Briefings</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

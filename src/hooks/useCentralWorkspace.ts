@@ -60,14 +60,19 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
       const remote=workspaceFrom(snapshot);
       const sameUser=previous?.member.user_id===snapshot.member.user_id;
       if(previous && !sameUser) {saveDraft();pending.current=null;recovery.current=null;}
+      const remoteChanged=!previous || !sameUser || diffWorkspace(previous,remote).length>0;
       base.current=snapshot;
       const next=sameUser ? mergeWorkspace(observed,latest.current,remote) : remote;
-      latest.current=next; apply(next,snapshot.member);
+      const pendingChanges=diffWorkspace(snapshot,next).length;
+      latest.current=next;
+      if (remoteChanged || pendingChanges>0) {
+        apply(next,snapshot.member);
+      }
       if (!sameUser) {
         try { const drafts=readPendingDrafts(localStorage,snapshot.member.user_id); recovery.current=drafts.length ? JSON.stringify({drafts}) : null; } catch { /* No browser cache available. */ }
         if (recovery.current) { paused.current=true; setStatus('recovery'); setMessage('Há um rascunho de uma sessão anterior. Baixe-o antes de recarregar a base.'); return; }
       }
-      setStatus(diffWorkspace(snapshot,next).length ? 'pending' : 'saved'); setMessage(''); setTick(t=>t+1);
+      setStatus(pendingChanges ? 'pending' : 'saved'); setMessage(''); if(remoteChanged || pendingChanges>0) setTick(t=>t+1);
     } catch (error) {
       setStatus('error'); setMessage(error instanceof Error ? error.message : 'Falha de conexão.');
     } finally { loading.current=false; if(refreshRequested.current){refreshRequested.current=false;queueMicrotask(()=>{void load();});} }

@@ -13,6 +13,7 @@ import {
   PontoRegistro,
   PontoTipo,
   PontoStatus,
+  AtestadoMedico,
   MediaDeliverable,
   DeliverableStatus,
   DeliverableFormat,
@@ -80,6 +81,9 @@ interface AgendaContextType {
   // Dados Ponto Eletrônico & Geolocalização
   pontos: PontoRegistro[];
   addPonto: (novo: Omit<PontoRegistro, 'id' | 'created_at'>) => PontoRegistro;
+  atestados: AtestadoMedico[];
+  addAtestado: (novo: Omit<AtestadoMedico, 'id' | 'created_at' | 'status'>) => AtestadoMedico;
+  abonarAtestado: (id: string) => void;
   isPontoModalOpen: boolean;
   pontoModalConfig: { preselectedClientId?: string; preselectedEventId?: string; tipo?: PontoTipo } | null;
   openPontoModal: (preselectedClientId?: string, preselectedEventId?: string, tipo?: PontoTipo) => void;
@@ -303,6 +307,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   // State Ponto Eletrônico & Geolocalização
   const [pontos, setPontos] = useState<PontoRegistro[]>(IS_DEMO ? INITIAL_PONTOS : []);
+  const [atestados, setAtestados] = useState<AtestadoMedico[]>([]);
   const [isPontoModalOpen, setIsPontoModalOpen] = useState(false);
   const [pontoModalConfig, setPontoModalConfig] = useState<{
     preselectedClientId?: string;
@@ -456,6 +461,63 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       toast('Registro de ajuste removido do Banco de Horas.', 'info');
     },
     [toast]
+  );
+
+  // Hidratação e persistência dos atestados médicos enviados pela equipe
+  useEffect(() => {
+    try {
+      const savedAtestados = localStorage.getItem('navegando_mkt_atestados_real_v1');
+      if (savedAtestados) {
+        const parsed = JSON.parse(savedAtestados);
+        if (Array.isArray(parsed)) setAtestados(parsed);
+      }
+    } catch {
+      // ignora erro de leitura local
+    }
+  }, []);
+
+  const addAtestado = useCallback(
+    (novo: Omit<AtestadoMedico, 'id' | 'created_at' | 'status'>): AtestadoMedico => {
+      const item: AtestadoMedico = {
+        ...novo,
+        id: `atest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        status: 'enviado',
+        created_at: new Date().toISOString(),
+      };
+      setAtestados((prev) => {
+        const next = [item, ...prev];
+        saveToStorage('navegando_mkt_atestados_real_v1', next);
+        return next;
+      });
+      toast(`Arquivo de atestado de ${item.employee_nome} enviado com sucesso!`, 'success');
+      return item;
+    },
+    [toast]
+  );
+
+  const abonarAtestado = useCallback(
+    (id: string) => {
+      const target = atestados.find((a) => a.id === id);
+      if (!target) return;
+      setAtestados((prev) => {
+        const next = prev.map((a) => (a.id === id ? { ...a, status: 'abonado' as const } : a));
+        saveToStorage('navegando_mkt_atestados_real_v1', next);
+        return next;
+      });
+      if (canManage) {
+        addBancoHorasLancamento({
+          employee_id: target.employee_id,
+          employee_nome: target.employee_nome,
+          data: target.data,
+          tipo: 'abono_horas',
+          minutos: 480,
+          motivo: `Abono por Atestado Médico: ${target.motivo} (${target.atestado_nome})`,
+          registrado_por: loggedEmployeeId,
+        });
+      }
+      toast('Atestado médico abonado com sucesso!', 'success');
+    },
+    [atestados, canManage, addBancoHorasLancamento, loggedEmployeeId, toast]
   );
 
   const openPontoModal = useCallback(
@@ -1635,6 +1697,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         socialAccounts,
         pontos: canManage ? enrichedPontos : enrichedPontos.filter(p=>p.employee_id===loggedEmployeeId),
         addPonto:(entry)=>guarded(entry.employee_id===loggedEmployeeId,addPonto)(entry),
+        atestados: canManage ? atestados : atestados.filter((a) => a.employee_id === loggedEmployeeId),
+        addAtestado,
+        abonarAtestado,
         isPontoModalOpen,
         pontoModalConfig,
         openPontoModal,

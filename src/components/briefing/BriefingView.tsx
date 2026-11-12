@@ -26,6 +26,7 @@ import {
   Copy,
   Send,
   UserCheck,
+  BarChart3,
 } from 'lucide-react';
 
 export interface BriefingRefItem {
@@ -197,6 +198,16 @@ export function parseBodyWithLinks(texto: string): BriefingUrlPart[] {
   return parts;
 }
 
+const ALL_KNOWN_FORMATS = new Set<string>([...VIDEO_FORMATS, ...EDITING_FORMATS]);
+
+function stripLegacyFormatPrefix(text: string): string {
+  const m = text.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+  if (m && ALL_KNOWN_FORMATS.has(m[1].trim())) {
+    return m[2].trim();
+  }
+  return text;
+}
+
 export function parseItems(raw: string): BriefingVideoItem[] {
   const normalized = raw.replace(/\r/g, '').trim();
   if (!normalized) return [];
@@ -204,7 +215,7 @@ export function parseItems(raw: string): BriefingVideoItem[] {
   const starts = [...normalized.matchAll(/(?:^|\n)\s*(\d+)\s*[-.)]\s*/g)];
   const montar = (bruto: string, n: number): BriefingVideoItem => {
     const { texto, refs } = extrairRefs(bruto.trim());
-    return { n, text: texto, refs };
+    return { n, text: stripLegacyFormatPrefix(texto), refs };
   };
 
   if (!starts.length) {
@@ -212,12 +223,13 @@ export function parseItems(raw: string): BriefingVideoItem[] {
     const merged: BriefingVideoItem[] = [];
     for (const block of rawBlocks) {
       const parsed = extrairRefs(block.trim());
-      if (!parsed.texto && parsed.refs.length > 0 && merged.length > 0) {
+      const cleanText = stripLegacyFormatPrefix(parsed.texto);
+      if (!cleanText && parsed.refs.length > 0 && merged.length > 0) {
         merged[merged.length - 1].refs.push(...parsed.refs);
       } else {
         merged.push({
           n: merged.length + 1,
-          text: parsed.texto,
+          text: cleanText,
           refs: parsed.refs,
         });
       }
@@ -231,8 +243,6 @@ export function parseItems(raw: string): BriefingVideoItem[] {
     return montar(normalized.slice(start, end), Number(m[1]));
   });
 }
-
-const ALL_KNOWN_FORMATS = new Set<string>([...VIDEO_FORMATS, ...EDITING_FORMATS]);
 
 function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
   if (!raw || !raw.trim()) {
@@ -261,19 +271,15 @@ function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
     ];
   }
   return parsed.map((item, idx) => {
-    let text = item.text;
-    let formato = 'Automático';
+    let text = stripLegacyFormatPrefix(item.text);
+    const formato = 'Automático';
     let titulo = '';
 
-    // Extrai prefixo opcional "[Formato] Título: " se foi salvo estruturado
-    const formatMatch = text.match(/^\[([^\]]+)\]\s*(?:([^\n:]+):\s*)?([\s\S]*)$/);
-    if (formatMatch) {
-      const candidateFormat = formatMatch[1].trim();
-      if (ALL_KNOWN_FORMATS.has(candidateFormat)) {
-        formato = candidateFormat;
-        titulo = (formatMatch[2] || '').trim();
-        text = formatMatch[3].trim();
-      }
+    // Extrai prefixo opcional "Título: " na primeira linha se curto
+    const titleMatch = text.match(/^([^\n:]{1,60}):\s*([\s\S]+)$/);
+    if (titleMatch && !/^https?$/i.test(titleMatch[1].trim())) {
+      titulo = titleMatch[1].trim();
+      text = titleMatch[2].trim();
     }
 
     return {
@@ -295,9 +301,8 @@ function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
   return valid
     .map((d, idx) => {
       const num = idx + 1;
-      const prefixFormat = `[${d.formato || 'Automático'}] `;
       const prefixTitle = d.titulo.trim() ? `${d.titulo.trim()}: ` : '';
-      const mainBody = `${num} - ${prefixFormat}${prefixTitle}${d.roteiro.trim()}`.trim();
+      const mainBody = `${num} - ${prefixTitle}${d.roteiro.trim()}`.trim();
       const refLine = d.refUrl.trim() ? `\n${d.refRotulo}: ${normalizarUrl(d.refUrl.trim())}` : '';
       return `${mainBody}${refLine}${(d.refsExtras || []).map((ref) => `\n${ref.rotulo}: ${ref.url}`).join('')}`;
     })
@@ -494,6 +499,81 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     }
     return { total: recordingEvents.length, feitos, pendentes };
   }, [recordingEvents, isEventDoneForMode]);
+
+  // Estatísticas completas de Análise de Performance de Briefings para Gestores
+  const managerPerformanceStats = useMemo(() => {
+    let videoBriefingsDone = 0;
+    let videoBriefingsPending = 0;
+    let totalVideosPlanned = 0;
+    let edicaoBriefingsDone = 0;
+    let edicaoBriefingsPending = 0;
+    let totalVideosEdicao = 0;
+
+    for (const ev of recordingEvents) {
+      if (hasVideoBriefingDone(ev)) {
+        videoBriefingsDone++;
+        totalVideosPlanned += countVideoBriefingVideos(ev);
+      } else {
+        videoBriefingsPending++;
+      }
+
+      if (hasEditingBriefingDone(ev)) {
+        edicaoBriefingsDone++;
+        totalVideosEdicao += countEditingBriefingVideos(ev);
+      } else {
+        edicaoBriefingsPending++;
+      }
+    }
+
+    const totalCommitments = recordingEvents.length;
+    const videoCompletionPct = totalCommitments
+      ? Math.round((videoBriefingsDone / totalCommitments) * 100)
+      : 0;
+    const edicaoCompletionPct = totalCommitments
+      ? Math.round((edicaoBriefingsDone / totalCommitments) * 100)
+      : 0;
+
+    // Performance por membro da equipe (Modelos e Filmmakers)
+    const teamPerformance = employees
+      .filter((emp) => emp.funcao === 'modelo' || emp.funcao === 'criadora' || emp.funcao === 'filmmaker')
+      .map((emp) => {
+        const memberEvents = recordingEvents.filter(
+          (ev) =>
+            (ev.assigned_employee_ids || []).includes(emp.id) ||
+            ev.modelo_editora_id === emp.id ||
+            resolveEventEditorModel(ev)?.id === emp.id
+        );
+        const videoDone = memberEvents.filter((ev) => hasVideoBriefingDone(ev)).length;
+        const edicaoDone = memberEvents.filter((ev) => hasEditingBriefingDone(ev)).length;
+        const videosCount = memberEvents.reduce(
+          (sum, ev) => sum + countVideoBriefingVideos(ev) + countEditingBriefingVideos(ev),
+          0
+        );
+        return {
+          employee: emp,
+          totalEvents: memberEvents.length,
+          videoDone,
+          videoPending: Math.max(0, memberEvents.length - videoDone),
+          edicaoDone,
+          edicaoPending: Math.max(0, memberEvents.length - edicaoDone),
+          videosCount,
+        };
+      })
+      .sort((a, b) => b.videoDone + b.edicaoDone - (a.videoDone + a.edicaoDone));
+
+    return {
+      totalCommitments,
+      videoBriefingsDone,
+      videoBriefingsPending,
+      videoCompletionPct,
+      totalVideosPlanned,
+      edicaoBriefingsDone,
+      edicaoBriefingsPending,
+      edicaoCompletionPct,
+      totalVideosEdicao,
+      teamPerformance,
+    };
+  }, [recordingEvents, employees, resolveEventEditorModel]);
 
   const filteredEvents = useMemo(() => {
     return recordingEvents.filter((ev) => {
@@ -774,9 +854,8 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               .map((v, idx) => {
                 const num = String(idx + 1).padStart(2, '0');
                 const titlePart = v.titulo.trim() ? ` — *${v.titulo.trim()}*` : '';
-                const formatPart = v.formato && v.formato !== 'Automático' ? ` [${v.formato}]` : '';
                 const refPart = v.refUrl.trim() ? `\n🔗 Referência: ${normalizarUrl(v.refUrl.trim())}` : '';
-                return `🎥 *VÍDEO ${num}${formatPart}*${titlePart}\n${v.roteiro.trim() || 'Roteiro em definição.'}${refPart}`;
+                return `🎥 *VÍDEO ${num}*${titlePart}\n${v.roteiro.trim() || 'Roteiro em definição.'}${refPart}`;
               })
               .join('\n\n')
           : 'Roteiros em preparação pela equipe Navegando MKT.';
@@ -1086,6 +1165,103 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             )}
           </div>
         </div>
+
+        {/* Barra de Filtros */}
+        {canManage && (
+          <section
+            aria-label="Análise de Performance de Briefings"
+            className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] space-y-4"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)]">
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Análise de Performance de Briefings • Visão do Gestor</span>
+                </div>
+                <h2 className="text-base sm:text-lg font-extrabold text-foreground mt-0.5">
+                  Quantos Briefings e Vídeos foram feitos vs. pendentes
+                </h2>
+              </div>
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 self-start sm:self-center">
+                {managerPerformanceStats.videoBriefingsDone + managerPerformanceStats.edicaoBriefingsDone} briefings concluídos no total
+              </span>
+            </div>
+
+            {/* 4 KPIs de Briefings para o Gestor */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)]">
+                <div className="text-[11px] font-bold text-zinc-400 uppercase">Briefings de Vídeo</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-1">
+                  {managerPerformanceStats.videoBriefingsDone}{' '}
+                  <span className="text-xs font-normal text-zinc-400">
+                    / {managerPerformanceStats.totalCommitments}
+                  </span>
+                </div>
+                <div className="text-[11px] text-emerald-400 font-semibold mt-1">
+                  {managerPerformanceStats.videoCompletionPct}% concluídos ({managerPerformanceStats.videoBriefingsPending} pendentes)
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)]">
+                <div className="text-[11px] font-bold text-zinc-400 uppercase">Vídeos Roteirizados</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-[var(--ui-accent)] mt-1">
+                  {managerPerformanceStats.totalVideosPlanned}
+                </div>
+                <div className="text-[11px] text-zinc-400 mt-1">
+                  Vídeos separados em Briefing de Gravação
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[var(--ui-page)] border border-purple-500/30">
+                <div className="text-[11px] font-bold text-purple-300 uppercase">Briefings de Edição</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-1">
+                  {managerPerformanceStats.edicaoBriefingsDone}{' '}
+                  <span className="text-xs font-normal text-zinc-400">
+                    / {managerPerformanceStats.totalCommitments}
+                  </span>
+                </div>
+                <div className="text-[11px] text-purple-300 font-semibold mt-1">
+                  {managerPerformanceStats.edicaoCompletionPct}% concluídos ({managerPerformanceStats.edicaoBriefingsPending} pendentes)
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[var(--ui-page)] border border-purple-500/30">
+                <div className="text-[11px] font-bold text-purple-300 uppercase">Vídeos em Edição (Modelos)</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-purple-300 mt-1">
+                  {managerPerformanceStats.totalVideosEdicao}
+                </div>
+                <div className="text-[11px] text-zinc-400 mt-1">
+                  Vídeos com briefing de edição preenchido
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela de Performance por Modelo / Filmmaker */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+              {managerPerformanceStats.teamPerformance.map((item) => (
+                <div
+                  key={item.employee.id}
+                  className="p-3 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <EmployeeBadge employee={item.employee} size="sm" showRole />
+                    <div className="text-[11px] text-zinc-400 mt-1">
+                      {item.totalEvents} gravações · <strong className="text-foreground">{item.videosCount} vídeos</strong>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 text-[11px] space-y-0.5">
+                    <div className="font-bold text-emerald-400">
+                      Vídeo: {item.videoDone}/{item.totalEvents}
+                    </div>
+                    <div className="font-bold text-purple-300">
+                      Edição: {item.edicaoDone}/{item.totalEvents}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Barra de Filtros */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -1927,30 +2103,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           vídeos
                         </div>
                       </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                            color: '#FF741F',
-                            fontSize: 56,
-                            lineHeight: 0.9,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {formatsCount}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: 'rgba(246,240,234,0.76)',
-                            marginTop: 8,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.14em',
-                          }}
-                        >
-                          formatos
-                        </div>
-                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -1968,8 +2120,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                   }}
                 >
                   {chunk.map((item) => {
-                    const cat = inferCategory(item.text);
-                    const sub = inferSub(item.text);
                     const bodyParts = parseBodyWithLinks(item.text);
 
                     return (
@@ -1986,7 +2136,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           flexDirection: 'column',
                         }}
                       >
-                        <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
                           <div
                             style={{
                               fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
@@ -2009,17 +2159,8 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                                 color: '#F6F0EA',
                               }}
                             >
-                              {cat}
+                              {briefingMode === 'edicao' ? `Edição Vídeo ${item.n}` : `Vídeo ${item.n}`}
                             </span>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: 'rgba(246,240,234,0.55)',
-                                marginTop: 6,
-                              }}
-                            >
-                              {sub}
-                            </div>
                           </div>
                         </div>
 

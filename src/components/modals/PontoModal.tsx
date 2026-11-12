@@ -21,6 +21,7 @@ export function PontoModal() {
     pontoModalConfig,
     closePontoModal,
     addPonto,
+    addAtestado,
     pontos,
     syncStatus,
     employees,
@@ -36,6 +37,8 @@ export function PontoModal() {
   const [clientId, setClientId] = useState('');
   const [eventId, setEventId] = useState<string | null>(null);
   const [observacao, setObservacao] = useState('');
+  const [atestadoArquivo, setAtestadoArquivo] = useState<string>('');
+  const [atestadoNome, setAtestadoNome] = useState<string>('');
 
   // Estados de Câmera / Foto
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
@@ -238,6 +241,8 @@ export function PontoModal() {
       setSubmittedPonto(null);
       setPhotoDataUrl(null);
       setObservacao('');
+      setAtestadoArquivo('');
+      setAtestadoNome('');
 
       // Descobrir gravação de hoje para este membro
       const todayIso = todayInSaoPaulo();
@@ -338,7 +343,20 @@ export function PontoModal() {
       status_localizacao: finalStatus,
       endereco: realAddress || undefined,
       observacao: observacao.trim() || undefined,
+      atestado_arquivo: atestadoArquivo || undefined,
+      atestado_nome: atestadoNome || undefined,
     });
+
+    if (atestadoArquivo && currentMember) {
+      addAtestado({
+        employee_id: currentMember.id,
+        employee_nome: currentMember.nome,
+        data: todayInSaoPaulo(),
+        motivo: observacao.trim() || `Atestado anexado no ponto (${tipo})`,
+        atestado_arquivo: atestadoArquivo,
+        atestado_nome: atestadoNome || 'atestado-medico',
+      });
+    }
 
     if(novoPonto) setSubmittedPonto(novoPonto);
   };
@@ -874,18 +892,48 @@ export function PontoModal() {
               )}
             </div>
 
-            {/* 5. Observação Opcional */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                Observação (opcional)
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: Chegada antecipada, iluminação pronta, gravação iniciada..."
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-              />
+            {/* 5. Observação Opcional & Upload de Atestado */}
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  Observação (opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Chegada antecipada, iluminação pronta, gravação iniciada..."
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  Anexar Atestado Médico (Upload de Arquivo - Opcional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (typeof reader.result === 'string') {
+                        setAtestadoArquivo(reader.result);
+                        setAtestadoNome(file.name);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full bg-[var(--ui-raised)] border border-dashed border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-zinc-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[var(--ui-accent)] file:text-foreground cursor-pointer"
+                />
+                {atestadoNome && (
+                  <span className="text-[10px] text-emerald-400 font-semibold mt-1 block">
+                    Arquivo de atestado anexado: {atestadoNome}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* 6. Botão de Envio */}

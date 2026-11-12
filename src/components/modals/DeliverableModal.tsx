@@ -1,7 +1,7 @@
 'use client';
 import { todayInSaoPaulo } from '@/lib/date-utils';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { DeliverableFormat, DeliverableStatus } from '@/types/database';
 import { Link, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -32,42 +32,49 @@ export function DeliverableModal() {
   const [dataGravacao, setDataGravacao] = useState(todayInSaoPaulo());
   const [dataPublicacao, setDataPublicacao] = useState(todayInSaoPaulo());
   const [observacoesAjuste, setObservacoesAjuste] = useState('');
+  const initializedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isDeliverableModalOpen) {
-      if (editingDeliverable) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset a draft when the externally controlled deliverable changes.
-        setClientId(editingDeliverable.client_id);
-        setTitulo(editingDeliverable.titulo);
-        setDescricao(editingDeliverable.descricao || '');
-        setFormato(editingDeliverable.formato);
-        setStatus(editingDeliverable.status);
-        setVersao(editingDeliverable.versao || 1);
-        setDriveUrl(editingDeliverable.drive_url || '');
-        setPastaDriveUrl(editingDeliverable.pasta_drive_url || '');
-        setThumbnailUrl(editingDeliverable.thumbnail_url || '');
-        setFilmmakerId(editingDeliverable.filmmaker_id || employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
-        setCriadoraId(editingDeliverable.criadora_id || employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
-        setDataGravacao(editingDeliverable.data_gravacao || todayInSaoPaulo());
-        setDataPublicacao(editingDeliverable.data_publicacao_prevista || todayInSaoPaulo());
-        setObservacoesAjuste(editingDeliverable.observacoes_ajuste || '');
-      } else {
-        const defaultClient = deliverableModalClientId || clients[0]?.id || '';
-        setClientId(defaultClient);
-        setTitulo('');
-        setDescricao('');
-        setFormato('reels_9_16');
-        setStatus('em_edicao');
-        setVersao(1);
-        setDriveUrl('');
-        setPastaDriveUrl('');
-        setThumbnailUrl('');
-        setFilmmakerId(employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
-        setCriadoraId(employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
-        setDataGravacao(todayInSaoPaulo());
-        setDataPublicacao(todayInSaoPaulo());
-        setObservacoesAjuste('');
-      }
+    if (!isDeliverableModalOpen) {
+      initializedKeyRef.current = null;
+      return;
+    }
+    const modalKey = editingDeliverable ? editingDeliverable.id : `__new__:${deliverableModalClientId || ''}`;
+    if (initializedKeyRef.current === modalKey) return;
+    initializedKeyRef.current = modalKey;
+
+    if (editingDeliverable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset a draft when the externally controlled deliverable changes.
+      setClientId(editingDeliverable.client_id);
+      setTitulo(editingDeliverable.titulo);
+      setDescricao(editingDeliverable.descricao || '');
+      setFormato(editingDeliverable.formato);
+      setStatus(editingDeliverable.status);
+      setVersao(editingDeliverable.versao || 1);
+      setDriveUrl(editingDeliverable.drive_url || '');
+      setPastaDriveUrl(editingDeliverable.pasta_drive_url || '');
+      setThumbnailUrl(editingDeliverable.thumbnail_url || '');
+      setFilmmakerId(editingDeliverable.filmmaker_id || employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
+      setCriadoraId(editingDeliverable.criadora_id || employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
+      setDataGravacao(editingDeliverable.data_gravacao || todayInSaoPaulo());
+      setDataPublicacao(editingDeliverable.data_publicacao_prevista || todayInSaoPaulo());
+      setObservacoesAjuste(editingDeliverable.observacoes_ajuste || '');
+    } else {
+      const defaultClient = deliverableModalClientId || clients[0]?.id || '';
+      setClientId(defaultClient);
+      setTitulo('');
+      setDescricao('');
+      setFormato('reels_9_16');
+      setStatus('em_edicao');
+      setVersao(1);
+      setDriveUrl('');
+      setPastaDriveUrl('');
+      setThumbnailUrl('');
+      setFilmmakerId(employees.find((e) => e.funcao === 'filmmaker')?.id || 'usr-victor');
+      setCriadoraId(employees.find((e) => e.funcao === 'modelo' || e.funcao === 'criadora')?.id || 'usr-isa');
+      setDataGravacao(todayInSaoPaulo());
+      setDataPublicacao(todayInSaoPaulo());
+      setObservacoesAjuste('');
     }
   }, [isDeliverableModalOpen, editingDeliverable, deliverableModalClientId, clients, employees]);
 

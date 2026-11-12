@@ -10,11 +10,14 @@ import { formatDistance, MAX_GEOFENCE_RADIUS_METERS } from '@/lib/geo-utils';
 import { LiveLocationRadar } from './LiveLocationRadar';
 import { PontoStreet } from './PontoStreet';
 import { TeamPontoOverview } from './TeamPontoOverview';
-import { Camera, MapPin, Clock, CheckCircle2, AlertTriangle, Plus, Calendar, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Camera, MapPin, Clock, CheckCircle2, AlertTriangle, Plus, Calendar, ExternalLink, ShieldCheck, FileText, Upload, Check } from 'lucide-react';
 
 export function PontoView() {
   const {
     pontos,
+    atestados,
+    addAtestado,
+    abonarAtestado,
     employees,
     clients,
     openPontoModal,
@@ -23,6 +26,45 @@ export function PontoView() {
 
   const currentMember = employees.find((e) => e.id === loggedEmployeeId);
   const isManagerOrOwner = currentMember?.funcao === 'dono' || currentMember?.funcao === 'gerente';
+
+  // Estados do formulário de Upload de Atestado Médico
+  const [atestadoData, setAtestadoData] = useState<string>(() => todayInSaoPaulo());
+  const [atestadoMotivo, setAtestadoMotivo] = useState<string>('');
+  const [atestadoArquivo, setAtestadoArquivo] = useState<string>('');
+  const [atestadoNome, setAtestadoNome] = useState<string>('');
+
+  const handleAtestadoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAtestadoArquivo(reader.result);
+        setAtestadoNome(file.name);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEnviarAtestado = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!atestadoArquivo) {
+      alert('Por favor, selecione o arquivo do atestado (Foto ou PDF) para fazer o upload.');
+      return;
+    }
+    const emp = currentMember || employees[0];
+    addAtestado({
+      employee_id: emp.id,
+      employee_nome: emp.nome,
+      data: atestadoData || todayInSaoPaulo(),
+      motivo: atestadoMotivo.trim() || 'Atestado Médico',
+      atestado_arquivo: atestadoArquivo,
+      atestado_nome: atestadoNome || 'atestado-medico.pdf',
+    });
+    setAtestadoMotivo('');
+    setAtestadoArquivo('');
+    setAtestadoNome('');
+  };
 
   const [selectedFilterEmpId, setSelectedFilterEmpId] = useState<string>('all');
   const [selectedFilterClientId, setSelectedFilterClientId] = useState<string>('all');
@@ -139,6 +181,150 @@ export function PontoView() {
           <span className="text-[11px] text-zinc-500">Alertas de auditoria</span>
         </div>
       </div>
+
+      {/* 1.5 CAMPO DE ATESTADO MÉDICO: UPLOAD DE ARQUIVO DO ATESTADO */}
+      <section
+        aria-label="Envio de Atestado Médico"
+        className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)]">
+              <FileText className="w-4 h-4" />
+              <span>Atestado Médico & Justificativa de Ponto</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-foreground mt-0.5">
+              Subir Upload de Arquivo de Atestado
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Envie o arquivo do seu atestado médico (foto JPG/PNG ou documento PDF) para registro e abono no ponto.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 self-start sm:self-center">
+            {atestados.length} {atestados.length === 1 ? 'atestado enviado' : 'atestados enviados'}
+          </span>
+        </div>
+
+        <form onSubmit={handleEnviarAtestado} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div className="md:col-span-3">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Data do Atestado *
+            </label>
+            <input
+              type="date"
+              required
+              value={atestadoData}
+              onChange={(e) => setAtestadoData(e.target.value)}
+              className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+            />
+          </div>
+
+          <div className="md:col-span-4">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Motivo / Observação do Atestado
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Consulta médica, Exame laboratorial, Atestado odontológico..."
+              value={atestadoMotivo}
+              onChange={(e) => setAtestadoMotivo(e.target.value)}
+              className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+            />
+          </div>
+
+          <div className="md:col-span-3">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Arquivo do Atestado (Foto ou PDF) *
+            </label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleAtestadoFileChange}
+              className="w-full rounded-xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-raised)] px-2.5 py-1.5 text-xs text-zinc-300 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[var(--ui-accent)] file:text-foreground cursor-pointer"
+            />
+            {atestadoNome && (
+              <span className="text-[10px] text-emerald-400 font-semibold mt-1 block truncate">
+                Arquivo selecionado: {atestadoNome}
+              </span>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="w-full py-2.5 px-3 rounded-xl gradient-cta text-foreground font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Enviar Atestado</span>
+            </button>
+          </div>
+        </form>
+
+        {/* Lista de Atestados Enviados */}
+        {atestados.length > 0 && (
+          <div className="pt-2 border-t border-[var(--ui-border)] space-y-2">
+            <span className="text-xs font-bold text-zinc-300 block">
+              {isManagerOrOwner
+                ? `Atestados Enviados pela Equipe (${atestados.length})`
+                : `Meus Atestados Enviados (${atestados.length})`}
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {atestados.map((at) => {
+                const emp = employees.find((e) => e.id === at.employee_id);
+                return (
+                  <div
+                    key={at.id}
+                    className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {emp ? <EmployeeBadge employee={emp} size="sm" /> : <strong className="text-foreground">{at.employee_nome}</strong>}
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            at.status === 'abonado'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          }`}
+                        >
+                          {at.status === 'abonado' ? 'Abonado' : 'Atestado Enviado'}
+                        </span>
+                      </div>
+                      <div className="font-semibold text-foreground truncate">{at.motivo}</div>
+                      <div className="text-[11px] text-zinc-400">
+                        Data: {new Date(`${at.data}T12:00:00`).toLocaleDateString('pt-BR')} • Arquivo: {at.atestado_nome}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <a
+                        href={at.atestado_arquivo}
+                        download={at.atestado_nome || 'atestado-medico'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/30 text-[11px] font-bold flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Ver Atestado</span>
+                      </a>
+
+                      {isManagerOrOwner && at.status !== 'abonado' && (
+                        <button
+                          type="button"
+                          onClick={() => abonarAtestado(at.id)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>Abonar Ponto</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* 2. Barra de Controle: Filtros e Botão de Ação */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">

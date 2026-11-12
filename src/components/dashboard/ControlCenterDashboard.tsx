@@ -29,6 +29,10 @@ export function ControlCenterDashboard() {
   const completed = weekEvents.filter(e => e.status === 'realizado').length;
   const percentage = weekEvents.length ? Math.round(completed / weekEvents.length * 100) : 0;
   const reports = weekEvents.filter(e => e.relatorio_filmmaker?.preenchido).length;
+  const allRecordingEvents = events.filter(e => e.status !== 'cancelado' && (e.tipo === 'gravacao' || e.tipo === 'foto' || e.tipo === 'edicao'));
+  const totalBriefingsVideoDone = allRecordingEvents.filter(e => Boolean(e.briefing_gravacao && e.briefing_gravacao.trim().length > 0)).length;
+  const totalBriefingsEdicaoDone = allRecordingEvents.filter(e => Boolean(e.briefing_edicao && e.briefing_edicao.trim().length > 0)).length;
+  const totalBriefingsPending = Math.max(0, allRecordingEvents.length - totalBriefingsVideoDone);
   const clientName = (id: string) => clients.find(c => c.id === id)?.nome || 'Restaurante';
   const employeeName = (id: string) => employees.find(e => e.id === id)?.nome || 'Colaborador';
   const dateLabel = new Date(`${today}T12:00:00-03:00`).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: 'long' });
@@ -45,7 +49,7 @@ export function ControlCenterDashboard() {
     { label: canManage ? 'Gravações hoje' : 'Minhas gravações hoje', value: todayEvents.length, note: `Em ${new Set(todayEvents.map(e => e.client_id)).size} restaurantes`, Icon: CalendarDays, tone: 'cyan' },
     { label: canManage ? 'Equipe com entrada hoje' : 'Meus pontos hoje', value: canManage ? peoplePresent : todayPoints.length, note: canManage ? 'Colaboradores com entrada registrada' : 'Batidas registradas no dia', Icon: Users, tone: 'green' },
     { label: 'Reembolsos', value: pending.length, note: 'Aguardando análise', Icon: Receipt, tone: 'amber' },
-    { label: 'Relatórios da semana', value: reports, note: 'Gravações com relatório preenchido', Icon: FileText, tone: 'blue' },
+    { label: canManage ? 'Performance Briefings' : 'Relatórios da semana', value: canManage ? totalBriefingsVideoDone : reports, note: canManage ? `${totalBriefingsVideoDone} feitos · ${totalBriefingsPending} pendentes` : 'Gravações com relatório preenchido', Icon: FileText, tone: 'blue' },
   ];
   return <div className="cc-dashboard">
     <section className="cc-welcome"><div><p className="cc-eyebrow">{dateLabel}</p><h1>Olá, {member.nome.split(' ')[0]}</h1><p className="cc-subtitle">{canManage ? 'A visão de hoje para acompanhar o trabalho da agência.' : 'Seus compromissos e registros em um só lugar.'}</p></div>
@@ -59,11 +63,8 @@ export function ControlCenterDashboard() {
       <section className="cc-card"><div className="cc-card-heading"><h2>Atividade recente</h2></div><div className="cc-activities">{activities.length ? activities.map(a => <button key={a.id} className="cc-activity" onClick={() => setCurrentView(a.view)}><span className={`cc-activity-icon cc-tone-${a.kind === 'point' ? 'green' : a.kind === 'expense' ? 'amber' : 'blue'}`}>{a.kind === 'point' ? <Check size={14}/> : a.kind === 'expense' ? <Receipt size={14}/> : <FileText size={14}/>}</span><span><strong>{a.title}</strong><small>{a.sub}</small><time>{new Date(a.at).toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' })} · {time(a.at)}</time></span></button>) : <p className="cc-empty">Os registros da equipe aparecerão aqui.</p>}</div></section>
     </div>
     <div className="cc-bottom-grid"><section className="cc-card"><div className="cc-card-heading"><h2>Produção da semana</h2><span className="cc-badge cc-badge-green">{percentage}% concluída</span></div><div className="cc-progress" role="progressbar" aria-label="Gravações realizadas na semana" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}><span style={{width:`${percentage}%`}}/></div><div className="cc-progress-caption"><span>Gravações realizadas</span><strong>{completed} de {weekEvents.length}</strong></div></section>
-      {canManage ? <section className="cc-card"><div className="cc-card-heading"><h2>Resumo financeiro</h2><button className="cc-link" onClick={() => setCurrentView('financeiro')}>Abrir <ArrowRight size={13}/></button></div><div className="cc-finance-row"><span>Despesas lançadas no mês</span><strong>{money(expenses)}</strong></div><div className="cc-finance-row"><span>Reembolsos pendentes de pagamento</span><strong className="cc-tone-amber">{money(outstanding)}</strong></div></section> : <section className="cc-card"><div className="cc-card-heading"><h2>Meu próximo passo</h2><Clock size={15}/></div><p className="cc-subtitle">Consulte sua escala e prepare as informações para a próxima atividade.</p><button className="cc-link" onClick={() => setCurrentView('minha-agenda')}>Abrir minha agenda <ArrowRight size={13}/></button></section>}
+      {canManage ? <section className="cc-card"><div className="cc-card-heading"><h2>Análise de Performance · Briefings & Financeiro</h2><button className="cc-link" onClick={() => setCurrentView('briefing')}>Ver briefings <ArrowRight size={13}/></button></div><div className="cc-finance-row"><span>Briefings de Vídeo concluídos</span><strong className="cc-tone-green">{totalBriefingsVideoDone} de {allRecordingEvents.length} ({totalBriefingsPending} pendentes)</strong></div><div className="cc-finance-row"><span>Briefings de Edição (Modelos)</span><strong>{totalBriefingsEdicaoDone} feitos</strong></div><div className="cc-finance-row"><span>Despesas do mês / Reembolsos pendentes</span><strong className="cc-tone-amber">{money(expenses)} · {money(outstanding)}</strong></div></section> : <section className="cc-card"><div className="cc-card-heading"><h2>Meu próximo passo</h2><Clock size={15}/></div><p className="cc-subtitle">Consulte sua escala e prepare as informações para a próxima atividade.</p><button className="cc-link" onClick={() => setCurrentView('minha-agenda')}>Abrir minha agenda <ArrowRight size={13}/></button></section>}
     </div>
     {hasSimulatedData && <p className="cc-stat-note">Os indicadores incluem registros simulados de demonstração.</p>}
   </div>;
 }
-
-
-

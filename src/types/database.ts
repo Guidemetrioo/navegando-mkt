@@ -68,11 +68,26 @@ export interface PontoRegistro {
   rua?: string;
   endereco_fonte?: string;
   observacao?: string;
+  atestado_arquivo?: string; // Data URL Base64 (imagem ou PDF) do arquivo de atestado enviado
+  atestado_nome?: string; // Nome original do arquivo do atestado
+  atestado_motivo?: string; // Motivo ou descrição do atestado médico
   created_at: string;
   // Relacionamentos populados
   employee?: Employee;
   client?: Client;
   event?: EventItem;
+}
+
+export interface AtestadoMedico {
+  id: string;
+  employee_id: string;
+  employee_nome: string;
+  data: string; // YYYY-MM-DD
+  motivo: string;
+  atestado_arquivo: string; // Data URL Base64 (imagem ou PDF) do arquivo do atestado
+  atestado_nome: string; // Nome do arquivo enviado
+  status: 'enviado' | 'abonado';
+  created_at: string;
 }
 
 export interface RelatorioFilmmaker {

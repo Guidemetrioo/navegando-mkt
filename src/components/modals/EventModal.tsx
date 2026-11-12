@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
@@ -68,57 +68,75 @@ export function EventModal() {
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sincronizar ao abrir/mudar editingEvent
+  // Evita que atualizações em segundo plano de `clients` ou re-renders resetem a aba ativa de volta para 'agenda'
+  const initializedEventKeyRef = useRef<string | null>(null);
+  const clientsRef = useRef(clients);
+  const currentViewRef = useRef(currentView);
   useEffect(() => {
-    if (editingEvent) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the form from the selected event when the modal opens.
-      setClientId(editingEvent.client_id || '');
-      const existingClient = clients.find((c) => c.id === editingEvent.client_id);
-      setClientSearch(existingClient ? existingClient.nome : '');
-      setDate(editingEvent.data || '');
-      setStartTime(editingEvent.hora_inicio ? editingEvent.hora_inicio.slice(0, 5) : '09:00');
-      setEndTime(editingEvent.hora_fim ? editingEvent.hora_fim.slice(0, 5) : '12:00');
-      setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
-      setLocal(editingEvent.local || '');
-      setObservacoes(editingEvent.observacoes || '');
-      setBriefingGravacao(editingEvent.briefing_gravacao || '');
-      setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
-      setStatus(editingEvent.status || 'agendado');
-      const savedMin =
-        editingEvent.tempo_antecedencia_minutos !== undefined && editingEvent.tempo_antecedencia_minutos !== null
-          ? editingEvent.tempo_antecedencia_minutos
-          : -1;
-      const presets = ['-1', '0', '15', '30', '60', '120', '240', '360', '720', '1440', '2880'];
-      if (presets.includes(String(savedMin))) {
-        setTempoAntecedenciaSelect(String(savedMin));
-      } else {
-        setTempoAntecedenciaSelect('custom');
-        if (savedMin >= 60 && savedMin % 60 === 0) {
-          setCustomTempoValor(String(savedMin / 60));
-          setCustomTempoUnidade('horas');
-        } else {
-          setCustomTempoValor(String(Math.max(1, savedMin)));
-          setCustomTempoUnidade('minutos');
-        }
-      }
-      setConflicts([]);
-      setErrorMessage('');
-      setShowNewClientForm(false);
+    clientsRef.current = clients;
+    currentViewRef.current = currentView;
+  }, [clients, currentView]);
 
-      // Carregar dados existentes do Relatório do Filmmaker
-      const rep = editingEvent.relatorio_filmmaker;
-      if (rep) {
-        setRelatorioTexto(rep.relatorio_texto || rep.observacoes || rep.pratos_gravados || '');
-        setDriveFolderLink(rep.pasta_brutos_link || existingClient?.drive_folder_url || '');
-      } else {
-        setRelatorioTexto('');
-        setDriveFolderLink(existingClient?.drive_folder_url || '');
-      }
-
-      // Se abriu a partir da tela de Relatórios, abre direto na categoria Relatório (sem mostrar Agenda)
-      setActiveTab(currentView === 'relatorios' ? 'relatorio' : 'agenda');
+  // Sincronizar apenas quando o modal abre ou quando o ID do evento editado muda de fato
+  useEffect(() => {
+    if (!isEventModalOpen || !editingEvent) {
+      initializedEventKeyRef.current = null;
+      return;
     }
-  }, [editingEvent, clients, currentView]);
+
+    const eventKey = editingEvent.id || '__new__';
+    if (initializedEventKeyRef.current === eventKey) {
+      return;
+    }
+    initializedEventKeyRef.current = eventKey;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the form from the selected event only when the modal first opens for that event.
+    setClientId(editingEvent.client_id || '');
+    const existingClient = clientsRef.current.find((c) => c.id === editingEvent.client_id);
+    setClientSearch(existingClient ? existingClient.nome : '');
+    setDate(editingEvent.data || '');
+    setStartTime(editingEvent.hora_inicio ? editingEvent.hora_inicio.slice(0, 5) : '09:00');
+    setEndTime(editingEvent.hora_fim ? editingEvent.hora_fim.slice(0, 5) : '12:00');
+    setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
+    setLocal(editingEvent.local || '');
+    setObservacoes(editingEvent.observacoes || '');
+    setBriefingGravacao(editingEvent.briefing_gravacao || '');
+    setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
+    setStatus(editingEvent.status || 'agendado');
+    const savedMin =
+      editingEvent.tempo_antecedencia_minutos !== undefined && editingEvent.tempo_antecedencia_minutos !== null
+        ? editingEvent.tempo_antecedencia_minutos
+        : -1;
+    const presets = ['-1', '0', '15', '30', '60', '120', '240', '360', '720', '1440', '2880'];
+    if (presets.includes(String(savedMin))) {
+      setTempoAntecedenciaSelect(String(savedMin));
+    } else {
+      setTempoAntecedenciaSelect('custom');
+      if (savedMin >= 60 && savedMin % 60 === 0) {
+        setCustomTempoValor(String(savedMin / 60));
+        setCustomTempoUnidade('horas');
+      } else {
+        setCustomTempoValor(String(Math.max(1, savedMin)));
+        setCustomTempoUnidade('minutos');
+      }
+    }
+    setConflicts([]);
+    setErrorMessage('');
+    setShowNewClientForm(false);
+
+    // Carregar dados existentes do Relatório do Filmmaker
+    const rep = editingEvent.relatorio_filmmaker;
+    if (rep) {
+      setRelatorioTexto(rep.relatorio_texto || rep.observacoes || rep.pratos_gravados || '');
+      setDriveFolderLink(rep.pasta_brutos_link || existingClient?.drive_folder_url || '');
+    } else {
+      setRelatorioTexto('');
+      setDriveFolderLink(existingClient?.drive_folder_url || '');
+    }
+
+    // Se abriu a partir da tela de Relatórios, abre direto na categoria Relatório (sem mostrar Agenda)
+    setActiveTab(currentViewRef.current === 'relatorios' ? 'relatorio' : 'agenda');
+  }, [isEventModalOpen, editingEvent]);
 
   if (!isEventModalOpen || !editingEvent) return null;
 
@@ -224,6 +242,7 @@ export function EventModal() {
       const nextStartStr = `${String(nextHour).padStart(2, '0')}:00`;
       const nextEndStr = `${String(nextEndHour).padStart(2, '0')}:00`;
       setTimeout(() => {
+        initializedEventKeyRef.current = null;
         openNewEventModal(targetDate);
         setStartTime(nextStartStr);
         setEndTime(nextEndStr);
@@ -960,7 +979,7 @@ export function EventModal() {
               </p>
               <textarea
                 rows={6}
-                placeholder="Ex:&#10;Reel 1 (ASMR): Finalização do Fettuccine na roda de queijo Grana Padano (close-up 60fps).&#10;Reel 2 (Apresentadora): Gancho 'Descobrimos o almoço executivo mais completo de Pinheiros...'&#10;Reel 3 (Drink): Preparo do Negroni defumado no balcão."
+                placeholder="Ex:&#10;Vídeo 1: Finalização do Fettuccine na roda de queijo Grana Padano (close-up 60fps).&#10;Vídeo 2: Gancho 'Descobrimos o almoço executivo mais completo de Pinheiros...'&#10;Vídeo 3: Preparo do Negroni defumado no balcão."
                 value={briefingGravacao}
                 onChange={(e) => setBriefingGravacao(e.target.value)}
                 className="w-full rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)] p-3.5 text-xs text-foreground focus:outline-none focus:border-purple-500 leading-relaxed"
