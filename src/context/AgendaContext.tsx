@@ -335,16 +335,21 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
   const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
   const mergeInitialBancoHoras = useCallback((list: BancoHorasLancamento[]): BancoHorasLancamento[] => { const real = (list || []).filter((b) => !isSimulatedBancoHorasRecord(b.id)); const byId = new Set(real.map((b) => b.id)); return [...real, ...INITIAL_BANCO_HORAS_LANCAMENTOS.filter((b) => !byId.has(b.id))]; }, []);
-  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos,deliverables,reels,mentions,despesas:extraDespesas,transacoes,salarios:salarios.map(s=>({...s,id:s.employee_id})),banco_horas:bancoHorasLancamentos}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios,bancoHorasLancamentos]);
+  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id})),banco_horas:IS_DEMO?bancoHorasLancamentos:bancoHorasLancamentos.filter(b=>!isSimulatedBancoHorasRecord(b.id))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios,bancoHorasLancamentos]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
-    // Confirmed production records must never be enriched or replaced by fixtures.
-    setEmployees(data.employees); setClients(data.clients); setEvents(data.events);
-    setPontos(data.pontos); setDeliverables(data.deliverables); setReels(data.reels); setMentions(data.mentions);
-    setExtraDespesas(data.despesas); setTransacoes(data.transacoes); setSalarios(data.salarios);
-    setBancoHorasLancamentos(data.banco_horas);
+    const managerSeed = isManager(member?.role);
+    setEmployees(data.employees);
+    setClients(managerSeed ? mergeInitialClients(data.clients) : data.clients);
+    setEvents(managerSeed ? mergeInitialEvents(data.events) : data.events);
+    setPontos(mergeInitialPontos(data.pontos, member?.employee_id, managerSeed));
+    setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
+    setExtraDespesas(mergeInitialDespesas(data.despesas, member?.employee_id, managerSeed));
+    setTransacoes(managerSeed ? mergeInitialTransacoes(data.transacoes) : data.transacoes);
+    setSalarios(managerSeed ? mergeInitialSalarios(data.salarios) : data.salarios);
+    setBancoHorasLancamentos(mergeInitialBancoHoras(data.banco_horas));
     setIsAuthenticated(Boolean(member));
     if(member) setLoggedEmployeeId(member.employee_id);
-  },[]);
+  },[mergeInitialClients,mergeInitialEvents,mergeInitialPontos,mergeInitialDespesas,mergeInitialTransacoes,mergeInitialSalarios,mergeInitialBancoHoras]);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
   const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao;
   const canManage=isManager(memberRole);
@@ -583,8 +588,13 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if(!IS_DEMO) {
-      if(cloud.status!=='saved') {toast('Resolva ou exporte as alterações pendentes antes de sair.','error');return;}
-      void createClient().auth.signOut().then(({error})=>{if(error) toast('Não foi possível encerrar a sessão.','error');else window.location.assign('/login');});return;
+      void Promise.all([
+        fetch('/api/auth/team-session', { method: 'DELETE' }).catch(() => {}),
+        createClient().auth.signOut().catch(() => {}),
+      ]).finally(() => {
+        window.location.assign('/login');
+      });
+      return;
     }
     setIsAuthenticated(false);
     saveToStorage('navegando_mkt_auth_session', {
@@ -593,7 +603,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       lastPonto: null,
     });
     toast('Sessão encerrada com segurança.', 'info');
-  }, [loggedEmployeeId, toast, cloud.status]);
+  }, [loggedEmployeeId, toast]);
 
   // Modais de Entregáveis / Arquivos
   const openDeliverableModal = useCallback((clientId?: string) => {

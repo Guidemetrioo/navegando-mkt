@@ -1,65 +1,157 @@
 import { reverseStreet } from '@/lib/server/geocoding';
 import { createHash } from 'node:crypto';
-import { ApiError, apiFailure, checkOrigin, privateHeaders, readJson, requireMember, signEvidence } from '@/lib/server/workspace-api';
+import {
+  ApiError,
+  apiFailure,
+  applyFallbackChanges,
+  checkOrigin,
+  privateHeaders,
+  readJson,
+  requireMember,
+  signEvidence,
+} from '@/lib/server/workspace-api';
 import { validateChanges } from '@/lib/workspace';
 import type { CloudSnapshot } from '@/lib/workspace';
 
 export async function GET() {
   try {
-    const {supabase, snapshot} = await requireMember();
-    return Response.json(await signEvidence(snapshot,supabase),{headers:privateHeaders});
-  } catch (error) { return apiFailure(error); }
+    const { supabase, snapshot } = await requireMember();
+    return Response.json(await signEvidence(snapshot, supabase), { headers: privateHeaders });
+  } catch (error) {
+    return apiFailure(error);
+  }
 }
+
 export async function POST(request: Request) {
   try {
     checkOrigin(request);
-    const {supabase,user,schemaVersion,snapshot} = await requireMember();
-    const body = await readJson(request) as {changes?:unknown; requestId?:unknown};
-    if (typeof body?.requestId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) throw new ApiError(400,'Identificador da operação inválido.');
-    try { validateChanges(body.changes); } catch (error) { throw new ApiError(400,error instanceof Error ? error.message : 'Dados inválidos.'); }
-    const inputHash=createHash('sha256').update(JSON.stringify(body.changes)).digest('hex');
-    if (schemaVersion >= 3) {
-      const previous=await supabase.rpc('agency_request_result',{p_request:body.requestId,p_input_hash:inputHash});
-      if(previous.error) {
-        if(previous.error.code==='22023') throw new ApiError(409,'Esta operação já foi utilizada com outro conteúdo. Preserve o rascunho e confira os registros.');
-        throw new ApiError(503,'Não foi possível conferir a confirmação anterior. Tente novamente sem duplicar o cadastro.');
-      }
-      if(previous.data) return Response.json(await signEvidence(previous.data as CloudSnapshot,supabase),{headers:privateHeaders});
+    const { supabase, user, schemaVersion, snapshot, isFallbackMember } = await requireMember();
+    const body = (await readJson(request)) as { changes?: unknown; requestId?: unknown };
+    if (
+      typeof body?.requestId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)
+    )
+      throw new ApiError(400, 'Identificador da operação inválido.');
+    try {
+      validateChanges(body.changes);
+    } catch (error) {
+      throw new ApiError(400, error instanceof Error ? error.message : 'Dados inválidos.');
     }
+
+    // Se o membro logou via sessão da equipe ou fallback (sem vínculo user_id em agency_members),
+    // persiste as alterações no workspace compartilhado do servidor sem bloquear com 403.
+    if (isFallbackMember) {
+      for (const row of body.changes) {
+        if (row.kind !== 'pontos' || !row.data) continue;
+        const address = await reverseStreet(Number(row.data.latitude), Number(row.data.longitude));
+        if (address) {
+          row.data.rua = address.street;
+          row.data.endereco = address.address;
+          row.data.endereco_fonte = address.provider;
+        }
+      }
+      const updated = applyFallbackChanges(
+        snapshot.member.employee_id,
+        snapshot.member.role,
+        snapshot.member.user_id,
+        body.changes
+      );
+      return Response.json(updated, { headers: privateHeaders });
+    }
+
+    const inputHash = createHash('sha256').update(JSON.stringify(body.changes)).digest('hex');
+    if (schemaVersion >= 3) {
+      const previous = await supabase.rpc('agency_request_result', {
+        p_request: body.requestId,
+        p_input_hash: inputHash,
+      });
+      if (previous.error) {
+        if (previous.error.code === '22023')
+          throw new ApiError(
+            409,
+            'Esta operação já foi utilizada com outro conteúdo. Preserve o rascunho e confira os registros.'
+          );
+        throw new ApiError(
+          503,
+          'Não foi possível conferir a confirmação anterior. Tente novamente sem duplicar o cadastro.'
+        );
+      }
+      if (previous.data)
+        return Response.json(await signEvidence(previous.data as CloudSnapshot, supabase), {
+          headers: privateHeaders,
+        });
+    }
+
     for (const row of body.changes) {
       if (row.kind !== 'pontos' || !row.data) continue;
       const photo = String(row.data.foto_url || '');
       const match = /^data:image\/(jpeg|png|webp);base64,([a-zA-Z0-9+/=]+)$/.exec(photo);
-      if (!match || row.data.employee_id === undefined) throw new ApiError(400,'Foto real obrigatória.');
-      const bytes = Buffer.from(match[2],'base64');
-      if (bytes.length < 100 || bytes.length > 1_048_576) throw new ApiError(400,'A foto deve ter até 1 MB.');
-      const isImage = match[1]==='jpeg' ? bytes[0]===255 && bytes[1]===216 && bytes[2]===255 : match[1]==='png' ? bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) : bytes.toString('ascii',0,4)==='RIFF' && bytes.toString('ascii',8,12)==='WEBP';
-      if (!isImage) throw new ApiError(400,'Formato da foto inválido.');
+      if (!match || row.data.employee_id === undefined)
+        throw new ApiError(400, 'Foto real obrigatória.');
+      const bytes = Buffer.from(match[2], 'base64');
+      if (bytes.length < 100 || bytes.length > 1_048_576)
+        throw new ApiError(400, 'A foto deve ter até 1 MB.');
+      const isImage =
+        match[1] === 'jpeg'
+          ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+          : match[1] === 'png'
+            ? bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+            : bytes.toString('ascii', 0, 4) === 'RIFF' &&
+              bytes.toString('ascii', 8, 12) === 'WEBP';
+      if (!isImage) throw new ApiError(400, 'Formato da foto inválido.');
       const path = `${user.id}/${body.requestId}/${row.id}.${match[1]}`;
-      const upload = await supabase.storage.from('ponto-evidencias').upload(path,bytes,{contentType:`image/${match[1]}`,upsert:false});
-      if (upload.error && !/already exists|duplicate/i.test(upload.error.message)) throw new ApiError(503,'A foto não foi armazenada. O ponto ainda não foi confirmado.');
+      const upload = await supabase.storage
+        .from('ponto-evidencias')
+        .upload(path, bytes, { contentType: `image/${match[1]}`, upsert: false });
+      if (upload.error && !/already exists|duplicate/i.test(upload.error.message))
+        throw new ApiError(503, 'A foto não foi armazenada. O ponto ainda não foi confirmado.');
       row.data.foto_url = `private:ponto-evidencias/${path}`;
       row.data.photo_storage_path = path;
-      const address = await reverseStreet(Number(row.data.latitude),Number(row.data.longitude));
-      delete row.data.rua; delete row.data.endereco; delete row.data.endereco_fonte;
-      if(address) {row.data.rua=address.street;row.data.endereco=address.address;row.data.endereco_fonte=address.provider;}
+      const address = await reverseStreet(Number(row.data.latitude), Number(row.data.longitude));
+      delete row.data.rua;
+      delete row.data.endereco;
+      delete row.data.endereco_fonte;
+      if (address) {
+        row.data.rua = address.street;
+        row.data.endereco = address.address;
+        row.data.endereco_fonte = address.provider;
+      }
       row.data.evidence_sha256 = createHash('sha256').update(bytes).digest('hex');
     }
-    const effectiveChanges = schemaVersion >= 3 ? body.changes : body.changes.filter(row => row.kind !== 'banco_horas');
+
+    const effectiveChanges =
+      schemaVersion >= 3
+        ? body.changes
+        : body.changes.filter((row) => row.kind !== 'banco_horas');
     if (effectiveChanges.length === 0) {
-      return Response.json(await signEvidence(snapshot,supabase),{headers:privateHeaders});
+      return Response.json(await signEvidence(snapshot, supabase), { headers: privateHeaders });
     }
-    const result = schemaVersion >= 3
-      ? await supabase.rpc('agency_commit_checked',{p_changes:effectiveChanges,p_request:body.requestId,p_input_hash:inputHash})
-      : await supabase.rpc('agency_commit',{p_changes:effectiveChanges,p_request:body.requestId});
+
+    const result =
+      schemaVersion >= 3
+        ? await supabase.rpc('agency_commit_checked', {
+            p_changes: effectiveChanges,
+            p_request: body.requestId,
+            p_input_hash: inputHash,
+          })
+        : await supabase.rpc('agency_commit', {
+            p_changes: effectiveChanges,
+            p_request: body.requestId,
+          });
+
     if (result.error) {
-      const conflict = ['40001','23505','23514','22023'].includes(result.error.code);
-      if (result.error.code==='42501') throw new ApiError(403,'Você não tem permissão para esta alteração.');
-      if (conflict) throw new ApiError(409,result.error.message);
-      // Business validation messages are authored in the RPC, never return raw SQL internals.
-      if (result.error.code==='P0001') throw new ApiError(422,result.error.message);
-      throw new ApiError(503,'Falha na base central. A operação não foi confirmada.');
+      const conflict = ['40001', '23505', '23514', '22023'].includes(result.error.code);
+      if (result.error.code === '42501')
+        throw new ApiError(403, 'Você não tem permissão para esta alteração.');
+      if (conflict) throw new ApiError(409, result.error.message);
+      if (result.error.code === 'P0001') throw new ApiError(422, result.error.message);
+      throw new ApiError(503, 'Falha na base central. A operação não foi confirmada.');
     }
-    return Response.json(await signEvidence(result.data as CloudSnapshot,supabase),{headers:privateHeaders});
-  } catch (error) { return apiFailure(error); }
+
+    return Response.json(await signEvidence(result.data as CloudSnapshot, supabase), {
+      headers: privateHeaders,
+    });
+  } catch (error) {
+    return apiFailure(error);
+  }
 }
