@@ -437,15 +437,15 @@ export function EventModal() {
 
         {/* Abas Superiores: Na tela de Relatórios, Relatório vem primeiro e Agenda não aparece */}
         {isEditing && (
-          <div className="flex items-center gap-1.5 p-1 bg-[var(--ui-surface)] rounded-xl border border-[var(--ui-border)]">
+          <div className="flex items-center gap-2 p-1.5 bg-[var(--ui-surface)] rounded-xl border border-[var(--ui-border)]">
             {isFromReportsView && (
               <button
                 type="button"
                 onClick={() => setActiveTab('relatorio')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'relatorio'
-                    ? 'bg-[#38bdf8] text-black shadow-sm font-black'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                    ? 'bg-[#38bdf8] text-black font-black border-sky-200/80 ring-2 ring-sky-400/50 shadow-[0_0_16px_rgba(56,189,248,0.48)]'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -466,10 +466,10 @@ export function EventModal() {
               <button
                 type="button"
                 onClick={() => setActiveTab('agenda')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'agenda'
-                    ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                    ? 'brand-solid bg-[var(--ui-accent)] text-[#0b1621] font-black border-[#a5eef9]/85 ring-2 ring-[#55c4d5]/55 shadow-[0_0_16px_rgba(85,196,213,0.48)]'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
                 <Video className="w-3.5 h-3.5" />
@@ -480,10 +480,10 @@ export function EventModal() {
             <button
               type="button"
               onClick={() => setActiveTab('briefing')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                 activeTab === 'briefing'
-                  ? 'bg-purple-500 text-white shadow-sm font-black'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                  ? 'bg-purple-500 text-white font-black border-purple-300/80 ring-2 ring-purple-400/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -494,10 +494,10 @@ export function EventModal() {
               <button
                 type="button"
                 onClick={() => setActiveTab('relatorio')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'relatorio'
-                    ? 'bg-[#38bdf8] text-black shadow-sm font-black'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                    ? 'bg-[#38bdf8] text-black font-black border-sky-200/80 ring-2 ring-sky-400/50 shadow-[0_0_16px_rgba(56,189,248,0.48)]'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -517,10 +517,10 @@ export function EventModal() {
             <button
               type="button"
               onClick={() => setActiveTab('despesas')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                 activeTab === 'despesas'
-                  ? 'bg-amber-500 text-black shadow-sm font-black'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                  ? 'bg-amber-500 text-black font-black border-amber-200/80 ring-2 ring-amber-400/50 shadow-[0_0_16px_rgba(245,158,11,0.48)]'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
@@ -1110,14 +1110,14 @@ export function EventModal() {
 
               {/* Seletor entre Briefing do Vídeo e Briefing de Edição */}
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="inline-flex rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-1 gap-1">
+                <div className="inline-flex rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-1.5 gap-2">
                   <button
                     type="button"
                     onClick={() => setModalBriefingMode('video')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
                       modalBriefingMode === 'video'
-                        ? 'bg-[var(--ui-accent)] text-black shadow-sm'
-                        : 'text-zinc-400 hover:text-foreground'
+                        ? 'bg-[var(--ui-accent)] text-[#0b1621] font-black border-[#a5eef9]/85 ring-2 ring-[#55c4d5]/55 shadow-[0_0_14px_rgba(85,196,213,0.45)]'
+                        : 'border-transparent text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <Video className="w-3.5 h-3.5" />
@@ -1126,10 +1126,10 @@ export function EventModal() {
                   <button
                     type="button"
                     onClick={() => setModalBriefingMode('edicao')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
                       modalBriefingMode === 'edicao'
-                        ? 'bg-purple-500 text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-foreground'
+                        ? 'bg-purple-500 text-white font-black border-purple-300/80 ring-2 ring-purple-400/50 shadow-[0_0_14px_rgba(168,85,247,0.48)]'
+                        : 'border-transparent text-zinc-400 hover:text-foreground'
                     }`}
                   >
                     <Scissors className="w-3.5 h-3.5" />
