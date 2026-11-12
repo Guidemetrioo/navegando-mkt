@@ -27,6 +27,7 @@ import {
   Send,
   UserCheck,
   BarChart3,
+  ShieldCheck,
 } from 'lucide-react';
 
 export interface BriefingRefItem {
@@ -55,7 +56,31 @@ export interface EditableVideoDraft {
   refRotulo: 'Referência' | 'Exemplo';
   refUrl: string;
   modeloEditoraId?: string;
+  aprovado?: boolean;
+  aprovadoPor?: string;
+  aprovadoEm?: string;
   refsExtras?: BriefingRefItem[];
+}
+
+export function isVictorCordoba(employee?: Employee | null, loggedId?: string | null): boolean {
+  if (loggedId === 'usr-vitinho') return true;
+  if (!employee) return false;
+  const nome = (employee.nome || '').toLowerCase();
+  const user = (employee.username || '').toLowerCase();
+  return employee.id === 'usr-vitinho' || user === 'vitinho' || nome.includes('victor cordoba');
+}
+
+export function isEventBriefingApproved(ev: Partial<EventItem>, mode: BriefingCategoryMode): boolean {
+  if (mode === 'edicao') {
+    if (ev.briefing_edicao_aprovado) return true;
+    const vids = ev.briefing_edicao_videos || [];
+    const filled = vids.filter((v) => v.roteiro?.trim() || v.titulo?.trim());
+    return filled.length > 0 && filled.every((v) => Boolean(v.aprovado));
+  }
+  if (ev.briefing_aprovado) return true;
+  const vids = ev.briefing_videos || [];
+  const filled = vids.filter((v) => v.roteiro?.trim() || v.titulo?.trim());
+  return filled.length > 0 && filled.every((v) => Boolean(v.aprovado));
 }
 
 export type BriefingCategoryMode = 'video' | 'edicao';
@@ -407,6 +432,10 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   );
   const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
   const isReadOnly = briefingMode === 'video' ? isModelMember : false;
+  const canApproveBriefing = useMemo(
+    () => isVictorCordoba(currentMember, loggedEmployeeId),
+    [currentMember, loggedEmployeeId]
+  );
 
   // Modelos responsáveis pela edição dos vídeos
   const modelEmployees = useMemo(
@@ -792,8 +821,14 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       refRotulo: video.refRotulo,
       refUrl: video.refUrl,
       modeloEditoraId: selectedEditorModelId || video.modeloEditoraId,
+      aprovado: video.aprovado,
+      aprovadoPor: video.aprovadoPor,
+      aprovadoEm: video.aprovadoEm,
       refsExtras: video.refsExtras,
     }));
+
+    const filledVideos = mappedVideos.filter((v) => v.roteiro.trim() || v.titulo.trim());
+    const allCardsApproved = filledVideos.length > 0 && filledVideos.every((v) => Boolean(v.aprovado));
 
     const updatedEvent: EventItem =
       briefingMode === 'edicao'
@@ -801,12 +836,14 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             ...activeEvent,
             briefing_edicao_videos: mappedVideos,
             briefing_edicao: raw || null,
+            briefing_edicao_aprovado: allCardsApproved || Boolean(activeEvent.briefing_edicao_aprovado),
             modelo_editora_id: selectedEditorModelId || activeEvent.modelo_editora_id || null,
           }
         : {
             ...activeEvent,
             briefing_videos: mappedVideos,
             briefing_gravacao: raw || null,
+            briefing_aprovado: allCardsApproved || Boolean(activeEvent.briefing_aprovado),
           };
 
     const result = saveEvent(updatedEvent, true);
@@ -831,6 +868,151 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       toast('Cards salvos. Preencha os briefings para concluir.', 'info');
       setStatusMsg(`${qtd} cards salvos. Briefings ainda pendentes.`);
     }
+  };
+
+  // Função exclusiva para Victor Cordoba: Aprovar / Validar Briefing (muda a borda do card para azul)
+  const handleToggleApproveEvent = (ev: EventItem, targetMode: BriefingCategoryMode = briefingMode) => {
+    if (!canApproveBriefing) return;
+    const currentlyApproved = isEventBriefingApproved(ev, targetMode);
+    const nextApproved = !currentlyApproved;
+    const nowIso = new Date().toISOString();
+
+    const baseDrafts =
+      activeEvent?.id === ev.id && targetMode === briefingMode
+        ? videoDrafts
+        : loadEventBriefingDrafts(ev, targetMode);
+
+    const updatedDrafts = baseDrafts.map((v) => ({
+      ...v,
+      aprovado: nextApproved,
+      aprovadoPor: nextApproved ? 'Victor Cordoba' : undefined,
+      aprovadoEm: nextApproved ? nowIso : undefined,
+    }));
+
+    const mappedVideos = updatedDrafts.map((video) => ({
+      titulo: video.titulo,
+      formato: video.formato || 'Automático',
+      roteiro: video.roteiro,
+      refRotulo: video.refRotulo,
+      refUrl: video.refUrl,
+      modeloEditoraId: selectedEditorModelId || video.modeloEditoraId,
+      aprovado: video.aprovado,
+      aprovadoPor: video.aprovadoPor,
+      aprovadoEm: video.aprovadoEm,
+      refsExtras: video.refsExtras,
+    }));
+
+    const raw = serializeDraftsToRaw(updatedDrafts);
+    const updatedEvent: EventItem =
+      targetMode === 'edicao'
+        ? {
+            ...ev,
+            briefing_edicao_videos: mappedVideos,
+            briefing_edicao: raw || ev.briefing_edicao || null,
+            briefing_edicao_aprovado: nextApproved,
+          }
+        : {
+            ...ev,
+            briefing_videos: mappedVideos,
+            briefing_gravacao: raw || ev.briefing_gravacao || null,
+            briefing_aprovado: nextApproved,
+            briefing_aprovado_por: nextApproved ? 'Victor Cordoba' : null,
+            briefing_aprovado_em: nextApproved ? nowIso : null,
+          };
+
+    const res = saveEvent(updatedEvent, true);
+    if (res?.success) {
+      if (activeEvent?.id === ev.id && targetMode === briefingMode) {
+        setVideoDrafts(updatedDrafts);
+        setSavedDrafts(JSON.stringify(updatedDrafts));
+      }
+      const clientName = (ev.client || clients.find((c) => c.id === ev.client_id))?.nome || 'Restaurante';
+      toast(
+        nextApproved
+          ? `Briefing de ${clientName} APROVADO e VALIDADO por Victor Cordoba!`
+          : `Aprovação removida do briefing de ${clientName}.`
+      );
+      setStatusMsg(
+        nextApproved
+          ? 'Briefing validado por Victor Cordoba! Card destacado com borda azul para toda a equipe.'
+          : 'Validação removida.'
+      );
+    }
+  };
+
+  // Função exclusiva para Victor Cordoba: Aprovar um card de vídeo individualmente
+  const handleToggleApproveVideoCard = (videoId: string) => {
+    if (!canApproveBriefing || !activeEvent) return;
+    const nowIso = new Date().toISOString();
+    const eventAlreadyAllApproved =
+      briefingMode === 'edicao' ? Boolean(activeEvent.briefing_edicao_aprovado) : Boolean(activeEvent.briefing_aprovado);
+
+    const updatedDrafts = videoDrafts.map((v) => {
+      const currentCardApproved = Boolean(v.aprovado || eventAlreadyAllApproved);
+      if (v.id !== videoId) {
+        return {
+          ...v,
+          aprovado: currentCardApproved,
+          aprovadoPor: currentCardApproved ? v.aprovadoPor || 'Victor Cordoba' : undefined,
+          aprovadoEm: currentCardApproved ? v.aprovadoEm || nowIso : undefined,
+        };
+      }
+      const nextCardApproved = !currentCardApproved;
+      return {
+        ...v,
+        aprovado: nextCardApproved,
+        aprovadoPor: nextCardApproved ? 'Victor Cordoba' : undefined,
+        aprovadoEm: nextCardApproved ? nowIso : undefined,
+      };
+    });
+
+    setVideoDrafts(updatedDrafts);
+    setSavedDrafts(JSON.stringify(updatedDrafts));
+
+    const mappedVideos = updatedDrafts.map((video) => ({
+      titulo: video.titulo,
+      formato: video.formato || 'Automático',
+      roteiro: video.roteiro,
+      refRotulo: video.refRotulo,
+      refUrl: video.refUrl,
+      modeloEditoraId: selectedEditorModelId || video.modeloEditoraId,
+      aprovado: video.aprovado,
+      aprovadoPor: video.aprovadoPor,
+      aprovadoEm: video.aprovadoEm,
+      refsExtras: video.refsExtras,
+    }));
+
+    const filledVideos = mappedVideos.filter((v) => v.roteiro.trim() || v.titulo.trim());
+    const allCardsApproved =
+      filledVideos.length > 0
+        ? filledVideos.every((v) => Boolean(v.aprovado))
+        : mappedVideos.every((v) => Boolean(v.aprovado));
+    const raw = serializeDraftsToRaw(updatedDrafts);
+
+    const updatedEvent: EventItem =
+      briefingMode === 'edicao'
+        ? {
+            ...activeEvent,
+            briefing_edicao_videos: mappedVideos,
+            briefing_edicao: raw || activeEvent.briefing_edicao || null,
+            briefing_edicao_aprovado: allCardsApproved,
+          }
+        : {
+            ...activeEvent,
+            briefing_videos: mappedVideos,
+            briefing_gravacao: raw || activeEvent.briefing_gravacao || null,
+            briefing_aprovado: allCardsApproved,
+            briefing_aprovado_por: allCardsApproved ? 'Victor Cordoba' : null,
+            briefing_aprovado_em: allCardsApproved ? nowIso : null,
+          };
+
+    saveEvent(updatedEvent, true);
+    const targetCard = updatedDrafts.find((v) => v.id === videoId);
+    toast(
+      targetCard?.aprovado
+        ? 'Card do vídeo aprovado por Victor Cordoba (borda azul validada)!'
+        : 'Aprovação do card removida.'
+    );
   };
 
   // Monta o documento formatado do Briefing do Vídeo para o Cliente visualizar
@@ -970,41 +1152,42 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const handleDownloadOrSharePdf = async (mode: 'download' | 'share', forClientDoc = false) => {
     if (!showPdfPreview) {
       setShowPdfPreview(true);
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 280));
     }
     if (isGeneratingPdf) return;
     setIsGeneratingPdf(true);
-    setStatusMsg(forClientDoc ? 'Preparando Documento A4 do Cliente...' : 'Gerando PDF A4...');
+    setStatusMsg(forClientDoc ? 'Preparando Briefing PDF A4...' : 'Gerando Briefing PDF A4...');
     try {
       const blob = await gerarPdfBlob();
       const cleanName = (activeClient?.nome || 'Restaurante').replace(/[\/\\:*?"<>|]/g, '-');
-      const prefix =
+      const fileName =
         briefingMode === 'edicao'
-          ? 'Briefing de Edicao'
-          : forClientDoc
-            ? 'Documento do Cliente - Briefing'
-            : 'Briefing de Gravacao';
-      const fileName = `${prefix} - ${cleanName} - ${activeEvent?.data || ''}.pdf`;
+          ? `Briefing de Edicao - ${cleanName}.pdf`
+          : `Briefing - ${cleanName}.pdf`;
 
       if (mode === 'share') {
         const file = new File([blob], fileName, { type: 'application/pdf' });
         if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: fileName });
-          setStatusMsg('Documento PDF compartilhado com sucesso!');
+          setStatusMsg(`Documento "${fileName}" compartilhado com sucesso!`);
           return;
         }
       }
       baixarBlob(blob, fileName);
-      setStatusMsg(
-        forClientDoc
-          ? 'Documento PDF do cliente baixado! Pronto para enviar ao restaurante.'
-          : 'PDF baixado com sucesso!'
-      );
+      setStatusMsg(`Documento "${fileName}" gerado no formato oficial Navegando MKT!`);
     } catch (e) {
       setStatusMsg('Erro ao gerar PDF: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setIsGeneratingPdf(false);
     }
+  };
+
+  const handleOpenAndSharePdfFromList = async (ev: EventItem) => {
+    handleOpenEventBriefing(ev, briefingMode);
+    setShowPdfPreview(true);
+    setTimeout(() => {
+      handleDownloadOrSharePdf('share', true);
+    }, 320);
   };
 
   // Barra de Seleção da Categoria de Briefing (Briefing do Vídeo vs Briefing de Edição)
@@ -1334,6 +1517,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             {restaurantEvents.map((ev) => {
               const client = ev.client || clients.find((c) => c.id === ev.client_id);
               const done = isEventDoneForMode(ev);
+              const isApproved = isEventBriefingApproved(ev, briefingMode);
               const restaurantRecordings = recordingEvents.filter((event) => event.client_id === ev.client_id);
               const videoCount = restaurantRecordings.reduce(
                 (sum, event) => sum + countEventVideosForMode(event),
@@ -1358,21 +1542,27 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                       handleOpenEventBriefing(ev);
                     }
                   }}
-                  className={`group min-w-0 rounded-2xl p-4 sm:p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
-                    done
-                      ? 'border-emerald-500/35 hover:border-emerald-400/70'
-                      : briefingMode === 'edicao'
-                        ? 'border-purple-500/35 hover:border-purple-400'
-                        : 'border-amber-500/35 hover:border-[var(--ui-accent)]'
+                  className={`group min-w-0 rounded-2xl p-4 sm:p-5 bg-[var(--ui-surface)] transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
+                    isApproved
+                      ? 'border-2 border-[#38bdf8] ring-2 ring-[#38bdf8]/35 bg-[#38bdf8]/[0.03] shadow-[0_0_28px_rgba(56,189,248,0.22)] hover:border-sky-300'
+                      : done
+                        ? 'border border-emerald-500/35 hover:border-emerald-400/70'
+                        : briefingMode === 'edicao'
+                          ? 'border border-purple-500/35 hover:border-purple-400'
+                          : 'border border-amber-500/35 hover:border-[var(--ui-accent)]'
                   }`}
                 >
                   <div className="space-y-3">
-                    {/* Topo do Card: Nome do Restaurante + Status (Pendente ou Feito) */}
+                    {/* Topo do Card: Nome do Restaurante + Status (Validado Azul / Feito / Pendente) */}
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="min-w-0">
                         <span
                           className={`inline-block text-[10px] font-extrabold uppercase tracking-wider mb-0.5 ${
-                            briefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
+                            isApproved
+                              ? 'text-[#38bdf8]'
+                              : briefingMode === 'edicao'
+                                ? 'text-purple-300'
+                                : 'text-[var(--ui-accent)]'
                           }`}
                         >
                           {briefingMode === 'edicao'
@@ -1384,17 +1574,25 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                         </h3>
                       </div>
 
-                      {done ? (
-                        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>{briefingMode === 'edicao' ? 'Edição Feita' : 'Briefing Feito'}</span>
-                        </span>
-                      ) : (
-                        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Pendente</span>
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        {isApproved && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50 shadow-sm">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Validado • Victor Cordoba</span>
+                          </span>
+                        )}
+                        {done ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{briefingMode === 'edicao' ? 'Edição Feita' : 'Briefing Feito'}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Pendente</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1486,20 +1684,40 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      {/* Atalho rápido para compartilhar documento do vídeo com o cliente */}
+                    <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+                      {/* Botão exclusivo para Victor Cordoba: Aprovar Briefing */}
+                      {canApproveBriefing && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleApproveEvent(ev, briefingMode);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                            isApproved
+                              ? 'bg-[#38bdf8] text-black shadow-md shadow-[#38bdf8]/25 hover:bg-sky-300'
+                              : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
+                          }`}
+                          title="Função exclusiva de Victor Cordoba: Aprovar e validar este briefing (muda a borda para azul)"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>{isApproved ? 'Aprovado ✓' : 'Aprovar'}</span>
+                        </button>
+                      )}
+
+                      {/* Atalho rápido para compartilhar PDF do briefing com o cliente */}
                       {briefingMode === 'video' && done && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleShareClientWhatsApp(ev);
+                            handleOpenAndSharePdfFromList(ev);
                           }}
                           className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                          title="Enviar documento de briefing para o cliente visualizar no WhatsApp"
+                          title="Compartilhar documento oficial de briefing em PDF A4"
                         >
                           <Share2 className="w-3 h-3" />
-                          <span>Enviar p/ Cliente</span>
+                          <span>Compartilhar Briefing</span>
                         </button>
                       )}
 
@@ -1534,6 +1752,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const displayClient = activeClient?.nome || 'Restaurante';
   const displayDate = fmtDate(activeEvent.data);
   const isCurrentlyDone = isEventDoneForMode(activeEvent);
+  const isCurrentlyApproved = isEventBriefingApproved(activeEvent, briefingMode);
   const activeEditorModel =
     employees.find((e) => e.id === selectedEditorModelId) || resolveEventEditorModel(activeEvent);
 
@@ -1543,7 +1762,13 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       {renderModelReadOnlyBanner()}
 
       {/* Barra Superior do Compromisso Selecionado */}
-      <div className="p-4 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div
+        className={`p-4 sm:p-6 rounded-2xl bg-[var(--ui-surface)] flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all ${
+          isCurrentlyApproved
+            ? 'border-2 border-[#38bdf8] ring-2 ring-[#38bdf8]/30 shadow-[0_0_28px_rgba(56,189,248,0.18)]'
+            : 'border border-[var(--ui-border)]'
+        }`}
+      >
         <div className="flex items-start sm:items-center gap-3.5">
           <button
             type="button"
@@ -1571,6 +1796,12 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                 <Calendar className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
                 {displayDate} ({activeEvent.hora_inicio.slice(0, 5)} às {activeEvent.hora_fim.slice(0, 5)})
               </span>
+              {isCurrentlyApproved && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50">
+                  <ShieldCheck className="w-3 h-3" />
+                  Validado • Victor Cordoba
+                </span>
+              )}
               {isCurrentlyDone ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   <CheckCircle2 className="w-3 h-3" />
@@ -1596,6 +1827,22 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
         {/* Ações Principais do Briefing */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {canApproveBriefing && (
+            <button
+              type="button"
+              onClick={() => handleToggleApproveEvent(activeEvent, briefingMode)}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all ${
+                isCurrentlyApproved
+                  ? 'bg-[#38bdf8] text-black shadow-lg shadow-[#38bdf8]/30 hover:bg-sky-300'
+                  : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/50'
+              }`}
+              title="Exclusivo Victor Cordoba: Aprovar e validar todos os cards deste briefing (borda azul)"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>{isCurrentlyApproved ? 'Briefing Aprovado ✓' : 'Aprovar Briefing'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setShowPdfPreview((v) => !v)}
@@ -1622,7 +1869,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Share2 className="w-4 h-4 text-[var(--ui-accent)]" />
-            <span>Compartilhar PDF</span>
+            <span>Compartilhar Briefing</span>
           </button>
 
           {!isReadOnly && (
@@ -1808,55 +2055,91 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
       {/* Grid de Cards Separados por Vídeo */}
       <div className="briefing-videos grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        {videoDrafts.map((video, index) => (
-          <article
-            key={video.id}
-            aria-label={
-              briefingMode === 'edicao'
-                ? `Briefing de Edição do Vídeo ${index + 1}`
-                : `Briefing do Vídeo ${index + 1}`
-            }
-            className={`min-w-0 rounded-2xl border bg-[var(--ui-surface)] p-4 sm:p-5 flex flex-col gap-3 ${
-              briefingMode === 'edicao' ? 'border-purple-500/30' : 'border-[var(--ui-border)]'
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
-              <div className="flex items-center gap-2">
-                <h3
-                  className={`text-base sm:text-xl font-bold ${
-                    briefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
-                  }`}
-                >
-                  {briefingMode === 'edicao'
-                    ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
-                    : `Vídeo ${String(index + 1).padStart(2, '0')}`}
-                </h3>
-                {briefingMode === 'edicao' && activeEditorModel && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/30">
-                    Editora: {activeEditorModel.nome}
-                  </span>
-                )}
-              </div>
+        {videoDrafts.map((video, index) => {
+          const isCardApproved = Boolean(video.aprovado || isCurrentlyApproved);
 
-              {!isReadOnly && (
-                <button
-                  type="button"
-                  aria-label={`Remover vídeo ${index + 1}`}
-                  onClick={() => {
-                    if (
-                      (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
-                      !window.confirm('Remover este vídeo e seu briefing?')
-                    )
-                      return;
-                    handleRemoveVideoDraft(video.id);
-                    setVideoQuantity(String(Math.max(1, videoDrafts.length - 1)));
-                  }}
-                  className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
-                >
-                  Remover
-                </button>
-              )}
-            </div>
+          return (
+            <article
+              key={video.id}
+              aria-label={
+                briefingMode === 'edicao'
+                  ? `Briefing de Edição do Vídeo ${index + 1}`
+                  : `Briefing do Vídeo ${index + 1}`
+              }
+              className={`min-w-0 rounded-2xl bg-[var(--ui-surface)] p-4 sm:p-5 flex flex-col gap-3 transition-all ${
+                isCardApproved
+                  ? 'border-2 border-[#38bdf8] ring-2 ring-[#38bdf8]/30 bg-[#38bdf8]/[0.03] shadow-[0_0_24px_rgba(56,189,248,0.18)]'
+                  : briefingMode === 'edicao'
+                    ? 'border border-purple-500/30'
+                    : 'border border-[var(--ui-border)]'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3
+                    className={`text-base sm:text-xl font-bold ${
+                      isCardApproved
+                        ? 'text-[#38bdf8]'
+                        : briefingMode === 'edicao'
+                          ? 'text-purple-300'
+                          : 'text-[var(--ui-accent)]'
+                    }`}
+                  >
+                    {briefingMode === 'edicao'
+                      ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
+                      : `Vídeo ${String(index + 1).padStart(2, '0')}`}
+                  </h3>
+                  {isCardApproved && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>Validado</span>
+                    </span>
+                  )}
+                  {briefingMode === 'edicao' && activeEditorModel && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/30">
+                      Editora: {activeEditorModel.nome}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Botão exclusivo para Victor Cordoba: Aprovar este card de vídeo */}
+                  {canApproveBriefing && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleApproveVideoCard(video.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                        isCardApproved
+                          ? 'bg-[#38bdf8] text-black shadow-sm hover:bg-sky-300'
+                          : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
+                      }`}
+                      title="Exclusivo Victor Cordoba: Aprovar e validar este card de vídeo (borda azul)"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>{isCardApproved ? 'Aprovado ✓' : 'Aprovar'}</span>
+                    </button>
+                  )}
+
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      aria-label={`Remover vídeo ${index + 1}`}
+                      onClick={() => {
+                        if (
+                          (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
+                          !window.confirm('Remover este vídeo e seu briefing?')
+                        )
+                          return;
+                        handleRemoveVideoDraft(video.id);
+                        setVideoQuantity(String(Math.max(1, videoDrafts.length - 1)));
+                      }}
+                      className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+              </div>
 
             <label className="text-xs font-semibold flex flex-col gap-1.5">
               Título do vídeo (opcional)
@@ -1955,7 +2238,8 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               </a>
             ))}
           </article>
-        ))}
+          );
+        })}
       </div>
 
       {!isReadOnly && (
@@ -1980,7 +2264,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
         </div>
       )}
 
-      {/* Pré-visualização Folha A4 (Documento do Cliente / Guia da Modelo) */}
+      {/* Pré-visualização Folha A4 (Idêntico a "Briefing - Sampa Burguer.pdf") */}
       {showPdfPreview && (
         <div className="p-4 sm:p-8 rounded-3xl overflow-x-auto bg-[#15100d] border border-[rgba(255,116,31,0.25)] flex justify-center">
           <div
@@ -2001,6 +2285,22 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                   boxShadow: '0 20px 70px rgba(0,0,0,.4)',
                 }}
               >
+                {/* Ambient Orange Glows (idêntico ao PDF de referência) */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    background:
+                      idx % 2 === 0
+                        ? 'radial-gradient(circle at 82% 20%, rgba(255,116,31,0.16) 0%, rgba(255,116,31,0.05) 34%, transparent 65%), radial-gradient(circle at 18% 78%, rgba(255,116,31,0.08) 0%, transparent 55%)'
+                        : 'radial-gradient(circle at 16% 74%, rgba(255,116,31,0.16) 0%, rgba(255,116,31,0.05) 34%, transparent 65%), radial-gradient(circle at 82% 22%, rgba(255,116,31,0.07) 0%, transparent 55%)',
+                  }}
+                />
+
+                {/* Top Header */}
                 <div
                   style={{
                     position: 'relative',
@@ -2025,7 +2325,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    <span>Cliente • {displayClient}</span>
+                    <span>Cliente · {displayClient}</span>
                     <span
                       style={{
                         width: 1,
@@ -2038,6 +2338,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                   </div>
                 </div>
 
+                {/* Hero na Página 1 / Barra Subheader na Página 2+ */}
                 {idx === 0 ? (
                   <div
                     style={{
@@ -2047,7 +2348,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                       justifyContent: 'space-between',
                       alignItems: 'flex-end',
                       paddingTop: 14,
-                      paddingBottom: 12,
+                      paddingBottom: 14,
                       borderBottom: '1px solid rgba(255,116,31,0.30)',
                     }}
                   >
@@ -2062,9 +2363,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           marginBottom: 8,
                         }}
                       >
-                        {briefingMode === 'edicao'
-                          ? `Briefing de Edição • Editora: ${activeEditorModel?.nome || 'Modelo'}`
-                          : 'Documento de Briefing Criativo • Visualização do Cliente'}
+                        Briefing Criativo
                       </div>
                       <h2
                         style={{
@@ -2078,7 +2377,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           color: '#F6F0EA',
                         }}
                       >
-                        {briefingMode === 'edicao' ? 'Guia de edição' : 'Roteiro de vídeos'}
+                        Roteiro de vídeos
                         <span style={{ color: '#FF741F', display: 'block' }}>{displayClient}.</span>
                       </h2>
                     </div>
@@ -2108,10 +2407,58 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           vídeos
                         </div>
                       </div>
+
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
+                            color: '#FF741F',
+                            fontSize: 56,
+                            lineHeight: 0.9,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {formatsCount}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: 'rgba(246,240,234,0.76)',
+                            marginTop: 8,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.14em',
+                          }}
+                        >
+                          formatos
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div
+                    style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      paddingTop: 18,
+                      paddingBottom: 12,
+                      borderBottom: '1px solid rgba(255,116,31,0.30)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11.5px',
+                        letterSpacing: '0.24em',
+                        textTransform: 'uppercase',
+                        color: '#FF741F',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Briefing Criativo · {displayClient}
+                    </div>
+                  </div>
+                )}
 
+                {/* Grade 2x2 de Cards da Página */}
                 <div
                   style={{
                     position: 'relative',
@@ -2119,22 +2466,24 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gridTemplateRows: '1fr 1fr',
-                    gap: 12,
-                    marginTop: 14,
-                    height: 830,
+                    gap: 14,
+                    marginTop: 16,
+                    height: idx === 0 ? 790 : 905,
                   }}
                 >
                   {chunk.map((item) => {
+                    const cat = inferCategory(item.text);
+                    const sub = inferSub(item.text);
                     const bodyParts = parseBodyWithLinks(item.text);
 
                     return (
                       <article
                         key={item.n}
                         style={{
-                          border: '1px solid rgba(255,116,31,0.42)',
-                          background: 'rgba(255,116,31,0.045)',
+                          border: '1px solid rgba(255,116,31,0.38)',
+                          background: 'rgba(255,116,31,0.035)',
                           borderRadius: 16,
-                          padding: 20,
+                          padding: '22px 22px',
                           minHeight: 0,
                           overflow: 'hidden',
                           display: 'flex',
@@ -2148,7 +2497,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                               fontSize: 48,
                               lineHeight: 0.88,
                               color: '#FF741F',
-                              fontWeight: 600,
+                              fontWeight: 700,
                             }}
                           >
                             {String(item.n).padStart(2, '0')}
@@ -2159,13 +2508,22 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                                 display: 'inline-block',
                                 border: '1px solid rgba(255,116,31,0.45)',
                                 borderRadius: 999,
-                                padding: '4px 10px',
+                                padding: '3px 12px',
                                 fontSize: 12,
                                 color: '#F6F0EA',
                               }}
                             >
-                              {briefingMode === 'edicao' ? `Edição Vídeo ${item.n}` : `Vídeo ${item.n}`}
+                              {cat}
                             </span>
+                            <div
+                              style={{
+                                fontSize: 12.5,
+                                color: 'rgba(246,240,234,0.58)',
+                                marginTop: 5,
+                              }}
+                            >
+                              {sub}
+                            </div>
                           </div>
                         </div>
 
@@ -2174,7 +2532,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                             fontSize: '16px',
                             lineHeight: 1.45,
                             color: '#F6F0EA',
-                            marginTop: 12,
+                            marginTop: 14,
                             whiteSpace: 'pre-line',
                           }}
                         >
@@ -2185,7 +2543,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                                 href={part.href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{ color: '#FF741F', fontSize: 13 }}
+                                style={{ color: '#FF741F', fontSize: 13.5 }}
                               >
                                 {part.display}
                               </a>
@@ -2196,13 +2554,14 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                         </div>
 
                         {item.refs.map((r, rIdx) => (
-                          <div key={rIdx} style={{ marginTop: 10 }}>
+                          <div key={rIdx} style={{ marginTop: 14 }}>
                             <div
                               style={{
                                 fontSize: '10.5px',
                                 letterSpacing: '0.2em',
                                 textTransform: 'uppercase',
-                                color: 'rgba(246,240,234,0.55)',
+                                color: 'rgba(246,240,234,0.52)',
+                                marginBottom: 4,
                               }}
                             >
                               {r.rotulo}
@@ -2211,7 +2570,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                               href={r.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: '#FF741F', fontSize: 13, wordBreak: 'break-all' }}
+                              style={{ color: '#FF741F', fontSize: 13.5, lineHeight: 1.35, wordBreak: 'break-all' }}
                             >
                               {exibirUrl(r.url)}
                             </a>
@@ -2220,6 +2579,27 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                       </article>
                     );
                   })}
+                </div>
+
+                {/* Rodapé da Folha A4 (Idêntico ao PDF) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 44,
+                    right: 44,
+                    bottom: 20,
+                    zIndex: 1,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '11.5px',
+                    color: 'rgba(246,240,234,0.48)',
+                  }}
+                >
+                  <span>Navegando MKT · Briefing criativo {displayClient}</span>
+                  <span>
+                    {idx + 1} / {pages.length}
+                  </span>
                 </div>
               </section>
             ))}

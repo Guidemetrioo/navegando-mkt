@@ -11,8 +11,10 @@ import {
   serializeDraftsToRaw,
   normalizarUrl,
   exibirUrl,
+  isVictorCordoba,
+  isEventBriefingApproved,
 } from '../briefing/BriefingView';
-import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus, Scissors, Save, Lock } from 'lucide-react';
+import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus, Scissors, Save, Lock, ShieldCheck } from 'lucide-react';
 
 export function EventModal() {
   const {
@@ -236,6 +238,9 @@ export function EventModal() {
         roteiro: v.roteiro,
         refRotulo: v.refRotulo,
         refUrl: v.refUrl,
+        aprovado: v.aprovado,
+        aprovadoPor: v.aprovadoPor,
+        aprovadoEm: v.aprovadoEm,
         refsExtras: v.refsExtras,
       }));
 
@@ -248,8 +253,16 @@ export function EventModal() {
         refRotulo: v.refRotulo,
         refUrl: v.refUrl,
         modeloEditoraId: v.modeloEditoraId || editingEvent.modelo_editora_id || undefined,
+        aprovado: v.aprovado,
+        aprovadoPor: v.aprovadoPor,
+        aprovadoEm: v.aprovadoEm,
         refsExtras: v.refsExtras,
       }));
+
+    const allVideoApproved =
+      mappedVideoBriefings.length > 0 && mappedVideoBriefings.every((v) => Boolean(v.aprovado));
+    const allEdicaoApproved =
+      mappedEdicaoBriefings.length > 0 && mappedEdicaoBriefings.every((v) => Boolean(v.aprovado));
 
     const payload = {
       id: editingEvent.id || undefined,
@@ -262,8 +275,14 @@ export function EventModal() {
       observacoes: observacoes || undefined,
       briefing_videos: mappedVideoBriefings.length > 0 ? mappedVideoBriefings : undefined,
       briefing_gravacao: rawVideoBriefing.trim() || undefined,
+      briefing_aprovado: allVideoApproved || Boolean(editingEvent.briefing_aprovado) || undefined,
+      briefing_aprovado_por:
+        allVideoApproved || editingEvent.briefing_aprovado
+          ? editingEvent.briefing_aprovado_por || 'Victor Cordoba'
+          : undefined,
       briefing_edicao_videos: mappedEdicaoBriefings.length > 0 ? mappedEdicaoBriefings : undefined,
       briefing_edicao: rawEdicaoBriefing.trim() || undefined,
+      briefing_edicao_aprovado: allEdicaoApproved || Boolean(editingEvent.briefing_edicao_aprovado) || undefined,
       modelo_editora_id: editingEvent.modelo_editora_id || undefined,
       tempo_antecedencia_minutos: resolvedMinutos,
       status,
@@ -994,12 +1013,39 @@ export function EventModal() {
           const currentMember = employees.find((e) => e.id === loggedEmployeeId);
           const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
           const isBriefingReadOnly = modalBriefingMode === 'video' ? isModelMember : false;
+          const canApproveBriefing = isVictorCordoba(currentMember, loggedEmployeeId);
+          const isEventApproved = isEventBriefingApproved(editingEvent, modalBriefingMode);
           const activeDrafts = modalBriefingMode === 'edicao' ? edicaoDrafts : videoDrafts;
           const setActiveDrafts = modalBriefingMode === 'edicao' ? setEdicaoDrafts : setVideoDrafts;
 
           const updateDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
             if (isBriefingReadOnly) return;
             setActiveDrafts((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+          };
+
+          const toggleApproveCard = (id: string) => {
+            if (!canApproveBriefing) return;
+            const nowIso = new Date().toISOString();
+            setActiveDrafts((prev) =>
+              prev.map((v) => {
+                const currentApproved = Boolean(v.aprovado || isEventApproved);
+                if (v.id !== id) {
+                  return {
+                    ...v,
+                    aprovado: currentApproved,
+                    aprovadoPor: currentApproved ? v.aprovadoPor || 'Victor Cordoba' : undefined,
+                    aprovadoEm: currentApproved ? v.aprovadoEm || nowIso : undefined,
+                  };
+                }
+                const nextApproved = !currentApproved;
+                return {
+                  ...v,
+                  aprovado: nextApproved,
+                  aprovadoPor: nextApproved ? 'Victor Cordoba' : undefined,
+                  aprovadoEm: nextApproved ? nowIso : undefined,
+                };
+              })
+            );
           };
 
           const addAnotherDraft = () => {
@@ -1101,46 +1147,84 @@ export function EventModal() {
 
               {/* Grid de Cards Separados por Vídeo (idêntico à aba de Briefing) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                {activeDrafts.map((video, index) => (
-                  <article
-                    key={video.id}
-                    aria-label={
-                      modalBriefingMode === 'edicao'
-                        ? `Briefing de Edição do Vídeo ${index + 1}`
-                        : `Briefing do Vídeo ${index + 1}`
-                    }
-                    className={`min-w-0 rounded-2xl border bg-[var(--ui-raised)] p-4 flex flex-col gap-3 ${
-                      modalBriefingMode === 'edicao' ? 'border-purple-500/30' : 'border-[var(--ui-border)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-2.5">
-                      <h4
-                        className={`text-base sm:text-lg font-bold ${
-                          modalBriefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
-                        }`}
-                      >
-                        {modalBriefingMode === 'edicao'
-                          ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
-                          : `Vídeo ${String(index + 1).padStart(2, '0')}`}
-                      </h4>
+                {activeDrafts.map((video, index) => {
+                  const isCardApproved = Boolean(video.aprovado || isEventApproved);
 
-                      {!isBriefingReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (
-                              (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
-                              !window.confirm('Remover este vídeo e seu briefing?')
-                            )
-                              return;
-                            removeDraft(video.id);
-                          }}
-                          className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
-                        >
-                          Remover
-                        </button>
-                      )}
-                    </div>
+                  return (
+                    <article
+                      key={video.id}
+                      aria-label={
+                        modalBriefingMode === 'edicao'
+                          ? `Briefing de Edição do Vídeo ${index + 1}`
+                          : `Briefing do Vídeo ${index + 1}`
+                      }
+                      className={`min-w-0 rounded-2xl bg-[var(--ui-raised)] p-4 flex flex-col gap-3 transition-all ${
+                        isCardApproved
+                          ? 'border-2 border-[#38bdf8] ring-2 ring-[#38bdf8]/30 bg-[#38bdf8]/[0.04] shadow-[0_0_22px_rgba(56,189,248,0.16)]'
+                          : modalBriefingMode === 'edicao'
+                            ? 'border border-purple-500/30'
+                            : 'border border-[var(--ui-border)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4
+                            className={`text-base sm:text-lg font-bold ${
+                              isCardApproved
+                                ? 'text-[#38bdf8]'
+                                : modalBriefingMode === 'edicao'
+                                  ? 'text-purple-300'
+                                  : 'text-[var(--ui-accent)]'
+                            }`}
+                          >
+                            {modalBriefingMode === 'edicao'
+                              ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
+                              : `Vídeo ${String(index + 1).padStart(2, '0')}`}
+                          </h4>
+
+                          {isCardApproved && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50">
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>Validado</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {canApproveBriefing && (
+                            <button
+                              type="button"
+                              onClick={() => toggleApproveCard(video.id)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
+                                isCardApproved
+                                  ? 'bg-[#38bdf8] text-black shadow-sm hover:bg-sky-300'
+                                  : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
+                              }`}
+                              title="Exclusivo Victor Cordoba: Aprovar este card de briefing (muda a borda para azul)"
+                            >
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>{isCardApproved ? 'Aprovado ✓' : 'Aprovar'}</span>
+                            </button>
+                          )}
+
+                          {!isBriefingReadOnly && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
+                                  !window.confirm('Remover este vídeo e seu briefing?')
+                                )
+                                  return;
+                                removeDraft(video.id);
+                              }}
+                              className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
+                            >
+                              Remover
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
                     <label className="text-xs font-semibold flex flex-col gap-1.5">
                       Título do vídeo (opcional)
@@ -1215,7 +1299,8 @@ export function EventModal() {
                       </a>
                     ))}
                   </article>
-                ))}
+                  );
+                })}
               </div>
 
               {!isBriefingReadOnly && (
