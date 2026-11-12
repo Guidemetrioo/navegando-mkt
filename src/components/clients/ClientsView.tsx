@@ -250,7 +250,11 @@ export function ClientsView() {
                       type="button"
                       onClick={() => {
                         if (confirm(`Deseja remover "${client.nome}" dos restaurantes parceiros?`)) {
-                          deleteClient(client.id);
+                          try {
+                            deleteClient(client.id);
+                          } catch {
+                            // O aviso de permissão/sincronização já é exibido pelo toast de AgendaContext
+                          }
                         }
                       }}
                       className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"

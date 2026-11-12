@@ -5,6 +5,7 @@ import {
   Employee,
   Client,
   EventItem,
+  TeamRole,
   UserRole,
   ConflictRecord,
   ReelMetric,
@@ -299,6 +300,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   // Papel e usuário atual
   const [loggedEmployeeId, setLoggedEmployeeId] = useState<string>('usr-felipe');
+  const [cloudMemberRole, setCloudMemberRole] = useState<TeamRole | undefined>(undefined);
 
   // Modais de Agenda
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -325,16 +327,37 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
   const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(IS_DEMO ? INITIAL_BANCO_HORAS_LANCAMENTOS : []);
 
+  const hasCloudHydratedRef = useRef(false);
   const [localHydrated,setLocalHydrated] = useState(false);
-  const mergeInitialClients = useCallback((list: Client[]): Client[] => {
-    const defById = new Map(INITIAL_CLIENTS.map((c) => [c.id, c])); const enrichedClients = (list || []).map((c) => { const def = defById.get(c.id); return def ? { ...c, nome: def.nome || c.nome, endereco: def.endereco || c.endereco, telefone: def.telefone || c.telefone, contato: def.contato || c.contato, latitude: def.latitude ?? c.latitude, longitude: def.longitude ?? c.longitude } : c; }); const byId = new Set(enrichedClients.map((c) => c.id));
-    const missing = INITIAL_CLIENTS.filter((c) => !byId.has(c.id)); return missing.length ? [...enrichedClients, ...missing] : enrichedClients;
-    /* fim merge */
+  const mergeInitialClients = useCallback((list: Client[], seedIfEmpty = false): Client[] => {
+    const defById = new Map(INITIAL_CLIENTS.map((c) => [c.id, c]));
+    const enrichedClients = (list || []).map((c) => {
+      const def = defById.get(c.id);
+      return def
+        ? {
+            ...c,
+            nome: c.nome || def.nome,
+            endereco: c.endereco || def.endereco,
+            telefone: c.telefone || def.telefone,
+            contato: c.contato || def.contato,
+            latitude: c.latitude ?? def.latitude,
+            longitude: c.longitude ?? def.longitude,
+          }
+        : c;
+    });
+    // Só semeia a base inicial caso o servidor ainda não tenha nenhum restaurante cadastrado na primeira carga.
+    // Nunca ressuscita restaurantes excluídos (tombstones gerariam conflito 409).
+    if (seedIfEmpty && enrichedClients.length === 0) {
+      return INITIAL_CLIENTS;
+    }
+    return enrichedClients;
   }, []);
-  const mergeInitialEvents = useCallback((list: EventItem[]): EventItem[] => {
-    const byId = new Set((list || []).map((e) => e.id));
-    const missing = INITIAL_EVENTS.filter((e) => !byId.has(e.id)); return missing.length ? [...(list || []), ...missing] : list || [];
-    /* fim merge */
+  const mergeInitialEvents = useCallback((list: EventItem[], seedIfEmpty = false): EventItem[] => {
+    const current = list || [];
+    if (seedIfEmpty && current.length === 0) {
+      return INITIAL_EVENTS;
+    }
+    return current;
   }, []);
   const mergeInitialPontos = useCallback((list: PontoRegistro[], empId?: string, manager?: boolean): PontoRegistro[] => { const real = (list || []).filter((p) => !isSimulatedRecord(p.id)); const byId = new Set(real.map((p) => p.id)); const simPool = manager || !empId ? INITIAL_PONTOS : INITIAL_PONTOS.filter((p) => p.employee_id === empId); return [...real, ...simPool.filter((p) => !byId.has(p.id))].sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime()); }, []);
   const mergeInitialDespesas = useCallback((list: DespesaGravacao[], empId?: string, manager?: boolean): DespesaGravacao[] => { const real = (list || []).filter((d) => !isSimulatedRecord(d.id)); const byId = new Set(real.map((d) => d.id)); const simPool = manager || !empId ? INITIAL_DESPESAS_GRAVACOES : INITIAL_DESPESAS_GRAVACOES.filter((d) => d.employee_id === empId); return [...real, ...simPool.filter((d) => !byId.has(d.id))]; }, []);
@@ -344,9 +367,12 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id})),banco_horas:IS_DEMO?bancoHorasLancamentos:bancoHorasLancamentos.filter(b=>!isSimulatedBancoHorasRecord(b.id))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios,bancoHorasLancamentos]);
   const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
     const managerSeed = isManager(member?.role);
+    const firstEmptySeed = managerSeed && !hasCloudHydratedRef.current && data.clients.length === 0 && data.events.length === 0;
+    if (member) hasCloudHydratedRef.current = true;
+    else hasCloudHydratedRef.current = false;
     setEmployees(data.employees);
-    setClients(managerSeed ? mergeInitialClients(data.clients) : data.clients);
-    setEvents(managerSeed ? mergeInitialEvents(data.events) : data.events);
+    setClients(managerSeed ? mergeInitialClients(data.clients, firstEmptySeed) : data.clients);
+    setEvents(managerSeed ? mergeInitialEvents(data.events, firstEmptySeed) : data.events);
     setPontos(mergeInitialPontos(data.pontos, member?.employee_id, managerSeed));
     setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
     setExtraDespesas(mergeInitialDespesas(data.despesas, member?.employee_id, managerSeed));
@@ -354,14 +380,25 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     setSalarios(managerSeed ? mergeInitialSalarios(data.salarios) : data.salarios);
     setBancoHorasLancamentos(mergeInitialBancoHoras(data.banco_horas));
     setIsAuthenticated(Boolean(member));
+    setCloudMemberRole(member?.role);
     if(member) setLoggedEmployeeId(member.employee_id);
   },[mergeInitialClients,mergeInitialEvents,mergeInitialPontos,mergeInitialDespesas,mergeInitialTransacoes,mergeInitialSalarios,mergeInitialBancoHoras]);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
-  const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao;
+  const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao ?? cloudMemberRole;
   const canManage=isManager(memberRole);
   const userRole:UserRole=canManage ? 'admin' : 'funcionario';
   const writable=IS_DEMO || !['conflict','recovery','loading','signed-out','setup'].includes(cloud.status);
-  const allowed=(condition:boolean)=>{if(!condition || !writable) {toast('Sem permissão ou há uma pendência de sincronização a resolver.','error');return false;}return true;};
+  const allowed=(condition:boolean)=>{
+    if(!condition) {
+      toast('Sem permissão para esta ação com o seu perfil atual.','error');
+      return false;
+    }
+    if(!writable) {
+      toast(cloud.message || 'Há uma pendência de sincronização a resolver. Recarregue a base no topo da tela.','error');
+      return false;
+    }
+    return true;
+  };
   useEffect(()=>{
     if(!IS_DEMO) return;
     queueMicrotask(()=>{
@@ -772,11 +809,31 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   const deleteClient = useCallback(
     (id: string) => {
+      const hasLinkedHistory =
+        events.some((e) => e.client_id === id) ||
+        deliverables.some((d) => d.client_id === id) ||
+        reels.some((r) => r.client_id === id) ||
+        mentions.some((m) => m.client_id === id) ||
+        pontos.some((p) => !isSimulatedRecord(p.id) && p.client_id === id) ||
+        transacoes.some((t) => !isSimulatedRecord(t.id) && t.client_id === id);
+
+      if (hasLinkedHistory) {
+        setClients((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, status: 'pausado' } : c))
+        );
+        toast(
+          'Este restaurante já possui gravações ou histórico vinculado; o contrato foi marcado como Pausado para não perder os registros.',
+          'info'
+        );
+        closeClientModal();
+        return;
+      }
+
       setClients((prev) => prev.filter((c) => c.id !== id));
       toast('Restaurante removido dos parceiros.', 'info');
       closeClientModal();
     },
-    [closeClientModal, toast]
+    [closeClientModal, deliverables, events, mentions, pontos, reels, toast, transacoes]
   );
 
   // Ações de Backup do Sistema
