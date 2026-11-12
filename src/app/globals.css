@@ -152,20 +152,22 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
-button, a, select, input, textarea {
-  touch-action: manipulation;
-  color: inherit;
-}
+@layer base {
+  button, a, select, input, textarea {
+    touch-action: manipulation;
+    color: inherit;
+  }
 
-button {
-  background-color: transparent;
-  -webkit-appearance: none;
-  appearance: none;
-}
+  button {
+    background-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
 
-option, optgroup {
-  background-color: #101f2c;
-  color: #eef7fa;
+  option, optgroup {
+    background-color: #101f2c;
+    color: #eef7fa;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

@@ -316,3 +316,32 @@
 .finance-breakdown progress { width:100%; height:7px; accent-color:var(--ui-accent); }
 .finance-empty { padding:24px 0; font-size:13px; color:var(--ui-muted); }
 @media(min-width:1024px) { .finance-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+/* Active category tab contour + glow shadow inside EventModal (preserves contrast and outer aura). */
+.event-modal-tab[data-tab-active="true"] {
+  font-weight:800;
+}
+.event-modal-tab[data-tab-active="true"][data-tab-kind="agenda"] {
+  background-color:#55c4d5 !important;
+  color:#0b1621 !important;
+  border-color:rgba(186,244,252,0.9) !important;
+  box-shadow:0 0 0 2px rgba(85,196,213,0.45), 0 0 18px rgba(85,196,213,0.5) !important;
+}
+.event-modal-tab[data-tab-active="true"][data-tab-kind="briefing"] {
+  background-color:#a855f7 !important;
+  color:#ffffff !important;
+  border-color:rgba(216,180,254,0.9) !important;
+  box-shadow:0 0 0 2px rgba(168,85,247,0.45), 0 0 18px rgba(168,85,247,0.5) !important;
+}
+.event-modal-tab[data-tab-active="true"][data-tab-kind="relatorio"] {
+  background-color:#38bdf8 !important;
+  color:#0b1621 !important;
+  border-color:rgba(186,230,253,0.9) !important;
+  box-shadow:0 0 0 2px rgba(56,189,248,0.45), 0 0 18px rgba(56,189,248,0.5) !important;
+}
+.event-modal-tab[data-tab-active="true"][data-tab-kind="despesas"] {
+  background-color:#f59e0b !important;
+  color:#0b1621 !important;
+  border-color:rgba(253,230,138,0.9) !important;
+  box-shadow:0 0 0 2px rgba(245,158,11,0.45), 0 0 18px rgba(245,158,11,0.5) !important;
+}

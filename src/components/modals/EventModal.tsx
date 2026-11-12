@@ -441,10 +441,12 @@ export function EventModal() {
             {isFromReportsView && (
               <button
                 type="button"
+                data-tab-kind="relatorio"
+                data-tab-active={activeTab === 'relatorio' ? 'true' : 'false'}
                 onClick={() => setActiveTab('relatorio')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                className={`event-modal-tab flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'relatorio'
-                    ? 'bg-[#38bdf8] text-black font-black border-sky-200/80 ring-2 ring-sky-400/50 shadow-[0_0_16px_rgba(56,189,248,0.48)]'
+                    ? 'bg-[#38bdf8] text-[#0b1621] font-black border-sky-200/80'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
@@ -465,10 +467,12 @@ export function EventModal() {
             {!isFromReportsView && (
               <button
                 type="button"
+                data-tab-kind="agenda"
+                data-tab-active={activeTab === 'agenda' ? 'true' : 'false'}
                 onClick={() => setActiveTab('agenda')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                className={`event-modal-tab flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'agenda'
-                    ? 'brand-solid bg-[var(--ui-accent)] text-[#0b1621] font-black border-[#a5eef9]/85 ring-2 ring-[#55c4d5]/55 shadow-[0_0_16px_rgba(85,196,213,0.48)]'
+                    ? 'bg-[#55c4d5] text-[#0b1621] font-black border-[#a5eef9]/85'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
@@ -479,10 +483,12 @@ export function EventModal() {
 
             <button
               type="button"
+              data-tab-kind="briefing"
+              data-tab-active={activeTab === 'briefing' ? 'true' : 'false'}
               onClick={() => setActiveTab('briefing')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+              className={`event-modal-tab flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                 activeTab === 'briefing'
-                  ? 'bg-purple-500 text-white font-black border-purple-300/80 ring-2 ring-purple-400/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]'
+                  ? 'bg-purple-500 text-white font-black border-purple-300/80'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
@@ -493,10 +499,12 @@ export function EventModal() {
             {!isFromReportsView && (
               <button
                 type="button"
+                data-tab-kind="relatorio"
+                data-tab-active={activeTab === 'relatorio' ? 'true' : 'false'}
                 onClick={() => setActiveTab('relatorio')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                className={`event-modal-tab flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeTab === 'relatorio'
-                    ? 'bg-[#38bdf8] text-black font-black border-sky-200/80 ring-2 ring-sky-400/50 shadow-[0_0_16px_rgba(56,189,248,0.48)]'
+                    ? 'bg-[#38bdf8] text-[#0b1621] font-black border-sky-200/80'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
                 }`}
               >
@@ -516,10 +524,12 @@ export function EventModal() {
 
             <button
               type="button"
+              data-tab-kind="despesas"
+              data-tab-active={activeTab === 'despesas' ? 'true' : 'false'}
               onClick={() => setActiveTab('despesas')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+              className={`event-modal-tab flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                 activeTab === 'despesas'
-                  ? 'bg-amber-500 text-black font-black border-amber-200/80 ring-2 ring-amber-400/50 shadow-[0_0_16px_rgba(245,158,11,0.48)]'
+                  ? 'bg-amber-500 text-[#0b1621] font-black border-amber-200/80'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
               }`}
             >
@@ -1113,10 +1123,12 @@ export function EventModal() {
                 <div className="inline-flex rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-1.5 gap-2">
                   <button
                     type="button"
+                    data-tab-kind="agenda"
+                    data-tab-active={modalBriefingMode === 'video' ? 'true' : 'false'}
                     onClick={() => setModalBriefingMode('video')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
+                    className={`event-modal-tab flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
                       modalBriefingMode === 'video'
-                        ? 'bg-[var(--ui-accent)] text-[#0b1621] font-black border-[#a5eef9]/85 ring-2 ring-[#55c4d5]/55 shadow-[0_0_14px_rgba(85,196,213,0.45)]'
+                        ? 'bg-[#55c4d5] text-[#0b1621] font-black border-[#a5eef9]/85'
                         : 'border-transparent text-zinc-400 hover:text-foreground'
                     }`}
                   >
@@ -1125,10 +1137,12 @@ export function EventModal() {
                   </button>
                   <button
                     type="button"
+                    data-tab-kind="briefing"
+                    data-tab-active={modalBriefingMode === 'edicao' ? 'true' : 'false'}
                     onClick={() => setModalBriefingMode('edicao')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
+                    className={`event-modal-tab flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
                       modalBriefingMode === 'edicao'
-                        ? 'bg-purple-500 text-white font-black border-purple-300/80 ring-2 ring-purple-400/50 shadow-[0_0_14px_rgba(168,85,247,0.48)]'
+                        ? 'bg-purple-500 text-white font-black border-purple-300/80'
                         : 'border-transparent text-zinc-400 hover:text-foreground'
                     }`}
                   >
