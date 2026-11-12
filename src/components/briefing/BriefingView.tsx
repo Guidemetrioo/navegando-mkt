@@ -378,13 +378,15 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     }
   }, [initialMode, currentView]);
 
-  // Identifica o membro logado e se é Modelo (responsável pela edição, porém somente visualização no briefing)
+  // Regras de permissão:
+  // - Modelos podem editar APENAS o Briefing de Edição (no Briefing do Vídeo têm acesso somente leitura)
+  // - Todos os outros membros podem alterar o Briefing dos Vídeos
   const currentMember = useMemo(
     () => employees.find((e) => e.id === loggedEmployeeId) || null,
     [employees, loggedEmployeeId]
   );
   const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
-  const isReadOnly = isModelMember || !canManage;
+  const isReadOnly = briefingMode === 'video' ? isModelMember : false;
 
   // Modelos responsáveis pela edição dos vídeos
   const modelEmployees = useMemo(
@@ -729,7 +731,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       return;
     }
     setSavedDrafts(JSON.stringify(videoDrafts));
-    if (briefingMode === 'video' && activeClient && raw) {
+    if (canManage && briefingMode === 'video' && activeClient && raw) {
       updateClient(activeClient.id, {
         briefing_roteiros_modelos: raw,
       });
@@ -977,7 +979,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               </span>
             </div>
             <div className="text-[11px] text-zinc-400 truncate">
-              Orientações de edição por vídeo para as modelos (visualização liberada)
+              As modelos podem editar o Briefing de Edição separado por vídeo
             </div>
           </div>
         </button>
@@ -985,7 +987,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     </div>
   );
 
-  // Banner informativo quando uma Modelo (ou perfil somente leitura) está acessando
+  // Banner informativo quando uma Modelo acessa o Briefing do Vídeo (somente leitura)
   const renderModelReadOnlyBanner = () => {
     if (!isReadOnly) return null;
     return (
@@ -994,9 +996,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           <Lock className="w-4 h-4 text-purple-300 shrink-0" />
           <div>
             <span className="font-extrabold text-purple-100">
-              Modo Somente Visualização ({isModelMember ? 'Modelo Responsável pela Edição' : 'Consulta'}):
+              Modo Visualização no Briefing do Vídeo (Modelo):
             </span>{' '}
-            Você tem acesso completo para visualizar os briefings de gravação e de edição, abrir referências e baixar o PDF A4, mas não pode editar os textos.
+            O Briefing dos Vídeos pode ser alterado por toda a equipe, exceto pelas modelos. Você pode visualizar tudo aqui e editar normalmente na aba <strong>Briefing de Edição</strong>.
           </div>
         </div>
         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-[10px] font-extrabold uppercase tracking-wider text-purple-200">
@@ -1353,7 +1355,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const isCurrentlyDone = isEventDoneForMode(activeEvent);
   const activeEditorModel =
     employees.find((e) => e.id === selectedEditorModelId) || resolveEventEditorModel(activeEvent);
-  const formatOptions = briefingMode === 'edicao' ? EDITING_FORMATS : VIDEO_FORMATS;
 
   return (
     <div className="space-y-6">
@@ -1676,47 +1677,28 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <label className="text-xs font-semibold flex flex-col gap-1.5 sm:col-span-2">
-                Título do vídeo (opcional)
-                <input
-                  aria-label={`Título do vídeo ${index + 1}`}
-                  readOnly={isReadOnly}
-                  disabled={isReadOnly}
-                  value={video.titulo}
-                  onChange={(event) => handleUpdateVideoDraft(video.id, { titulo: event.target.value })}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      videoInputs.current[video.id]?.focus();
-                    }
-                  }}
-                  placeholder={
-                    briefingMode === 'edicao'
-                      ? `Ex: Reel ${index + 1} - Cortes dinâmicos do prato`
-                      : `Ideia do vídeo ${index + 1}`
+            <label className="text-xs font-semibold flex flex-col gap-1.5">
+              Título do vídeo (opcional)
+              <input
+                aria-label={`Título do vídeo ${index + 1}`}
+                readOnly={isReadOnly}
+                disabled={isReadOnly}
+                value={video.titulo}
+                onChange={(event) => handleUpdateVideoDraft(video.id, { titulo: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    videoInputs.current[video.id]?.focus();
                   }
-                  className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-sm sm:text-base read-only:opacity-80"
-                />
-              </label>
-
-              <label className="text-xs font-semibold flex flex-col gap-1.5">
-                {briefingMode === 'edicao' ? 'Estilo de Edição' : 'Formato'}
-                <select
-                  aria-label={`Formato do vídeo ${index + 1}`}
-                  disabled={isReadOnly}
-                  value={video.formato || 'Automático'}
-                  onChange={(event) => handleUpdateVideoDraft(video.id, { formato: event.target.value })}
-                  className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-2.5 py-2 text-xs sm:text-sm disabled:opacity-80"
-                >
-                  {formatOptions.map((fmt) => (
-                    <option key={fmt} value={fmt}>
-                      {fmt}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+                }}
+                placeholder={
+                  briefingMode === 'edicao'
+                    ? `Ex: Reel ${index + 1} - Cortes dinâmicos do prato`
+                    : `Ideia do vídeo ${index + 1}`
+                }
+                className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-sm sm:text-base read-only:opacity-80"
+              />
+            </label>
 
             <label className="text-xs font-semibold flex flex-col gap-2 flex-1">
               {briefingMode === 'edicao'

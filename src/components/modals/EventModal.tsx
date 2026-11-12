@@ -22,10 +22,15 @@ export function EventModal() {
     addClient,
     userRole,
     addDespesaGravacao,
+    currentView,
   } = useAgenda();
 
+  const isFromReportsView = currentView === 'relatorios';
+
   // Aba ativa: 'agenda', 'briefing', 'relatorio' ou 'despesas'
-  const [activeTab, setActiveTab] = useState<'agenda' | 'briefing' | 'relatorio' | 'despesas'>('agenda');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'briefing' | 'relatorio' | 'despesas'>(
+    isFromReportsView ? 'relatorio' : 'agenda'
+  );
 
   // Estados do formulário de Reembolso (3 campos simples: Valor, Razão e Upload de Comprovante)
   const [despDescricao, setDespDescricao] = useState('');
@@ -110,10 +115,10 @@ export function EventModal() {
         setDriveFolderLink(existingClient?.drive_folder_url || '');
       }
 
-      // Se já foi realizado ou se o usuário logado é filmmaker, default pode ser 'agenda'
-      setActiveTab('agenda');
+      // Se abriu a partir da tela de Relatórios, abre direto na categoria Relatório (sem mostrar Agenda)
+      setActiveTab(currentView === 'relatorios' ? 'relatorio' : 'agenda');
     }
-  }, [editingEvent, clients]);
+  }, [editingEvent, clients, currentView]);
 
   if (!isEventModalOpen || !editingEvent) return null;
 
@@ -347,21 +352,47 @@ export function EventModal() {
            data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
-        {/* Abas Superiores: Agenda vs Relatório vs Custos */}
+        {/* Abas Superiores: Na tela de Relatórios, Relatório vem primeiro e Agenda não aparece */}
         {isEditing && (
           <div className="flex items-center gap-1.5 p-1 bg-[var(--ui-surface)] rounded-xl border border-[var(--ui-border)]">
-            <button
-              type="button"
-              onClick={() => setActiveTab('agenda')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'agenda'
-                  ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" />
-              <span>Agenda</span>
-            </button>
+            {isFromReportsView && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('relatorio')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'relatorio'
+                    ? 'bg-[#38bdf8] text-black shadow-sm font-black'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Relatório</span>
+                {editingEvent?.relatorio_filmmaker?.preenchido ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    OK
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Pendente
+                  </span>
+                )}
+              </button>
+            )}
+
+            {!isFromReportsView && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('agenda')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'agenda'
+                    ? 'brand-solid bg-[var(--ui-accent)] text-foreground shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                }`}
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Agenda</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -376,27 +407,29 @@ export function EventModal() {
               <span>Briefing</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('relatorio')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'relatorio'
-                  ? 'bg-[#38bdf8] text-black shadow-sm font-black'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Relatório</span>
-              {editingEvent?.relatorio_filmmaker?.preenchido ? (
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  OK
-                </span>
-              ) : (
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Pendente
-                </span>
-              )}
-            </button>
+            {!isFromReportsView && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('relatorio')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'relatorio'
+                    ? 'bg-[#38bdf8] text-black shadow-sm font-black'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ui-raised)]'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Relatório</span>
+                {editingEvent?.relatorio_filmmaker?.preenchido ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    OK
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Pendente
+                  </span>
+                )}
+              </button>
+            )}
 
             <button
               type="button"

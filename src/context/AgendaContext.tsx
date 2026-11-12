@@ -1674,7 +1674,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         closeEventModal,
         openDayDetailModal,
         closeDayDetailModal,
-        saveEvent:guarded(canManage,saveEvent),
+        saveEvent:(eventData,allowConflictOverride)=>guarded(
+          canManage || Boolean(eventData.id && events.some(e=>e.id===eventData.id) && canUserAccessView(memberRole,'briefing')),
+          saveEvent
+        )(eventData,allowConflictOverride),
         deleteEvent:guarded(canManage,deleteEvent),
         saveEventReport:(id,report)=>guarded(canManage || memberRole==='filmmaker' && Boolean(events.find(e=>e.id===id)?.assigned_employee_ids?.includes(loggedEmployeeId)),saveEventReport)(id,report),
         autoGenerateMonthlyRoster:guarded(canManage,autoGenerateMonthlyRoster),
