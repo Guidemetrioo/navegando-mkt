@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { todayInSaoPaulo } from '@/lib/date-utils';
-import { EventItem, EVENT_TYPE_LABELS } from '@/types/database';
+import { EventItem, EVENT_TYPE_LABELS, Employee } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
   Share2,
@@ -20,6 +20,12 @@ import {
   ChevronRight,
   Save,
   Eye,
+  Scissors,
+  Video,
+  Lock,
+  Copy,
+  Send,
+  UserCheck,
 } from 'lucide-react';
 
 export interface BriefingRefItem {
@@ -47,7 +53,14 @@ export interface EditableVideoDraft {
   roteiro: string;
   refRotulo: 'Referência' | 'Exemplo';
   refUrl: string;
+  modeloEditoraId?: string;
   refsExtras?: BriefingRefItem[];
+}
+
+export type BriefingCategoryMode = 'video' | 'edicao';
+
+export interface BriefingViewProps {
+  initialMode?: BriefingCategoryMode;
 }
 
 const VIDEO_FORMATS = [
@@ -61,6 +74,19 @@ const VIDEO_FORMATS = [
   'Preparo',
   'Tutorial',
   'Falado',
+  'Conteúdo',
+] as const;
+
+const EDITING_FORMATS = [
+  'Automático',
+  'Cortes Rápidos / Dinâmico',
+  'ASMR',
+  'Trend / Áudio em Alta',
+  'Foodporn / Slow Motion',
+  'Storytelling',
+  'Legenda Dinâmica',
+  'POV',
+  'Narrado / Voiceover',
   'Conteúdo',
 ] as const;
 
@@ -87,7 +113,10 @@ export function fmtDate(v: string): string {
 export function inferCategory(t: string): string {
   const s = t.toLowerCase();
   if (s.includes('asmr')) return 'ASMR';
-  if (s.includes('foodporn') || s.includes('food porn')) return 'Foodporn';
+  if (s.includes('foodporn') || s.includes('food porn') || s.includes('slow motion')) return 'Foodporn';
+  if (s.includes('cortes rápidos') || s.includes('dinâmico') || s.includes('dinamico')) return 'Dinâmico';
+  if (s.includes('legenda')) return 'Legenda Dinâmica';
+  if (s.includes('storytelling') || s.includes('narrado') || s.includes('voiceover')) return 'Storytelling';
   if (s.includes('entrevist') || s.includes('perguntar') || s.includes('ele responder')) return 'Entrevista';
   if (s.includes('pov') || s.includes('óculos meta') || s.includes('oculos meta')) return 'POV';
   if (
@@ -203,6 +232,8 @@ export function parseItems(raw: string): BriefingVideoItem[] {
   });
 }
 
+const ALL_KNOWN_FORMATS = new Set<string>([...VIDEO_FORMATS, ...EDITING_FORMATS]);
+
 function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
   if (!raw || !raw.trim()) {
     return [
@@ -238,7 +269,7 @@ function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
     const formatMatch = text.match(/^\[([^\]]+)\]\s*(?:([^\n:]+):\s*)?([\s\S]*)$/);
     if (formatMatch) {
       const candidateFormat = formatMatch[1].trim();
-      if (VIDEO_FORMATS.includes(candidateFormat as (typeof VIDEO_FORMATS)[number])) {
+      if (ALL_KNOWN_FORMATS.has(candidateFormat)) {
         formato = candidateFormat;
         titulo = (formatMatch[2] || '').trim();
         text = formatMatch[3].trim();
@@ -268,19 +299,29 @@ function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
       const prefixTitle = d.titulo.trim() ? `${d.titulo.trim()}: ` : '';
       const mainBody = `${num} - ${prefixFormat}${prefixTitle}${d.roteiro.trim()}`.trim();
       const refLine = d.refUrl.trim() ? `\n${d.refRotulo}: ${normalizarUrl(d.refUrl.trim())}` : '';
-      return `${mainBody}${refLine}${(d.refsExtras || []).map(ref => `\n${ref.rotulo}: ${ref.url}`).join('')}`;
+      return `${mainBody}${refLine}${(d.refsExtras || []).map((ref) => `\n${ref.rotulo}: ${ref.url}`).join('')}`;
     })
     .join('\n\n');
 }
 
-function hasBriefingDone(event: EventItem): boolean {
+function hasVideoBriefingDone(event: EventItem): boolean {
   return Boolean(event.briefing_gravacao && event.briefing_gravacao.trim().length > 0);
 }
 
-function countBriefingVideos(event: EventItem): number {
+function hasEditingBriefingDone(event: EventItem): boolean {
+  return Boolean(event.briefing_edicao && event.briefing_edicao.trim().length > 0);
+}
+
+function countVideoBriefingVideos(event: EventItem): number {
   if (event.briefing_videos?.length) return event.briefing_videos.length;
   if (!event.briefing_gravacao || !event.briefing_gravacao.trim()) return 0;
   return parseItems(event.briefing_gravacao).filter((i) => i.text.trim().length > 0).length;
+}
+
+function countEditingBriefingVideos(event: EventItem): number {
+  if (event.briefing_edicao_videos?.length) return event.briefing_edicao_videos.length;
+  if (!event.briefing_edicao || !event.briefing_edicao.trim()) return 0;
+  return parseItems(event.briefing_edicao).filter((i) => i.text.trim().length > 0).length;
 }
 
 function NavegandoBrandLogo() {
@@ -292,7 +333,7 @@ function NavegandoBrandLogo() {
       aria-label="Navegando MKT"
     >
       <path
-        d="M11.1492 564.243V449.566H30.5806L83.7782 530.397V449.566H103.21V564.243H83.7782L30.5806 483.411V564.243H11.1492ZM136.78 566.632C130.569 566.632 125.313 565.464 121.012 563.128C116.712 560.739 113.447 557.58 111.217 553.651C109.04 549.723 107.952 545.396 107.952 540.671C107.952 536.529 108.642 532.813 110.022 529.521C111.403 526.177 113.526 523.31 116.393 520.921C119.26 518.478 122.977 516.487 127.543 514.948C130.994 513.833 135.028 512.824 139.647 511.922C144.319 511.019 149.363 510.196 154.778 509.453C160.247 508.656 165.954 507.807 171.9 506.904L165.052 510.807C165.105 504.86 163.777 500.48 161.07 497.667C158.362 494.853 153.796 493.446 147.372 493.446C143.497 493.446 139.754 494.348 136.143 496.153C132.533 497.959 130.011 501.064 128.578 505.471L111.058 499.976C113.181 492.702 117.216 486.862 123.163 482.456C129.162 478.049 137.232 475.846 147.372 475.846C155.017 475.846 161.733 477.094 167.52 479.589C173.36 482.084 177.687 486.172 180.501 491.853C182.041 494.879 182.97 497.985 183.289 501.171C183.607 504.303 183.766 507.727 183.766 511.444V564.243H166.963V545.608L169.75 548.634C165.875 554.846 161.335 559.412 156.132 562.332C150.982 565.199 144.532 566.632 136.78 566.632ZM140.603 551.342C144.957 551.342 148.673 550.572 151.752 549.032C154.832 547.493 157.274 545.608 159.079 543.378C160.937 541.148 162.185 539.051 162.822 537.087C163.831 534.645 164.388 531.857 164.494 528.725C164.653 525.54 164.733 522.965 164.733 521L170.626 522.752C164.839 523.655 159.875 524.451 155.734 525.141C151.593 525.832 148.036 526.495 145.063 527.132C142.09 527.716 139.462 528.38 137.179 529.123C134.949 529.92 133.064 530.849 131.524 531.91C129.985 532.972 128.79 534.193 127.941 535.574C127.144 536.954 126.746 538.573 126.746 540.432C126.746 542.555 127.277 544.44 128.339 546.086C129.401 547.679 130.94 548.953 132.958 549.908C135.028 550.864 137.577 551.342 140.603 551.342ZM211.901 564.243L180.683 478.235H199.875L221.537 540.591L243.118 478.235H262.391L231.173 564.243H211.901ZM299.932 566.632C291.225 566.632 283.58 564.748 276.997 560.978C270.413 557.209 265.263 551.979 261.547 545.29C257.884 538.6 256.052 530.902 256.052 522.195C256.052 512.798 257.857 504.648 261.467 497.746C265.078 490.791 270.095 485.402 276.519 481.58C282.943 477.757 290.376 475.846 298.817 475.846C307.737 475.846 315.302 477.943 321.514 482.137C327.779 486.278 332.424 492.145 335.45 499.737C338.476 507.329 339.618 516.275 338.875 526.575H319.841V519.567C319.788 510.223 318.142 503.4 314.904 499.1C311.665 494.8 306.569 492.649 299.614 492.649C291.756 492.649 285.916 495.092 282.093 499.976C278.271 504.807 276.359 511.895 276.359 521.239C276.359 529.946 278.271 536.689 282.093 541.467C285.916 546.245 291.491 548.634 298.817 548.634C303.542 548.634 307.604 547.599 311.002 545.528C314.453 543.405 317.107 540.352 318.965 536.37L337.919 542.104C334.627 549.855 329.531 555.881 322.629 560.182C315.78 564.482 308.214 566.632 299.932 566.632ZM270.307 526.575V512.081H329.477V526.575H270.307ZM380.057 604.858C375.279 604.858 370.686 604.115 366.28 602.628C361.926 601.142 357.998 598.992 354.493 596.178C350.989 593.417 348.123 590.072 345.893 586.143L363.572 577.383C365.218 580.516 367.527 582.825 370.501 584.312C373.527 585.851 376.739 586.621 380.137 586.621C384.118 586.621 387.676 585.904 390.808 584.471C393.94 583.091 396.356 581.02 398.055 578.259C399.807 575.552 400.63 572.154 400.524 568.066V543.617H402.913V478.235H419.716V568.384C419.716 570.561 419.61 572.632 419.398 574.596C419.238 576.613 418.946 578.578 418.522 580.489C417.248 586.064 414.805 590.63 411.195 594.187C407.585 597.797 403.099 600.478 397.736 602.23C392.427 603.982 386.534 604.858 380.057 604.858ZM378.385 566.632C370.474 566.632 363.572 564.641 357.679 560.659C351.786 556.678 347.22 551.262 343.981 544.414C340.743 537.565 339.124 529.84 339.124 521.239C339.124 512.532 340.743 504.781 343.981 497.985C347.273 491.136 351.919 485.747 357.918 481.819C363.917 477.837 370.978 475.846 379.101 475.846C387.277 475.846 394.126 477.837 399.648 481.819C405.222 485.747 409.443 491.136 412.31 497.985C415.177 504.834 416.61 512.585 416.61 521.239C416.61 529.787 415.177 537.512 412.31 544.414C409.443 551.262 405.169 556.678 399.488 560.659C393.808 564.641 386.773 566.632 378.385 566.632ZM381.331 549.431C386.481 549.431 390.622 548.263 393.755 545.927C396.94 543.538 399.25 540.219 400.683 535.972C402.17 531.725 402.913 526.814 402.913 521.239C402.913 515.611 402.17 510.7 400.683 506.506C399.25 502.259 396.993 498.967 393.914 496.631C390.835 494.242 386.853 493.048 381.968 493.048C376.818 493.048 372.571 494.322 369.226 496.87C365.882 499.365 363.413 502.763 361.82 507.064C360.227 511.311 359.431 516.036 359.431 521.239C359.431 526.495 360.201 531.273 361.74 535.574C363.333 539.821 365.749 543.192 368.987 545.688C372.226 548.183 376.341 549.431 381.331 549.431ZM453.357 566.632C447.145 566.632 441.889 565.464 437.589 563.128C433.288 560.739 430.023 557.58 427.793 553.651C425.616 549.723 424.528 545.396 424.528 540.671C424.528 536.529 425.218 532.813 426.599 529.521C427.979 526.177 430.103 523.31 432.97 520.921C435.837 518.478 439.553 516.487 444.119 514.948C447.57 513.833 451.605 512.824 456.224 511.922C460.896 511.019 465.939 510.196 471.355 509.453C476.823 508.656 482.53 507.807 488.477 506.904L481.628 510.807C481.681 504.86 480.354 500.48 477.646 497.667C474.938 494.853 470.373 493.446 463.948 493.446C460.073 493.446 456.33 494.348 452.72 496.153C449.109 497.959 446.588 501.064 445.154 505.471L427.634 499.976C429.758 492.702 433.793 486.862 439.739 482.456C445.738 478.049 453.808 475.846 463.948 475.846C471.594 475.846 478.31 477.094 484.097 479.589C489.937 482.084 494.264 486.172 497.078 491.853C498.617 494.879 499.546 497.985 499.865 501.171C500.183 504.303 500.343 507.727 500.343 511.444V564.243H483.539V545.608L486.327 548.634C482.451 554.846 477.912 559.412 472.709 562.332C467.559 565.199 461.108 566.632 453.357 566.632ZM457.179 551.342C461.533 551.342 465.249 550.572 468.329 549.032C471.408 547.493 473.85 545.608 475.655 543.378C477.513 541.148 478.761 539.051 479.398 537.087C480.407 534.645 480.964 531.857 481.07 528.725C481.23 525.54 481.309 522.965 481.309 521L487.203 522.752C481.416 523.655 476.452 524.451 472.31 525.141C468.169 525.832 464.612 526.495 461.639 527.132C458.666 527.716 456.038 528.38 453.755 529.123C451.525 529.92 449.64 530.849 448.101 531.91C446.561 532.972 445.366 534.193 444.517 535.574C443.721 536.954 443.322 538.573 443.322 540.432C443.322 542.555 443.853 544.44 444.915 546.086C445.977 547.679 447.517 548.953 449.534 549.908C451.605 550.864 454.153 551.342 457.179 551.342ZM567.823 564.243V522.832C567.823 520.124 567.637 517.125 567.265 513.833C566.894 510.541 566.018 507.382 564.637 504.356C563.31 501.277 561.292 498.755 558.585 496.791C555.93 494.826 552.32 493.844 547.754 493.844C545.312 493.844 542.896 494.242 540.507 495.038C538.118 495.835 535.941 497.215 533.977 499.18C532.066 501.091 530.526 503.745 529.358 507.143C528.19 510.488 527.606 514.789 527.606 520.045L516.218 515.187C516.218 507.86 517.625 501.224 520.439 495.277C523.306 489.331 527.5 484.606 533.021 481.102C538.543 477.545 545.338 475.766 553.408 475.766C559.779 475.766 565.035 476.828 569.177 478.952C573.318 481.075 576.609 483.783 579.052 487.075C581.494 490.366 583.299 493.87 584.467 497.587C585.635 501.303 586.378 504.834 586.697 508.179C587.068 511.47 587.254 514.151 587.254 516.222V564.243H567.823ZM508.174 564.243V478.235H525.296V504.913H527.606V564.243H508.174ZM628.377 566.632C620.466 566.632 613.564 564.641 607.671 560.659C601.778 556.678 597.212 551.262 593.973 544.414C590.735 537.565 589.116 529.84 589.116 521.239C589.116 512.532 590.735 504.781 593.973 497.985C597.265 491.136 601.911 485.747 607.91 481.819C613.909 477.837 620.97 475.846 629.093 475.846C637.27 475.846 644.118 477.837 649.64 481.819C655.214 485.747 659.435 491.136 662.302 497.985C665.169 504.834 666.603 512.585 666.603 521.239C666.603 529.787 665.169 537.512 662.302 544.414C659.435 551.262 655.161 556.678 649.481 560.659C643.8 564.641 636.765 566.632 628.377 566.632ZM631.323 549.431C636.473 549.431 640.614 548.263 643.747 545.927C646.932 543.538 649.242 540.219 650.675 535.972C652.162 531.725 652.905 526.814 652.905 521.239C652.905 515.611 652.162 510.7 650.675 506.506C649.242 502.259 646.985 498.967 643.906 496.631C640.827 494.242 636.845 493.048 631.96 493.048C626.811 493.048 622.563 494.322 619.218 496.87C615.874 499.365 613.405 502.763 611.812 507.064C610.219 511.311 609.423 516.036 609.423 521.239C609.423 526.495 610.193 531.273 611.733 535.574C613.325 539.821 615.741 543.192 618.98 545.688C622.218 548.183 626.333 549.431 631.323 549.431ZM652.905 564.243V503.878H650.516V449.566H669.868V564.243H652.905ZM717.441 566.632C708.84 566.632 701.328 564.694 694.904 560.819C688.48 556.943 683.489 551.607 679.932 544.812C676.428 537.963 674.676 530.105 674.676 521.239C674.676 512.214 676.481 504.303 680.091 497.507C683.701 490.712 688.718 485.402 695.143 481.58C701.567 477.757 708.999 475.846 717.441 475.846C726.095 475.846 733.634 477.784 740.058 481.659C746.482 485.535 751.473 490.897 755.03 497.746C758.587 504.542 760.365 512.373 760.365 521.239C760.365 530.158 758.56 538.043 754.95 544.891C751.393 551.687 746.402 557.023 739.978 560.898C733.554 564.721 726.042 566.632 717.441 566.632ZM717.441 548.634C725.086 548.634 730.767 546.086 734.483 540.989C738.2 535.892 740.058 529.309 740.058 521.239C740.058 512.904 738.173 506.267 734.404 501.33C730.634 496.339 724.98 493.844 717.441 493.844C712.291 493.844 708.044 495.012 704.699 497.348C701.407 499.631 698.965 502.843 697.372 506.984C695.78 511.072 694.983 515.824 694.983 521.239C694.983 529.574 696.868 536.237 700.638 541.228C704.46 546.166 710.061 548.634 717.441 548.634ZM784.314 564.243V449.566H801.595L841.254 530.796L880.914 449.566H898.195V564.243H880.276V490.738L845.077 564.243H837.432L802.312 490.738V564.243H784.314ZM907.826 564.243V449.566H927.018V502.763L972.81 449.566H996.382L947.087 505.79L999.727 564.243H975.358L927.018 510.727V564.243H907.826ZM1025.76 564.243V467.564H988.651V449.566H1082.07V467.564H1044.95V564.243H1025.76Z"
+        d="M11.1492 564.243V449.566H30.5806L83.7782 530.397V449.566H103.21V564.243H83.7782L30.5806 483.411V564.243H11.1492ZM136.78 566.632C130.569 566.632 125.313 565.464 121.012 563.128C116.712 560.739 113.447 557.58 111.217 553.651C109.04 549.723 107.952 545.396 107.952 540.671C107.952 536.529 108.642 532.813 110.022 529.521C111.403 526.177 113.526 523.31 116.393 520.921C119.26 518.478 122.977 516.487 127.543 514.948C130.994 513.833 135.028 512.824 139.647 511.922C144.319 511.019 149.363 510.196 154.778 509.453C160.247 508.656 165.954 507.807 171.9 506.904L165.052 510.807C165.105 504.86 163.777 500.48 161.07 497.667C158.362 494.853 153.796 493.446 147.372 493.446C143.497 493.446 139.754 494.348 136.143 496.153C132.533 497.959 130.011 501.064 128.578 505.471L111.058 499.976C113.181 492.702 117.216 486.862 123.163 482.456C129.162 478.049 137.232 475.846 147.372 475.846C155.017 475.846 161.733 477.094 167.52 479.589C173.36 482.084 177.687 486.172 180.501 491.853C182.041 494.879 182.97 497.985 183.289 501.171C183.607 504.303 183.766 507.727 183.766 511.444V564.243H166.963V545.608L169.75 548.634C165.875 554.846 161.335 559.412 156.132 562.332C150.982 565.199 144.532 566.632 136.78 566.632ZM140.603 551.342C144.957 551.342 148.673 550.572 151.752 549.032C154.832 547.493 157.274 545.608 159.079 543.378C160.937 541.148 162.185 539.051 162.822 537.087C163.831 534.645 164.388 531.857 164.494 528.725C164.653 525.54 164.733 522.965 164.733 521L170.626 522.752C164.839 523.655 159.875 524.451 155.734 525.141C151.593 525.832 148.036 526.495 145.063 527.132C142.09 527.716 139.462 528.38 137.179 529.123C134.949 529.92 133.064 530.849 131.524 531.91C129.985 532.972 128.79 534.193 127.941 535.574C127.144 536.954 126.746 538.573 126.746 540.432C126.746 542.555 127.277 544.44 128.339 546.086C129.401 547.679 130.94 548.953 132.958 549.908C135.028 550.864 137.577 551.342 140.603 551.342ZM211.901 564.243L180.683 478.235H199.875L221.537 540.591L243.118 478.235H262.391L231.173 564.243H211.901ZM299.932 566.632C291.225 566.632 283.58 564.748 276.997 560.978C270.413 557.209 265.263 551.979 261.547 545.29C257.884 538.6 256.052 530.902 256.052 522.195C256.052 512.798 257.857 504.648 261.467 497.746C265.078 490.791 270.095 485.402 276.519 481.58C282.943 477.757 290.376 475.846 298.817 475.846C307.737 475.846 315.302 477.943 321.514 482.137C327.779 486.278 332.424 492.145 335.45 499.737C338.476 507.329 339.618 516.275 338.875 526.575H319.841V519.567C319.788 510.223 318.142 503.4 314.904 499.1C311.665 494.8 306.569 492.649 299.614 492.649C291.756 492.649 285.916 495.092 282.093 499.976C278.271 504.807 276.359 511.895 276.359 521.239C276.359 529.946 278.271 536.689 282.093 541.467C285.916 546.245 291.491 548.634 298.817 548.634C303.542 548.634 307.604 547.599 311.002 545.528C314.453 543.405 317.107 540.352 318.965 536.37L337.919 542.104C334.627 549.855 329.531 555.881 322.629 560.182C315.78 564.482 308.214 566.632 299.932 566.632ZM270.307 526.575V512.081H329.477V526.575H270.307ZM380.057 604.858C375.279 604.858 370.686 604.115 366.28 602.628C361.926 601.142 357.998 598.992 354.493 596.178C350.989 593.417 348.123 590.072 345.893 586.143L363.572 577.383C365.218 580.516 367.527 582.825 370.501 584.312C373.527 585.851 376.739 586.621 380.137 586.621C384.118 586.621 387.676 585.904 390.808 584.471C393.94 583.091 396.356 581.02 398.055 578.259C399.807 575.552 400.63 572.154 400.524 568.066V543.617H402.913V478.235H419.716V568.384C419.716 570.561 419.61 572.632 419.398 574.596C419.238 576.613 418.946 578.578 418.522 580.489C417.248 586.064 414.805 590.63 411.195 594.187C407.585 597.797 403.099 600.478 397.736 602.23C392.427 603.982 386.534 604.858 380.057 604.858ZM378.385 566.632C370.474 566.632 363.572 564.641 357.679 560.659C351.786 556.678 347.22 551.262 343.981 544.414C340.743 537.565 339.124 529.84 339.124 521.239C339.124 512.532 340.743 504.781 343.981 497.985C347.273 491.136 351.919 485.747 357.918 481.819C363.917 477.837 370.978 475.846 379.101 475.846C387.277 475.846 394.126 477.837 399.648 481.819C655.214 485.747 659.435 491.136 662.302 497.985C665.169 504.834 666.603 512.585 666.603 521.239C666.603 529.787 665.169 537.512 662.302 544.414C659.435 551.262 655.161 556.678 649.481 560.659C643.8 564.641 636.765 566.632 628.377 566.632ZM784.314 564.243V449.566H801.595L841.254 530.796L880.914 449.566H898.195V564.243H880.276V490.738L845.077 564.243H837.432L802.312 490.738V564.243H784.314ZM907.826 564.243V449.566H927.018V502.763L972.81 449.566H996.382L947.087 505.79L999.727 564.243H975.358L927.018 510.727V564.243H907.826ZM1025.76 564.243V467.564H988.651V449.566H1082.07V467.564H1044.95V564.243H1025.76Z"
         fill="#FE731B"
       />
       <path
@@ -307,8 +348,71 @@ function NavegandoBrandLogo() {
   );
 }
 
-export function BriefingView() {
-  const { clients, events, employees, updateClient, saveEvent, openNewEventModal, toast } = useAgenda();
+export function BriefingView({ initialMode }: BriefingViewProps = {}) {
+  const {
+    clients,
+    events,
+    employees,
+    updateClient,
+    saveEvent,
+    openNewEventModal,
+    toast,
+    loggedEmployeeId,
+    canManage,
+    currentView,
+    setCurrentView,
+  } = useAgenda();
+
+  // Categoria ativa dentro de Briefing: 'video' (Briefing do Vídeo) ou 'edicao' (Briefing de Edição - Modelos)
+  const [briefingMode, setBriefingMode] = useState<BriefingCategoryMode>(
+    initialMode || (currentView === 'briefing-edicao' ? 'edicao' : 'video')
+  );
+
+  useEffect(() => {
+    if (initialMode) {
+      setBriefingMode(initialMode);
+    } else if (currentView === 'briefing-edicao') {
+      setBriefingMode('edicao');
+    } else if (currentView === 'briefing') {
+      setBriefingMode('video');
+    }
+  }, [initialMode, currentView]);
+
+  // Identifica o membro logado e se é Modelo (responsável pela edição, porém somente visualização no briefing)
+  const currentMember = useMemo(
+    () => employees.find((e) => e.id === loggedEmployeeId) || null,
+    [employees, loggedEmployeeId]
+  );
+  const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
+  const isReadOnly = isModelMember || !canManage;
+
+  // Modelos responsáveis pela edição dos vídeos
+  const modelEmployees = useMemo(
+    () => employees.filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora'),
+    [employees]
+  );
+
+  const resolveEventEditorModel = useCallback(
+    (ev: EventItem): Employee | null => {
+      if (ev.modelo_editora_id) {
+        const explicit = employees.find((e) => e.id === ev.modelo_editora_id);
+        if (explicit) return explicit;
+      }
+      const fromVideo = ev.briefing_edicao_videos?.find((v) => v.modeloEditoraId)?.modeloEditoraId;
+      if (fromVideo) {
+        const found = employees.find((e) => e.id === fromVideo);
+        if (found) return found;
+      }
+      const assignedModelId = (ev.assigned_employee_ids || []).find((id) =>
+        modelEmployees.some((m) => m.id === id)
+      );
+      if (assignedModelId) {
+        return modelEmployees.find((m) => m.id === assignedModelId) || null;
+      }
+      return modelEmployees[0] || null;
+    },
+    [employees, modelEmployees]
+  );
 
   // Filtro de busca e status na tela de cards de compromissos
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendentes' | 'feitos'>('todos');
@@ -318,35 +422,60 @@ export function BriefingView() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [videoDrafts, setVideoDrafts] = useState<EditableVideoDraft[]>([]);
   const [videoQuantity, setVideoQuantity] = useState('1');
+  const [selectedEditorModelId, setSelectedEditorModelId] = useState<string>('');
   const editorHeading = useRef<HTMLHeadingElement | null>(null);
   const videoInputs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const focusVideoId = useRef<string | null>(null);
   const [savedDrafts, setSavedDrafts] = useState('[]');
-  useEffect(() => {
-    if (focusVideoId.current) { videoInputs.current[focusVideoId.current]?.focus(); focusVideoId.current = null; }
-  }, [videoDrafts]);
-  const [showPdfPreview, setShowPdfPreview] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (focusVideoId.current) {
+      videoInputs.current[focusVideoId.current]?.focus();
+      focusVideoId.current = null;
+    }
+  }, [videoDrafts]);
+
+  const [showPdfPreview, setShowPdfPreview] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!activeEventId) return;
-    const frame = requestAnimationFrame(() => { editorHeading.current?.focus(); editorHeading.current?.scrollIntoView({block:'start'}); });
+    const frame = requestAnimationFrame(() => {
+      editorHeading.current?.focus();
+      editorHeading.current?.scrollIntoView({ block: 'start' });
+    });
     return () => cancelAnimationFrame(frame);
   }, [activeEventId]);
+
   useEffect(() => {
-    if (!activeEventId || JSON.stringify(videoDrafts) === savedDrafts) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    if (!activeEventId || isReadOnly || JSON.stringify(videoDrafts) === savedDrafts) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [activeEventId, videoDrafts, savedDrafts]);
+  }, [activeEventId, videoDrafts, savedDrafts, isReadOnly]);
 
-  // Todos os compromissos de gravação / foto dos restaurantes ordenados por data
+  // Funções dependentes do modo atual ('video' vs 'edicao')
+  const isEventDoneForMode = useCallback(
+    (ev: EventItem, mode: BriefingCategoryMode = briefingMode) =>
+      mode === 'edicao' ? hasEditingBriefingDone(ev) : hasVideoBriefingDone(ev),
+    [briefingMode]
+  );
+
+  const countEventVideosForMode = useCallback(
+    (ev: EventItem, mode: BriefingCategoryMode = briefingMode) =>
+      mode === 'edicao' ? countEditingBriefingVideos(ev) : countVideoBriefingVideos(ev),
+    [briefingMode]
+  );
+
+  // Todos os compromissos de gravação / foto / edição dos restaurantes ordenados por data
   const recordingEvents = useMemo(() => {
     return [...events]
-      .filter((ev) => ev.status !== 'cancelado' && (ev.tipo === 'gravacao' || ev.tipo === 'foto'))
+      .filter((ev) => ev.status !== 'cancelado' && (ev.tipo === 'gravacao' || ev.tipo === 'foto' || ev.tipo === 'edicao'))
       .sort((a, b) => {
         const cmp = a.data.localeCompare(b.data);
         if (cmp !== 0) return cmp;
@@ -358,15 +487,15 @@ export function BriefingView() {
     let feitos = 0;
     let pendentes = 0;
     for (const ev of recordingEvents) {
-      if (hasBriefingDone(ev)) feitos++;
+      if (isEventDoneForMode(ev)) feitos++;
       else pendentes++;
     }
     return { total: recordingEvents.length, feitos, pendentes };
-  }, [recordingEvents]);
+  }, [recordingEvents, isEventDoneForMode]);
 
   const filteredEvents = useMemo(() => {
     return recordingEvents.filter((ev) => {
-      const done = hasBriefingDone(ev);
+      const done = isEventDoneForMode(ev);
       if (statusFilter === 'pendentes' && done) return false;
       if (statusFilter === 'feitos' && !done) return false;
 
@@ -375,17 +504,18 @@ export function BriefingView() {
         const clientName = (ev.client?.nome || clients.find((c) => c.id === ev.client_id)?.nome || '').toLowerCase();
         const local = (ev.local || '').toLowerCase();
         const dateStr = fmtDate(ev.data).toLowerCase();
-        return clientName.includes(q) || local.includes(q) || dateStr.includes(q);
+        const editorModel = (resolveEventEditorModel(ev)?.nome || '').toLowerCase();
+        return clientName.includes(q) || local.includes(q) || dateStr.includes(q) || editorModel.includes(q);
       }
       return true;
     });
-  }, [recordingEvents, statusFilter, searchQuery, clients]);
+  }, [recordingEvents, statusFilter, searchQuery, clients, isEventDoneForMode, resolveEventEditorModel]);
 
   const restaurantEvents = useMemo(() => {
     const groups = new Map<string, EventItem[]>();
     for (const event of filteredEvents) groups.set(event.client_id, [...(groups.get(event.client_id) || []), event]);
     const today = todayInSaoPaulo();
-    return [...groups.values()].map(group => group.find(event => event.data >= today) || group[group.length - 1]);
+    return [...groups.values()].map((group) => group.find((event) => event.data >= today) || group[group.length - 1]);
   }, [filteredEvents]);
 
   const activeEvent = useMemo(
@@ -398,48 +528,128 @@ export function BriefingView() {
     return activeEvent.client || clients.find((c) => c.id === activeEvent.client_id) || null;
   }, [activeEvent, clients]);
 
+  // Carrega os drafts do evento conforme o modo ('video' ou 'edicao')
+  const loadDraftsForEventAndMode = useCallback(
+    (ev: EventItem, mode: BriefingCategoryMode) => {
+      const sourceVideos = mode === 'edicao' ? ev.briefing_edicao_videos : ev.briefing_videos;
+      const sourceRaw = mode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
+
+      const structured = sourceVideos?.map((video, index) => ({
+        ...video,
+        id: `video-${index + 1}-${crypto.randomUUID()}`,
+      }));
+      const drafts =
+        structured?.length && serializeDraftsToRaw(structured) === (sourceRaw || '')
+          ? structured
+          : draftsFromRaw(sourceRaw);
+
+      const defaultModel = resolveEventEditorModel(ev);
+      setSelectedEditorModelId(ev.modelo_editora_id || defaultModel?.id || '');
+      setVideoDrafts(drafts);
+      setVideoQuantity(String(drafts.length));
+      setSavedDrafts(JSON.stringify(drafts));
+      setShowPdfPreview(false);
+      setStatusMsg('');
+    },
+    [resolveEventEditorModel]
+  );
+
   // Ao clicar no card de um compromisso de restaurante, abre o editor de vídeos
-  const handleOpenEventBriefing = (ev: EventItem) => {
+  const handleOpenEventBriefing = (ev: EventItem, targetMode: BriefingCategoryMode = briefingMode) => {
+    if (targetMode !== briefingMode) {
+      setBriefingMode(targetMode);
+    }
     setActiveEventId(ev.id);
-    const structured = ev.briefing_videos?.map((video, index) => ({ ...video, id: `video-${index + 1}-${crypto.randomUUID()}` }));
-    const drafts = structured?.length && serializeDraftsToRaw(structured) === (ev.briefing_gravacao || '') ? structured : draftsFromRaw(ev.briefing_gravacao);
-    setVideoDrafts(drafts);
-    setVideoQuantity(String(drafts.length));
-    setSavedDrafts(JSON.stringify(drafts));
-    setShowPdfPreview(false);
-    setStatusMsg('');
+    loadDraftsForEventAndMode(ev, targetMode);
+  };
+
+  // Troca entre "Briefing do Vídeo" e "Briefing de Edição" mantendo o restaurante aberto se houver
+  const handleSwitchMode = (nextMode: BriefingCategoryMode) => {
+    if (nextMode === briefingMode) return;
+    if (
+      activeEvent &&
+      !isReadOnly &&
+      JSON.stringify(videoDrafts) !== savedDrafts &&
+      !window.confirm('Existem alterações não salvas neste briefing. Deseja alternar de aba sem salvar?')
+    ) {
+      return;
+    }
+    setBriefingMode(nextMode);
+    if (currentView === 'briefing' && nextMode === 'edicao') {
+      setCurrentView('briefing-edicao');
+    } else if (currentView === 'briefing-edicao' && nextMode === 'video') {
+      setCurrentView('briefing');
+    }
+    if (activeEvent) {
+      loadDraftsForEventAndMode(activeEvent, nextMode);
+    }
   };
 
   // Manipulação da lista de vídeos separados
-  const createVideo = (): EditableVideoDraft => ({ id: crypto.randomUUID(), titulo: '', formato: 'Automático', roteiro: '', refRotulo: 'Referência', refUrl: '' });
+  const createVideo = (): EditableVideoDraft => ({
+    id: crypto.randomUUID(),
+    titulo: '',
+    formato: 'Automático',
+    roteiro: '',
+    refRotulo: 'Referência',
+    refUrl: '',
+    modeloEditoraId: selectedEditorModelId || undefined,
+  });
+
   const handleAddAnotherVideo = () => {
+    if (isReadOnly) return;
     const video = createVideo();
-    setVideoDrafts(prev => [...prev, video]);
+    setVideoDrafts((prev) => [...prev, video]);
     setVideoQuantity(String(videoDrafts.length + 1));
     focusVideoId.current = video.id;
   };
+
   const advanceVideo = (index: number) => {
+    if (isReadOnly) return;
     if (index + 1 < videoDrafts.length) videoInputs.current[videoDrafts[index + 1].id]?.focus();
     else handleAddAnotherVideo();
   };
+
   const applyQuantity = () => {
+    if (isReadOnly) return;
     const quantity = Number(videoQuantity);
-    if (!Number.isSafeInteger(quantity) || quantity < 1) { toast('Informe uma quantidade inteira maior que zero.', 'error'); return; }
-    if (quantity < videoDrafts.length && videoDrafts.slice(quantity).some(video => video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim() || video.refsExtras?.length)) {
-      toast('Há vídeos preenchidos nessa redução. Remova os cards desejados individualmente.', 'error'); return;
+    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+      toast('Informe uma quantidade inteira maior que zero.', 'error');
+      return;
     }
-    setVideoDrafts(prev => quantity <= prev.length ? prev.slice(0, quantity) : [...prev, ...Array.from({length: quantity - prev.length}, createVideo)]);
+    if (
+      quantity < videoDrafts.length &&
+      videoDrafts
+        .slice(quantity)
+        .some((video) => video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim() || video.refsExtras?.length)
+    ) {
+      toast('Há vídeos preenchidos nessa redução. Remova os cards desejados individualmente.', 'error');
+      return;
+    }
+    setVideoDrafts((prev) =>
+      quantity <= prev.length
+        ? prev.slice(0, quantity)
+        : [...prev, ...Array.from({ length: quantity - prev.length }, createVideo)]
+    );
   };
+
   const leaveEditor = () => {
-    if (JSON.stringify(videoDrafts) !== savedDrafts && !window.confirm('Existem alterações não salvas. Deseja sair sem salvar?')) return;
+    if (
+      !isReadOnly &&
+      JSON.stringify(videoDrafts) !== savedDrafts &&
+      !window.confirm('Existem alterações não salvas. Deseja sair sem salvar?')
+    )
+      return;
     setActiveEventId(null);
   };
 
   const handleUpdateVideoDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
+    if (isReadOnly) return;
     setVideoDrafts((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
   };
 
   const handleRemoveVideoDraft = (id: string) => {
+    if (isReadOnly) return;
     setVideoDrafts((prev) => {
       if (prev.length <= 1) {
         return [
@@ -457,7 +667,7 @@ export function BriefingView() {
     });
   };
 
-  //Texto bruto consolidado para o evento e para o PDF A4
+  // Texto bruto consolidado para o evento e para o PDF A4
   const serializedRawText = useMemo(() => serializeDraftsToRaw(videoDrafts), [videoDrafts]);
   const parsedPreviewItems = useMemo(() => parseItems(serializedRawText), [serializedRawText]);
   const formatsCount = useMemo(
@@ -474,39 +684,136 @@ export function BriefingView() {
   }, [parsedPreviewItems]);
 
   const handleSaveBriefing = () => {
-    if (!activeEvent) return;
+    if (!activeEvent || isReadOnly) return;
     const raw = serializeDraftsToRaw(videoDrafts);
 
     for (const video of videoDrafts) {
       if (!video.refUrl.trim()) continue;
-      try { const url = new URL(normalizarUrl(video.refUrl.trim())); if (!['https:', 'http:'].includes(url.protocol)) throw new Error(); }
-      catch { toast('Confira o link de referência antes de salvar.', 'error'); return; }
+      try {
+        const url = new URL(normalizarUrl(video.refUrl.trim()));
+        if (!['https:', 'http:'].includes(url.protocol)) throw new Error();
+      } catch {
+        toast('Confira o link de referência antes de salvar.', 'error');
+        return;
+      }
     }
-    const result = saveEvent(
-      {
-        ...activeEvent,
-        briefing_videos: videoDrafts.map(video => ({titulo:video.titulo, formato:video.formato, roteiro:video.roteiro, refRotulo:video.refRotulo, refUrl:video.refUrl, refsExtras:video.refsExtras})),
-        briefing_gravacao: raw || null,
-      },
-      true
-    );
 
-    if (!result?.success) { toast('Não foi possível salvar o briefing.', 'error'); return; }
+    const mappedVideos = videoDrafts.map((video) => ({
+      titulo: video.titulo,
+      formato: video.formato,
+      roteiro: video.roteiro,
+      refRotulo: video.refRotulo,
+      refUrl: video.refUrl,
+      modeloEditoraId: selectedEditorModelId || video.modeloEditoraId,
+      refsExtras: video.refsExtras,
+    }));
+
+    const updatedEvent: EventItem =
+      briefingMode === 'edicao'
+        ? {
+            ...activeEvent,
+            briefing_edicao_videos: mappedVideos,
+            briefing_edicao: raw || null,
+            modelo_editora_id: selectedEditorModelId || activeEvent.modelo_editora_id || null,
+          }
+        : {
+            ...activeEvent,
+            briefing_videos: mappedVideos,
+            briefing_gravacao: raw || null,
+          };
+
+    const result = saveEvent(updatedEvent, true);
+
+    if (!result?.success) {
+      toast('Não foi possível salvar o briefing.', 'error');
+      return;
+    }
     setSavedDrafts(JSON.stringify(videoDrafts));
-    if (activeClient && raw) {
+    if (briefingMode === 'video' && activeClient && raw) {
       updateClient(activeClient.id, {
         briefing_roteiros_modelos: raw,
       });
     }
 
     const qtd = videoDrafts.length;
+    const labelTipo = briefingMode === 'edicao' ? 'Briefing de Edição' : 'Briefing do Vídeo';
     if (raw) {
-      toast(`Briefing salvo com ${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'} para ${activeClient?.nome || 'Restaurante'}!`);
-      setStatusMsg(`Salvo com sucesso (${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'}). Status: Briefing Feito.`);
+      toast(`${labelTipo} salvo com ${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'} para ${activeClient?.nome || 'Restaurante'}!`);
+      setStatusMsg(`${labelTipo} salvo com sucesso (${qtd} ${qtd === 1 ? 'vídeo' : 'vídeos'}). Status: Feito.`);
     } else {
       toast('Cards salvos. Preencha os briefings para concluir.', 'info');
       setStatusMsg(`${qtd} cards salvos. Briefings ainda pendentes.`);
     }
+  };
+
+  // Monta o documento formatado do Briefing do Vídeo para o Cliente visualizar
+  const buildClientDocumentText = useCallback(
+    (ev: EventItem, draftsToFormat?: EditableVideoDraft[]) => {
+      const clientObj = ev.client || clients.find((c) => c.id === ev.client_id);
+      const nomeCliente = clientObj?.nome || 'Restaurante Parceiro';
+      const dataFmt = fmtDate(ev.data);
+      const horario = `${ev.hora_inicio.slice(0, 5)} às ${ev.hora_fim.slice(0, 5)}`;
+
+      const items = draftsToFormat
+        ? draftsToFormat.filter((d) => d.roteiro.trim() || d.titulo.trim())
+        : draftsFromRaw(ev.briefing_gravacao).filter((d) => d.roteiro.trim() || d.titulo.trim());
+
+      const header = [
+        `📋 *DOCUMENTO DE BRIEFING DE GRAVAÇÃO — NAVEGANDO MKT*`,
+        `🍽️ *Cliente:* ${nomeCliente}`,
+        `📅 *Data da Gravação:* ${dataFmt} (${horario})`,
+        `🎬 *Total de Vídeos Planejados:* ${items.length}`,
+        `----------------------------------------`,
+      ].join('\n');
+
+      const body =
+        items.length > 0
+          ? items
+              .map((v, idx) => {
+                const num = String(idx + 1).padStart(2, '0');
+                const titlePart = v.titulo.trim() ? ` — *${v.titulo.trim()}*` : '';
+                const formatPart = v.formato && v.formato !== 'Automático' ? ` [${v.formato}]` : '';
+                const refPart = v.refUrl.trim() ? `\n🔗 Referência: ${normalizarUrl(v.refUrl.trim())}` : '';
+                return `🎥 *VÍDEO ${num}${formatPart}*${titlePart}\n${v.roteiro.trim() || 'Roteiro em definição.'}${refPart}`;
+              })
+              .join('\n\n')
+          : 'Roteiros em preparação pela equipe Navegando MKT.';
+
+      const footer = [
+        `----------------------------------------`,
+        `✅ *Documento gerado pela Central Criativa Navegando MKT para visualização e alinhamento com o cliente.*`,
+      ].join('\n');
+
+      return `${header}\n\n${body}\n\n${footer}`;
+    },
+    [clients]
+  );
+
+  const handleCopyClientDocument = async (ev: EventItem, draftsToFormat?: EditableVideoDraft[]) => {
+    const docText = buildClientDocumentText(ev, draftsToFormat);
+    try {
+      await navigator.clipboard.writeText(docText);
+      toast('Documento do cliente copiado! Pronto para colar e enviar para o restaurante.');
+      setStatusMsg('Documento formatado copiado para a área de transferência! Envie para o cliente visualizar.');
+    } catch {
+      toast('Não foi possível copiar automaticamente. Use a opção de WhatsApp ou PDF.', 'error');
+    }
+  };
+
+  const handleShareClientWhatsApp = (ev: EventItem, draftsToFormat?: EditableVideoDraft[]) => {
+    const docText = buildClientDocumentText(ev, draftsToFormat);
+    const clientObj = ev.client || clients.find((c) => c.id === ev.client_id);
+    const rawDigits = (clientObj?.contato || '').replace(/\D/g, '');
+    const phone =
+      rawDigits.length >= 10
+        ? rawDigits.startsWith('55')
+          ? rawDigits
+          : `55${rawDigits}`
+        : '';
+    const encoded = encodeURIComponent(docText);
+    const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast('Abrindo WhatsApp com o documento de briefing para o cliente visualizar!');
   };
 
   // Geração de PDF A4 para o compromisso aberto
@@ -574,34 +881,130 @@ export function BriefingView() {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
-  const handleDownloadOrSharePdf = async (mode: 'download' | 'share') => {
+  const handleDownloadOrSharePdf = async (mode: 'download' | 'share', forClientDoc = false) => {
     if (!showPdfPreview) {
       setShowPdfPreview(true);
       await new Promise((r) => setTimeout(r, 250));
     }
     if (isGeneratingPdf) return;
     setIsGeneratingPdf(true);
-    setStatusMsg('Gerando PDF A4...');
+    setStatusMsg(forClientDoc ? 'Preparando Documento A4 do Cliente...' : 'Gerando PDF A4...');
     try {
       const blob = await gerarPdfBlob();
       const cleanName = (activeClient?.nome || 'Restaurante').replace(/[\/\\:*?"<>|]/g, '-');
-      const fileName = `Briefing - ${cleanName} - ${activeEvent?.data || ''}.pdf`;
+      const prefix =
+        briefingMode === 'edicao'
+          ? 'Briefing de Edicao'
+          : forClientDoc
+            ? 'Documento do Cliente - Briefing'
+            : 'Briefing de Gravacao';
+      const fileName = `${prefix} - ${cleanName} - ${activeEvent?.data || ''}.pdf`;
 
       if (mode === 'share') {
         const file = new File([blob], fileName, { type: 'application/pdf' });
         if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: fileName });
-          setStatusMsg('PDF compartilhado!');
+          setStatusMsg('Documento PDF compartilhado com sucesso!');
           return;
         }
       }
       baixarBlob(blob, fileName);
-      setStatusMsg('PDF baixado com sucesso!');
+      setStatusMsg(
+        forClientDoc
+          ? 'Documento PDF do cliente baixado! Pronto para enviar ao restaurante.'
+          : 'PDF baixado com sucesso!'
+      );
     } catch (e) {
       setStatusMsg('Erro ao gerar PDF: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setIsGeneratingPdf(false);
     }
+  };
+
+  // Barra de Seleção da Categoria de Briefing (Briefing do Vídeo vs Briefing de Edição)
+  const renderCategorySwitcher = () => (
+    <div className="p-2 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+        <button
+          type="button"
+          onClick={() => handleSwitchMode('video')}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all cursor-pointer border ${
+            briefingMode === 'video'
+              ? 'bg-[var(--ui-accent)]/15 border-[var(--ui-accent)] text-foreground shadow-[0_0_20px_rgba(255,102,0,0.15)]'
+              : 'bg-[var(--ui-page)]/60 border-transparent text-zinc-400 hover:text-foreground hover:bg-[var(--ui-page)]'
+          }`}
+        >
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              briefingMode === 'video'
+                ? 'bg-[var(--ui-accent)] text-white'
+                : 'bg-[var(--ui-surface)] text-zinc-400 border border-[var(--ui-border)]'
+            }`}
+          >
+            <Video className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-extrabold truncate">Briefing do Vídeo (Gravação)</div>
+            <div className="text-[11px] text-zinc-400 truncate">
+              Roteiros por vídeo + Documento para o Cliente visualizar
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSwitchMode('edicao')}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all cursor-pointer border ${
+            briefingMode === 'edicao'
+              ? 'bg-purple-500/15 border-purple-400/60 text-foreground shadow-[0_0_20px_rgba(168,85,247,0.15)]'
+              : 'bg-[var(--ui-page)]/60 border-transparent text-zinc-400 hover:text-foreground hover:bg-[var(--ui-page)]'
+          }`}
+        >
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              briefingMode === 'edicao'
+                ? 'bg-purple-500 text-white'
+                : 'bg-[var(--ui-surface)] text-zinc-400 border border-[var(--ui-border)]'
+            }`}
+          >
+            <Scissors className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-extrabold truncate flex items-center gap-1.5">
+              <span>Briefing de Edição</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                Modelos Editoras
+              </span>
+            </div>
+            <div className="text-[11px] text-zinc-400 truncate">
+              Orientações de edição por vídeo para as modelos (visualização liberada)
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+
+  // Banner informativo quando uma Modelo (ou perfil somente leitura) está acessando
+  const renderModelReadOnlyBanner = () => {
+    if (!isReadOnly) return null;
+    return (
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-purple-200">
+        <div className="flex items-center gap-2.5">
+          <Lock className="w-4 h-4 text-purple-300 shrink-0" />
+          <div>
+            <span className="font-extrabold text-purple-100">
+              Modo Somente Visualização ({isModelMember ? 'Modelo Responsável pela Edição' : 'Consulta'}):
+            </span>{' '}
+            Você tem acesso completo para visualizar os briefings de gravação e de edição, abrir referências e baixar o PDF A4, mas não pode editar os textos.
+          </div>
+        </div>
+        <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-[10px] font-extrabold uppercase tracking-wider text-purple-200">
+          <Eye className="w-3 h-3" />
+          Apenas Leitura
+        </span>
+      </div>
+    );
   };
 
   // ============================================================================
@@ -610,18 +1013,34 @@ export function BriefingView() {
   if (!activeEvent) {
     return (
       <div className="space-y-6">
+        {renderCategorySwitcher()}
+        {renderModelReadOnlyBanner()}
+
         {/* Cabeçalho e Resumo */}
         <div className="p-5 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)] mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span>Central de Briefings por Compromisso</span>
+              {briefingMode === 'edicao' ? (
+                <>
+                  <Scissors className="w-4 h-4 text-purple-400" />
+                  <span className="text-purple-300">Briefing de Edição • Modelos Responsáveis pela Edição</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Central de Briefings de Vídeo por Compromisso</span>
+                </>
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-foreground">
-              Gravações dos Restaurantes
+              {briefingMode === 'edicao'
+                ? 'Briefings de Edição dos Restaurantes'
+                : 'Gravações & Briefings de Vídeo dos Restaurantes'}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Clique no card de um restaurante agendado para abrir a área de escrita e separar os briefings de cada vídeo.
+              {briefingMode === 'edicao'
+                ? 'Mesmo esquema por restaurante e separado por vídeo: organize as instruções de edição para as modelos responsáveis (as modelos visualizam tudo sem editar).'
+                : 'Clique no card do restaurante para abrir os briefings separados por vídeo e compartilhar o documento de visualização com o cliente.'}
             </p>
           </div>
 
@@ -646,19 +1065,23 @@ export function BriefingView() {
             <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <div>
-                <div className="text-[10px] uppercase font-bold text-emerald-300/80">Briefing Feito</div>
+                <div className="text-[10px] uppercase font-bold text-emerald-300/80">
+                  {briefingMode === 'edicao' ? 'Edição Feita' : 'Briefing Feito'}
+                </div>
                 <div className="text-sm font-extrabold text-emerald-400">{counts.feitos}</div>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => openNewEventModal()}
-              className="px-3.5 py-2.5 rounded-xl gradient-cta text-foreground font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nova Gravação</span>
-            </button>
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={() => openNewEventModal()}
+                className="px-3.5 py-2.5 rounded-xl gradient-cta text-foreground font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nova Gravação</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -706,7 +1129,7 @@ export function BriefingView() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar restaurante, data ou local..."
+              placeholder="Buscar restaurante, modelo editora, data ou local..."
               className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
             />
           </div>
@@ -724,16 +1147,21 @@ export function BriefingView() {
             </p>
           </div>
         ) : (
-          <div className="briefing-restaurants grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="briefing-restaurants grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {restaurantEvents.map((ev) => {
               const client = ev.client || clients.find((c) => c.id === ev.client_id);
-              const done = hasBriefingDone(ev);
-              const restaurantRecordings = recordingEvents.filter(event => event.client_id === ev.client_id);
-              const videoCount = restaurantRecordings.reduce((sum, event) => sum + countBriefingVideos(event), 0);
+              const done = isEventDoneForMode(ev);
+              const restaurantRecordings = recordingEvents.filter((event) => event.client_id === ev.client_id);
+              const videoCount = restaurantRecordings.reduce(
+                (sum, event) => sum + countEventVideosForMode(event),
+                0
+              );
               const assignedMembers = (ev.assigned_employee_ids || [])
                 .map((id) => employees.find((emp) => emp.id === id))
                 .filter(Boolean);
-              const parsedPreview = done && ev.briefing_gravacao ? parseItems(ev.briefing_gravacao) : [];
+              const editorModel = resolveEventEditorModel(ev);
+              const rawSource = briefingMode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
+              const parsedPreview = done && rawSource ? parseItems(rawSource) : [];
 
               return (
                 <div
@@ -747,18 +1175,26 @@ export function BriefingView() {
                       handleOpenEventBriefing(ev);
                     }
                   }}
-                  className={`group min-w-0 rounded-2xl p-3 sm:p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
+                  className={`group min-w-0 rounded-2xl p-4 sm:p-5 bg-[var(--ui-surface)] border transition-all cursor-pointer flex flex-col justify-between gap-4 hover:-translate-y-0.5 shadow-lg ${
                     done
                       ? 'border-emerald-500/35 hover:border-emerald-400/70'
-                      : 'border-amber-500/35 hover:border-[var(--ui-accent)]'
+                      : briefingMode === 'edicao'
+                        ? 'border-purple-500/35 hover:border-purple-400'
+                        : 'border-amber-500/35 hover:border-[var(--ui-accent)]'
                   }`}
                 >
                   <div className="space-y-3">
                     {/* Topo do Card: Nome do Restaurante + Status (Pendente ou Feito) */}
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="inline-block text-[10px] font-extrabold uppercase tracking-wider text-[var(--ui-accent)] mb-0.5">
-                          {EVENT_TYPE_LABELS[ev.tipo] || 'Gravação'}
+                        <span
+                          className={`inline-block text-[10px] font-extrabold uppercase tracking-wider mb-0.5 ${
+                            briefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
+                          }`}
+                        >
+                          {briefingMode === 'edicao'
+                            ? 'Briefing de Edição • Modelos'
+                            : EVENT_TYPE_LABELS[ev.tipo] || 'Gravação'}
                         </span>
                         <h3 className="text-sm sm:text-base font-extrabold text-foreground break-words group-hover:text-[var(--ui-accent)] transition-colors">
                           {client?.nome || 'Restaurante'}
@@ -768,7 +1204,7 @@ export function BriefingView() {
                       {done ? (
                         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Briefing feito</span>
+                          <span>{briefingMode === 'edicao' ? 'Edição Feita' : 'Briefing Feito'}</span>
                         </span>
                       ) : (
                         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">
@@ -778,7 +1214,22 @@ export function BriefingView() {
                       )}
                     </div>
 
-                    <p className="text-xs text-zinc-400">{restaurantRecordings.length} gravações · {videoCount} vídeos gerados</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-zinc-400">
+                        {restaurantRecordings.length}{' '}
+                        {restaurantRecordings.length === 1 ? 'compromisso' : 'compromissos'} · {videoCount}{' '}
+                        {briefingMode === 'edicao' ? 'vídeos para editar' : 'vídeos planejados'}
+                      </p>
+
+                      {/* Destaque da Modelo Responsável pela Edição */}
+                      {editorModel && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-[11px] font-bold text-purple-200">
+                          <Scissors className="w-3 h-3 text-purple-400" />
+                          <span>Edição: {editorModel.nome}</span>
+                        </span>
+                      )}
+                    </div>
+
                     {/* Data e Horário do Compromisso */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300 bg-[var(--ui-page)] px-3 py-2 rounded-xl border border-[var(--ui-border)]">
                       <span className="flex items-center gap-1.5 font-semibold">
@@ -796,14 +1247,22 @@ export function BriefingView() {
                     {done && parsedPreview.length > 0 ? (
                       <div className="space-y-1.5 pt-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                          Vídeos planejados:
+                          {briefingMode === 'edicao' ? 'Vídeos para edição:' : 'Vídeos planejados:'}
                         </div>
                         {parsedPreview.slice(0, 2).map((vid) => (
                           <div
                             key={vid.n}
                             className="text-xs text-zinc-300 line-clamp-1 bg-white/[0.02] px-2.5 py-1.5 rounded-lg border border-white/5"
                           >
-                            <strong className="text-[var(--ui-accent)] mr-1.5">Vídeo {vid.n}:</strong>
+                            <strong
+                              className={
+                                briefingMode === 'edicao'
+                                  ? 'text-purple-300 mr-1.5'
+                                  : 'text-[var(--ui-accent)] mr-1.5'
+                              }
+                            >
+                              {briefingMode === 'edicao' ? `Edição Vídeo ${vid.n}:` : `Vídeo ${vid.n}:`}
+                            </strong>
                             {vid.text}
                           </div>
                         ))}
@@ -816,12 +1275,18 @@ export function BriefingView() {
                     ) : (
                       <div className="p-3 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 text-xs text-amber-200/90 flex items-center gap-2">
                         <FileText className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>Nenhum briefing escrito ainda. Clique para criar os vídeos desta gravação.</span>
+                        <span>
+                          {isReadOnly
+                            ? 'Este briefing ainda está sendo preparado pela gestão.'
+                            : briefingMode === 'edicao'
+                              ? 'Nenhum briefing de edição escrito ainda. Clique para separar a edição de cada vídeo para a modelo.'
+                              : 'Nenhum briefing escrito ainda. Clique para criar os vídeos desta gravação.'}
+                        </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Rodapé do Card: Equipe + Botão de Abrir */}
+                  {/* Rodapé do Card: Equipe + Ações Rápidas */}
                   <div className="pt-3 border-t border-[var(--ui-border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1 flex-wrap">
                       {assignedMembers.length > 0 ? (
@@ -838,10 +1303,38 @@ export function BriefingView() {
                       )}
                     </div>
 
-                    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[var(--ui-accent)] group-hover:translate-x-0.5 transition-transform">
-                      <span>{done ? 'Editar Vídeos' : 'Escrever Briefing'}</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </span>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      {/* Atalho rápido para compartilhar documento do vídeo com o cliente */}
+                      {briefingMode === 'video' && done && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareClientWhatsApp(ev);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          title="Enviar documento de briefing para o cliente visualizar no WhatsApp"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>Enviar p/ Cliente</span>
+                        </button>
+                      )}
+
+                      <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[var(--ui-accent)] group-hover:translate-x-0.5 transition-transform">
+                        <span>
+                          {isReadOnly
+                            ? 'Visualizar Briefing'
+                            : done
+                              ? briefingMode === 'edicao'
+                                ? 'Editar Briefing de Edição'
+                                : 'Editar Vídeos'
+                              : briefingMode === 'edicao'
+                                ? 'Criar Briefing de Edição'
+                                : 'Escrever Briefing'}
+                        </span>
+                        <ChevronRight className="w-4 h-4" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -857,10 +1350,16 @@ export function BriefingView() {
   // ============================================================================
   const displayClient = activeClient?.nome || 'Restaurante';
   const displayDate = fmtDate(activeEvent.data);
-  const isCurrentlyDone = hasBriefingDone(activeEvent);
+  const isCurrentlyDone = isEventDoneForMode(activeEvent);
+  const activeEditorModel =
+    employees.find((e) => e.id === selectedEditorModelId) || resolveEventEditorModel(activeEvent);
+  const formatOptions = briefingMode === 'edicao' ? EDITING_FORMATS : VIDEO_FORMATS;
 
   return (
     <div className="space-y-6">
+      {renderCategorySwitcher()}
+      {renderModelReadOnlyBanner()}
+
       {/* Barra Superior do Compromisso Selecionado */}
       <div className="p-4 sm:p-6 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3.5">
@@ -875,8 +1374,16 @@ export function BriefingView() {
 
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[var(--ui-accent)]/15 text-[var(--ui-accent)]">
-                {EVENT_TYPE_LABELS[activeEvent.tipo] || 'Gravação'}
+              <span
+                className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  briefingMode === 'edicao'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                    : 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)]'
+                }`}
+              >
+                {briefingMode === 'edicao'
+                  ? 'Briefing de Edição (Modelos)'
+                  : EVENT_TYPE_LABELS[activeEvent.tipo] || 'Briefing do Vídeo'}
               </span>
               <span className="text-xs text-zinc-400 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-[var(--ui-accent)]" />
@@ -885,17 +1392,21 @@ export function BriefingView() {
               {isCurrentlyDone ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   <CheckCircle2 className="w-3 h-3" />
-                  Briefing Feito
+                  {briefingMode === 'edicao' ? 'Briefing de Edição Feito' : 'Briefing Feito'}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                   <Clock className="w-3 h-3" />
-                  Briefing Pendente
+                  {briefingMode === 'edicao' ? 'Edição Pendente' : 'Briefing Pendente'}
                 </span>
               )}
             </div>
 
-            <h2 ref={editorHeading} tabIndex={-1} className="scroll-mt-24 text-xl sm:text-2xl font-extrabold text-foreground">
+            <h2
+              ref={editorHeading}
+              tabIndex={-1}
+              className="scroll-mt-24 text-xl sm:text-2xl font-extrabold text-foreground"
+            >
               {displayClient}
             </h2>
           </div>
@@ -909,7 +1420,7 @@ export function BriefingView() {
             className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer"
           >
             <Eye className="w-4 h-4 text-[var(--ui-accent)]" />
-            <span>{showPdfPreview ? 'Ocultar Folha A4' : 'Ver Folha A4'}</span>
+            <span>{showPdfPreview ? 'Ocultar Documento A4' : 'Ver Documento A4'}</span>
           </button>
 
           <button
@@ -929,20 +1440,116 @@ export function BriefingView() {
             className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Share2 className="w-4 h-4 text-[var(--ui-accent)]" />
-            <span>Compartilhar</span>
+            <span>Compartilhar PDF</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleSaveBriefing}
-            aria-label="Salvar briefings"
-            className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>Salvar Briefing ({videoDrafts.length} {videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})</span>
-          </button>
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={handleSaveBriefing}
+              aria-label="Salvar briefings"
+              className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>
+                {briefingMode === 'edicao'
+                  ? `Salvar Briefing de Edição (${videoDrafts.length} ${videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`
+                  : `Salvar Briefing (${videoDrafts.length} ${videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`}
+              </span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ===================================================================== */}
+      {/* OPÇÃO DE COMPARTILHAR DOCUMENTO PARA O CLIENTE VISUALIZAR (NO VÍDEO)  */}
+      {/* ===================================================================== */}
+      {briefingMode === 'video' && (
+        <section className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[var(--ui-accent)]/12 via-[var(--ui-surface)] to-emerald-500/10 border border-[var(--ui-accent)]/35 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)]">
+              <FileText className="w-4 h-4" />
+              <span>Documento do Cliente • Visualização Externa</span>
+            </div>
+            <h3 className="text-sm sm:text-base font-extrabold text-foreground">
+              Compartilhar Documento do Briefing para {displayClient} visualizar
+            </h3>
+            <p className="text-xs text-zinc-300">
+              Gere e compartilhe o documento oficial em PDF A4 ou envie o roteiro estruturado no WhatsApp para o cliente aprovar e acompanhar os vídeos da gravação.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleDownloadOrSharePdf('share', true)}
+              disabled={isGeneratingPdf || parsedPreviewItems.length === 0}
+              className="px-3.5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Compartilhar Documento PDF c/ Cliente</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleShareClientWhatsApp(activeEvent, videoDrafts)}
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>Enviar no WhatsApp do Cliente</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleCopyClientDocument(activeEvent, videoDrafts)}
+              className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-zinc-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Copy className="w-4 h-4 text-[var(--ui-accent)]" />
+              <span>Copiar Documento do Cliente</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ===================================================================== */}
+      {/* PAINEL DA MODELO RESPONSÁVEL PELA EDIÇÃO (NO BRIEFING DE EDIÇÃO)      */}
+      {/* ===================================================================== */}
+      {briefingMode === 'edicao' && (
+        <section className="p-4 sm:p-5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-purple-300">
+              <UserCheck className="w-4 h-4" />
+              <span>Responsabilidade de Edição • Modelos Navegando MKT</span>
+            </div>
+            <h3 className="text-sm sm:text-base font-extrabold text-foreground">
+              Modelo Responsável pela Edição dos Vídeos de {displayClient}
+            </h3>
+            <p className="text-xs text-zinc-300">
+              As modelos são responsáveis pela edição dos vídeos e possuem acesso de visualização a todos os cards separados abaixo.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {activeEditorModel && <EmployeeBadge employee={activeEditorModel} size="md" />}
+            <label className="flex items-center gap-2 text-xs font-bold text-zinc-200">
+              <span>Modelo Editora:</span>
+              <select
+                aria-label="Modelo responsável pela edição"
+                disabled={isReadOnly}
+                value={selectedEditorModelId}
+                onChange={(e) => setSelectedEditorModelId(e.target.value)}
+                className="rounded-xl border border-purple-500/40 bg-[var(--ui-page)] px-3 py-2 text-xs font-bold text-foreground disabled:opacity-60"
+              >
+                {modelEmployees.map((mod) => (
+                  <option key={mod.id} value={mod.id}>
+                    {mod.nome} (Modelo & Editora)
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
+      )}
 
       {statusMsg && (
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center gap-2">
@@ -952,55 +1559,265 @@ export function BriefingView() {
       )}
 
       <label className="flex flex-col gap-2 text-xs font-semibold">
-        Gravação deste restaurante
-        <select aria-label="Gravação do restaurante" value={activeEvent.id} onChange={event => {
-          if (JSON.stringify(videoDrafts) !== savedDrafts && !window.confirm('Há alterações não salvas. Trocar de gravação sem salvar?')) return;
-          const selected = recordingEvents.find(item => item.id === event.target.value);
-          if (selected) handleOpenEventBriefing(selected);
-        }} className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-3 text-base">
-          {recordingEvents.filter(event => event.client_id === activeEvent.client_id).map(event => <option key={event.id} value={event.id}>{fmtDate(event.data)} · {event.hora_inicio.slice(0,5)} · {countBriefingVideos(event)} vídeos</option>)}
+        Compromisso deste restaurante
+        <select
+          aria-label="Gravação do restaurante"
+          value={activeEvent.id}
+          onChange={(event) => {
+            if (
+              !isReadOnly &&
+              JSON.stringify(videoDrafts) !== savedDrafts &&
+              !window.confirm('Há alterações não salvas. Trocar de gravação sem salvar?')
+            )
+              return;
+            const selected = recordingEvents.find((item) => item.id === event.target.value);
+            if (selected) handleOpenEventBriefing(selected, briefingMode);
+          }}
+          className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-3 text-base"
+        >
+          {recordingEvents
+            .filter((event) => event.client_id === activeEvent.client_id)
+            .map((event) => (
+              <option key={event.id} value={event.id}>
+                {fmtDate(event.data)} · {event.hora_inicio.slice(0, 5)} · {countEventVideosForMode(event)} vídeos (
+                {briefingMode === 'edicao' ? 'Edição' : 'Gravação'})
+              </option>
+            ))}
         </select>
       </label>
-      <section className="rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-4 space-y-3">
-        <form onSubmit={event => { event.preventDefault(); applyQuantity(); }} className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-2 text-sm font-semibold">
-            Quantos vídeos serão?
-            <input aria-label="Quantidade de vídeos" type="number" min="1" step="1" value={videoQuantity} onChange={event => setVideoQuantity(event.target.value)} className="w-24 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
-          </label>
-          <button type="submit" className="rounded-xl border border-[var(--ui-border)] px-4 py-2 text-sm font-semibold">Gerar cards</button>
-          <span className="text-xs text-zinc-400 pb-2">{videoDrafts.length} vídeos · {videoDrafts.filter(video => video.roteiro.trim()).length} briefings preenchidos</span>
-        </form>
-        <p className="text-xs text-zinc-400">Um card por vídeo. Enter avança para o próximo; Shift+Enter cria uma nova linha. Salve ao finalizar.</p>
-      </section>
-      <div className="briefing-videos grid grid-cols-2 gap-3 sm:gap-4">
+
+      {!isReadOnly && (
+        <section className="rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-4 space-y-3">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              applyQuantity();
+            }}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <label className="flex flex-col gap-2 text-sm font-semibold">
+              {briefingMode === 'edicao' ? 'Quantos vídeos serão editados?' : 'Quantos vídeos serão?'}
+              <input
+                aria-label="Quantidade de vídeos"
+                type="number"
+                min="1"
+                step="1"
+                value={videoQuantity}
+                onChange={(event) => setVideoQuantity(event.target.value)}
+                className="w-24 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-xl border border-[var(--ui-border)] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[var(--ui-raised)]"
+            >
+              Gerar cards
+            </button>
+            <span className="text-xs text-zinc-400 pb-2">
+              {videoDrafts.length} vídeos · {videoDrafts.filter((video) => video.roteiro.trim()).length}{' '}
+              {briefingMode === 'edicao' ? 'briefings de edição preenchidos' : 'briefings preenchidos'}
+            </span>
+          </form>
+          <p className="text-xs text-zinc-400">
+            Um card separado por vídeo. Enter avança para o próximo vídeo; Shift+Enter cria uma nova linha. Salve ao finalizar.
+          </p>
+        </section>
+      )}
+
+      {/* Grid de Cards Separados por Vídeo */}
+      <div className="briefing-videos grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {videoDrafts.map((video, index) => (
-          <article key={video.id} aria-label={`Briefing do Vídeo ${index + 1}`} className="min-w-0 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 sm:p-5 flex flex-col gap-3">
+          <article
+            key={video.id}
+            aria-label={
+              briefingMode === 'edicao'
+                ? `Briefing de Edição do Vídeo ${index + 1}`
+                : `Briefing do Vídeo ${index + 1}`
+            }
+            className={`min-w-0 rounded-2xl border bg-[var(--ui-surface)] p-4 sm:p-5 flex flex-col gap-3 ${
+              briefingMode === 'edicao' ? 'border-purple-500/30' : 'border-[var(--ui-border)]'
+            }`}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-3">
-              <h3 className="text-base sm:text-xl font-bold text-[var(--ui-accent)]">Vídeo {String(index + 1).padStart(2, '0')}</h3>
-              <button type="button" aria-label={`Remover vídeo ${index + 1}`} onClick={() => { if ((video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) && !window.confirm('Remover este vídeo e seu briefing?')) return; handleRemoveVideoDraft(video.id); setVideoQuantity(String(Math.max(1, videoDrafts.length - 1))); }} className="text-xs text-zinc-400 py-2">Remover</button>
+              <div className="flex items-center gap-2">
+                <h3
+                  className={`text-base sm:text-xl font-bold ${
+                    briefingMode === 'edicao' ? 'text-purple-300' : 'text-[var(--ui-accent)]'
+                  }`}
+                >
+                  {briefingMode === 'edicao'
+                    ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
+                    : `Vídeo ${String(index + 1).padStart(2, '0')}`}
+                </h3>
+                {briefingMode === 'edicao' && activeEditorModel && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/30">
+                    Editora: {activeEditorModel.nome}
+                  </span>
+                )}
+              </div>
+
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  aria-label={`Remover vídeo ${index + 1}`}
+                  onClick={() => {
+                    if (
+                      (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
+                      !window.confirm('Remover este vídeo e seu briefing?')
+                    )
+                      return;
+                    handleRemoveVideoDraft(video.id);
+                    setVideoQuantity(String(Math.max(1, videoDrafts.length - 1)));
+                  }}
+                  className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
+                >
+                  Remover
+                </button>
+              )}
             </div>
-            <label className="text-xs font-semibold flex flex-col gap-2">
-              Título (opcional)
-              <input aria-label={`Título do vídeo ${index + 1}`} value={video.titulo} onChange={event => handleUpdateVideoDraft(video.id, {titulo: event.target.value})} onKeyDown={event => { if(event.key === 'Enter') {event.preventDefault(); videoInputs.current[video.id]?.focus();} }} placeholder={`Ideia do vídeo ${index + 1}`} className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
-            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <label className="text-xs font-semibold flex flex-col gap-1.5 sm:col-span-2">
+                Título do vídeo (opcional)
+                <input
+                  aria-label={`Título do vídeo ${index + 1}`}
+                  readOnly={isReadOnly}
+                  disabled={isReadOnly}
+                  value={video.titulo}
+                  onChange={(event) => handleUpdateVideoDraft(video.id, { titulo: event.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      videoInputs.current[video.id]?.focus();
+                    }
+                  }}
+                  placeholder={
+                    briefingMode === 'edicao'
+                      ? `Ex: Reel ${index + 1} - Cortes dinâmicos do prato`
+                      : `Ideia do vídeo ${index + 1}`
+                  }
+                  className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-sm sm:text-base read-only:opacity-80"
+                />
+              </label>
+
+              <label className="text-xs font-semibold flex flex-col gap-1.5">
+                {briefingMode === 'edicao' ? 'Estilo de Edição' : 'Formato'}
+                <select
+                  aria-label={`Formato do vídeo ${index + 1}`}
+                  disabled={isReadOnly}
+                  value={video.formato || 'Automático'}
+                  onChange={(event) => handleUpdateVideoDraft(video.id, { formato: event.target.value })}
+                  className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-2.5 py-2 text-xs sm:text-sm disabled:opacity-80"
+                >
+                  {formatOptions.map((fmt) => (
+                    <option key={fmt} value={fmt}>
+                      {fmt}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <label className="text-xs font-semibold flex flex-col gap-2 flex-1">
-              Briefing
-              <textarea ref={element => {videoInputs.current[video.id] = element;}} aria-label={`Briefing do vídeo ${index + 1}`} rows={7} value={video.roteiro} onChange={event => handleUpdateVideoDraft(video.id, {roteiro:event.target.value})} onKeyDown={event => {if(event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {event.preventDefault(); advanceVideo(index);} }} placeholder="O que gravar, cenas e falas…" className="w-full min-w-0 flex-1 resize-y rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-3 text-base leading-relaxed" />
+              {briefingMode === 'edicao'
+                ? 'Briefing de Edição (Cortes, Gancho, Áudio/Trilha, Legenda e CTA)'
+                : 'Briefing de Gravação'}
+              <textarea
+                ref={(element) => {
+                  videoInputs.current[video.id] = element;
+                }}
+                aria-label={`Briefing do vídeo ${index + 1}`}
+                readOnly={isReadOnly}
+                disabled={isReadOnly}
+                rows={7}
+                value={video.roteiro}
+                onChange={(event) => handleUpdateVideoDraft(video.id, { roteiro: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                    advanceVideo(index);
+                  }
+                }}
+                placeholder={
+                  briefingMode === 'edicao'
+                    ? 'Descreva como a modelo deve editar este vídeo: gancho nos 3 primeiros segundos, ritmo dos cortes, música/áudio em alta, estilo de legenda e chamada final…'
+                    : 'O que gravar, cenas e falas…'
+                }
+                className="w-full min-w-0 flex-1 resize-y rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-3 text-base leading-relaxed read-only:opacity-85"
+              />
             </label>
+
             <label className="text-xs font-semibold flex flex-col gap-2">
-              Link de referência
-              <input aria-label={`Referência do vídeo ${index + 1}`} type="url" value={video.refUrl} onChange={event => handleUpdateVideoDraft(video.id, {refUrl:event.target.value})} onKeyDown={event => { if(event.key === 'Enter') {event.preventDefault(); advanceVideo(index);} }} placeholder="https://…" className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base" />
+              {briefingMode === 'edicao'
+                ? 'Link de referência ou pasta de brutos'
+                : 'Link de referência'}
+              <input
+                aria-label={`Referência do vídeo ${index + 1}`}
+                readOnly={isReadOnly}
+                disabled={isReadOnly}
+                type="url"
+                value={video.refUrl}
+                onChange={(event) => handleUpdateVideoDraft(video.id, { refUrl: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    advanceVideo(index);
+                  }
+                }}
+                placeholder="https://…"
+                className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-page)] px-3 py-2 text-base read-only:opacity-80"
+              />
             </label>
-            {(video.refsExtras || []).map((ref, i) => <a key={i} href={normalizarUrl(ref.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--ui-accent)] break-all">{ref.rotulo}: {exibirUrl(ref.url)}</a>)}
+
+            {video.refUrl.trim() && (
+              <a
+                href={normalizarUrl(video.refUrl.trim())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-[var(--ui-accent)] hover:underline break-all"
+              >
+                Abrir link: {exibirUrl(video.refUrl.trim())}
+              </a>
+            )}
+
+            {(video.refsExtras || []).map((ref, i) => (
+              <a
+                key={i}
+                href={normalizarUrl(ref.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[var(--ui-accent)] break-all"
+              >
+                {ref.rotulo}: {exibirUrl(ref.url)}
+              </a>
+            ))}
           </article>
         ))}
       </div>
-      <div className="flex flex-wrap gap-3">
-        <button type="button" aria-label={`Adicionar vídeo ${videoDrafts.length + 1}`} onClick={handleAddAnotherVideo} className="flex-1 rounded-xl border border-dashed border-[var(--ui-accent)] py-3 px-4 text-sm font-semibold text-[var(--ui-accent)]">Adicionar vídeo {videoDrafts.length + 1}</button>
-        <button type="button" onClick={handleSaveBriefing} className="gradient-cta rounded-xl py-3 px-5 text-sm font-bold">Salvar todos os briefings</button>
-      </div>
 
-      {/* Pré-visualização Folha A4 (Opcional / Sob Demanda) */}
+      {!isReadOnly && (
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            aria-label={`Adicionar vídeo ${videoDrafts.length + 1}`}
+            onClick={handleAddAnotherVideo}
+            className="flex-1 rounded-xl border border-dashed border-[var(--ui-accent)] py-3 px-4 text-sm font-semibold text-[var(--ui-accent)] cursor-pointer hover:bg-[var(--ui-accent)]/10"
+          >
+            {briefingMode === 'edicao'
+              ? `+ Fazer Briefing de Edição do Vídeo ${videoDrafts.length + 1}`
+              : `+ Fazer Briefing do Vídeo ${videoDrafts.length + 1}`}
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveBriefing}
+            className="gradient-cta rounded-xl py-3 px-5 text-sm font-bold text-white cursor-pointer"
+          >
+            {briefingMode === 'edicao' ? 'Salvar todos os briefings de edição' : 'Salvar todos os briefings'}
+          </button>
+        </div>
+      )}
+
+      {/* Pré-visualização Folha A4 (Documento do Cliente / Guia da Modelo) */}
       {showPdfPreview && (
         <div className="p-4 sm:p-8 rounded-3xl overflow-x-auto bg-[#15100d] border border-[rgba(255,116,31,0.25)] flex justify-center">
           <div
@@ -1082,7 +1899,9 @@ export function BriefingView() {
                           marginBottom: 8,
                         }}
                       >
-                        Briefing criativo
+                        {briefingMode === 'edicao'
+                          ? `Briefing de Edição • Editora: ${activeEditorModel?.nome || 'Modelo'}`
+                          : 'Documento de Briefing Criativo • Visualização do Cliente'}
                       </div>
                       <h2
                         style={{
@@ -1096,7 +1915,7 @@ export function BriefingView() {
                           color: '#F6F0EA',
                         }}
                       >
-                        Roteiro de vídeos
+                        {briefingMode === 'edicao' ? 'Guia de edição' : 'Roteiro de vídeos'}
                         <span style={{ color: '#FF741F', display: 'block' }}>{displayClient}.</span>
                       </h2>
                     </div>

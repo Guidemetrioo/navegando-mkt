@@ -62,6 +62,7 @@ export type AgendaView =
   | 'arquivos'
   | 'clientes'
   | 'briefing'
+  | 'briefing-edicao'
   | 'reembolsos'
   | 'metricas-reels'
   | 'mural-ugc'

@@ -101,6 +101,9 @@ export interface EventItem {
   observacoes?: string | null;
   briefing_videos?: { titulo: string; formato: string; roteiro: string; refRotulo: 'Referência' | 'Exemplo'; refUrl: string; refsExtras?: { rotulo: 'Referência' | 'Exemplo'; url: string }[] }[];
   briefing_gravacao?: string | null; // Roteiro específico, ganchos e lista de cenas da diária
+  briefing_edicao_videos?: { titulo: string; formato: string; roteiro: string; refRotulo: 'Referência' | 'Exemplo'; refUrl: string; modeloEditoraId?: string; refsExtras?: { rotulo: 'Referência' | 'Exemplo'; url: string }[] }[];
+  briefing_edicao?: string | null; // Briefing de edição separado por vídeo para as modelos responsáveis pela edição
+  modelo_editora_id?: string | null; // ID da modelo responsável pela edição dos vídeos deste compromisso
   tempo_antecedencia_minutos?: number | null; // Ex: 0 = imediato ao agendar, 60 = 1h antes, 1440 = 24h antes, -1 = desativado
   status: EventStatus;
   relatorio_filmmaker?: RelatorioFilmmaker;

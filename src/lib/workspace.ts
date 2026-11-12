@@ -23,12 +23,12 @@ export interface Change { kind: Entity; id: string; expected: number; data: Reco
 export const emptyWorkspace = (): Workspace => ({ banco_horas: [], employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [], despesas: [], transacoes: [], salarios: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
 const modules: Record<TeamRole, readonly string[]> = {
-  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','metricas-reels'],
-  modelo: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos'],
-  criadora: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos'],
-  interno: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos','arquivos'],
+  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','briefing-edicao','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','briefing-edicao','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','briefing-edicao','reembolsos','arquivos','metricas-reels'],
+  modelo: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','briefing-edicao','reembolsos'],
+  criadora: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','briefing-edicao','reembolsos'],
+  interno: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','briefing-edicao','reembolsos','arquivos'],
 };
 export function mayAccess(role: TeamRole | undefined, view: string): boolean {
   return role !== undefined && (modules[role]?.includes(view) ?? false);

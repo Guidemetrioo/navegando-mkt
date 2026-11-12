@@ -151,6 +151,7 @@ function AgendaMainContent() {
               {currentView === 'banco-horas' && 'Banco de Horas (42h Semanais)'}
               {currentView === 'relatorios' && 'Relatórios de Produção'}
               {currentView === 'briefing' && 'Briefing & Roteiros'}
+              {currentView === 'briefing-edicao' && 'Briefing de Edição (Modelos)'}
               {currentView === 'reembolsos' && 'Reembolsos'}
               {currentView === 'clientes' && 'Restaurantes'}
               {currentView === 'financeiro' && 'Controle Financeiro'}
@@ -338,7 +339,8 @@ function AgendaMainContent() {
             {currentView === 'ponto' && <PontoView />}
             {currentView === 'banco-horas' && <BancoDeHorasView />}
             {currentView === 'relatorios' && <ProductionReportsView />}
-            {currentView === 'briefing' && <BriefingView />}
+            {currentView === 'briefing' && <BriefingView initialMode="video" />}
+            {currentView === 'briefing-edicao' && <BriefingView initialMode="edicao" />}
             {currentView === 'reembolsos' && <ReembolsosView />}
             {currentView === 'clientes' && <ClientsView />}
             {currentView === 'backups' && <BackupSafetyView />}

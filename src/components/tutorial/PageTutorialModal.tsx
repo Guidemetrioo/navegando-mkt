@@ -33,6 +33,39 @@ export interface PageTutorialData {
 }
 
 export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
+  'briefing-edicao': {
+    view: 'briefing-edicao',
+    title: 'Briefing de Edição (Modelos Editoras)',
+    subtitle: 'Diretrizes de edição separadas por vídeo e por compromisso de restaurante',
+    category: 'Produção & Pós-Produção',
+    purpose: 'Organiza os briefings de edição separados por vídeo para cada restaurante, definindo a modelo responsável pela edição e liberando acesso de visualização para as modelos sem permissão de edição.',
+    installedFunctions: [
+      'Cards por compromisso de restaurante com status Pendente ou Edição Feita',
+      'Separação individual por vídeo (Edição do Vídeo 01, 02, etc.)',
+      'Atribuição da Modelo responsável pela edição com modo somente visualização para modelos',
+    ],
+    agencyBenefits: [
+      'Padronização da edição de vídeos pelas modelos',
+      'Segurança total contra alterações acidentais nos briefings',
+    ],
+    howToFeedSteps: [
+      {
+        stepTitle: '1. Clique no card do restaurante',
+        description: 'Abra o compromisso agendado para visualizar ou cadastrar os briefings de edição.',
+      },
+      {
+        stepTitle: '2. Separe as instruções por vídeo',
+        description: 'Adicione quantos vídeos forem necessários e salve para disponibilizar à modelo editora.',
+      },
+    ],
+    exampleTitle: 'Briefing de Edição por Vídeo',
+    exampleSubtitle: 'Exemplo de orientação para a modelo editora',
+    exampleBadge: 'Modelos Editoras',
+    exampleFields: [
+      { label: 'Modelo Responsável', value: 'Isa (Modelo & Editora)', highlight: true },
+      { label: 'Edição do Vídeo 01', value: 'Cortes rápidos nos 3 primeiros segundos + áudio em alta + legenda dinâmica' },
+    ],
+  },
   'banco-horas': {
     view: 'banco-horas',
     title: 'Banco de Horas (Meta 42h Semanais & Locomoção)',

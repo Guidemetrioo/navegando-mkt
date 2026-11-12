@@ -125,3 +125,4 @@ export function authenticateTeamMember(
 
   return { ok: true, session, account };
 }
+
