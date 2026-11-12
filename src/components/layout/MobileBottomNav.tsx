@@ -15,13 +15,40 @@ export function MobileBottomNav({ onOpenMenu, menuOpen }: { onOpenMenu: () => vo
   const allowed = shortcuts.filter(item => canUserAccessView(role, item.view));
 
   return (
-    <nav aria-label="Navegação no celular" className="text-mobile-nav lg:hidden" inert={menuOpen}>
+    <nav
+      aria-label="Navegação no celular"
+      className="text-mobile-nav lg:hidden"
+      style={{ backgroundColor: '#101f2c', color: '#eef7fa', borderTop: '1px solid #244052' }}
+      inert={menuOpen}
+    >
       {allowed.map(item => (
-        <button key={item.view} type="button" aria-current={item.active ? 'page' : undefined} onClick={() => setCurrentView(item.view)}>
+        <button
+          key={item.view}
+          type="button"
+          aria-current={item.active ? 'page' : undefined}
+          onClick={() => setCurrentView(item.view)}
+          style={{
+            backgroundColor: item.active ? '#182b3a' : 'transparent',
+            color: item.active ? '#55c4d5' : '#eef7fa',
+            WebkitTextFillColor: item.active ? '#55c4d5' : '#eef7fa',
+          }}
+        >
           {item.label}
         </button>
       ))}
-      <button type="button" aria-controls="workspace-navigation" aria-expanded={menuOpen} onClick={onOpenMenu}>Menu</button>
+      <button
+        type="button"
+        aria-controls="workspace-navigation"
+        aria-expanded={menuOpen}
+        onClick={onOpenMenu}
+        style={{
+          backgroundColor: menuOpen ? '#182b3a' : 'transparent',
+          color: menuOpen ? '#55c4d5' : '#eef7fa',
+          WebkitTextFillColor: menuOpen ? '#55c4d5' : '#eef7fa',
+        }}
+      >
+        Menu
+      </button>
     </nav>
   );
 }

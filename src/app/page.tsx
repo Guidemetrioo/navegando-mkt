@@ -92,7 +92,7 @@ function AgendaMainContent() {
   }, [isMobileNavOpen]);
 
   React.useEffect(() => {
-    if (window.matchMedia('(width < 1024px)').matches) window.scrollTo(0, 0);
+    if (window.matchMedia('(max-width: 1023.98px)').matches) window.scrollTo(0, 0);
   }, [currentView]);
 
   // Atalho global Ctrl+K / Cmd+K

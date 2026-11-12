@@ -209,7 +209,8 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         aria-modal={isMobileOpen || undefined}
         data-collapsed={isCollapsed}
         data-mobile-open={isMobileOpen}
-        className={`crm-sidebar fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen flex flex-col justify-between bg-[var(--ui-surface)] border-r border-[var(--ui-border)] transition-all duration-300 z-50 lg:z-30 shrink-0 ${
+        style={{ backgroundColor: '#0c1c28', color: '#eef7fa' }}
+        className={`crm-sidebar fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen flex flex-col justify-between bg-[#0c1c28] text-[#eef7fa] border-r border-[var(--ui-border)] transition-all duration-300 z-50 lg:z-30 shrink-0 ${
           isCollapsed ? 'lg:w-20' : 'lg:w-64 xl:w-72'
         } w-72 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -237,17 +238,19 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
             <button
               type="button"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
+              style={{ color: '#eef7fa', WebkitTextFillColor: '#eef7fa', backgroundColor: '#182b3a' }}
+              className="hidden lg:flex p-1.5 rounded-xl text-[#eef7fa] hover:text-white bg-[#182b3a] hover:bg-[var(--ui-hover)] border border-[#244052] transition-colors cursor-pointer"
               title={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-             data-text-action="true"><span className="text-action-label">{isCollapsed ? 'Expandir' : 'Recolher'}</span></button>
+             data-text-action="true"><span className="text-action-label" style={{ color: '#eef7fa' }}>{isCollapsed ? 'Expandir' : 'Recolher'}</span></button>
             {onCloseMobile && (
               <button
                 id="close-workspace-navigation"
                 type="button"
                 onClick={onCloseMobile}
-                className="flex lg:hidden p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-raised)] transition-colors cursor-pointer"
+                style={{ color: '#eef7fa', WebkitTextFillColor: '#eef7fa', backgroundColor: '#182b3a' }}
+                className="flex lg:hidden p-1.5 rounded-xl text-[#eef7fa] hover:text-white bg-[#182b3a] hover:bg-[var(--ui-hover)] border border-[#244052] transition-colors cursor-pointer"
                 title="Fechar menu"
-               data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
+               data-text-action="true"><span className="text-action-label" style={{ color: '#eef7fa' }}>{"Fechar"}</span></button>
             )}
           </div>
         </div>
@@ -314,8 +317,11 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           return (
             <div key={group.groupTitle} className="space-y-1">
               {!isCollapsed && (
-                <div className="hidden">
-              {/* Sem títulos de categorias: apenas botões diretos na barra */}
+                <div
+                  style={{ color: '#7ad8e5', WebkitTextFillColor: '#7ad8e5' }}
+                  className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#7ad8e5]"
+                >
+                  {group.groupTitle}
                 </div>
               )}
               {accessibleItems.map((item) => {
@@ -332,23 +338,38 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
                       setCurrentView(item.id);
                       if (onCloseMobile) onCloseMobile();
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all cursor-pointer ${
+                    style={{
+                      backgroundColor: isActive ? '#173341' : 'transparent',
+                      color: isActive ? '#55c4d5' : '#eef7fa',
+                      WebkitTextFillColor: isActive ? '#55c4d5' : '#eef7fa',
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] font-bold border border-[var(--ui-accent)]/30 shadow-[0_0_15px_rgba(255,102,0,0.15)]'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
+                        ? 'bg-[#173341] text-[#55c4d5] font-bold border border-[#55c4d5]/40'
+                        : 'bg-transparent text-[#eef7fa] hover:text-white hover:bg-[#132836]'
                     } ${isCollapsed ? 'justify-center' : 'justify-between'}`}
                     aria-current={isActive ? 'page' : undefined}
                     title={item.label}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[var(--ui-accent)] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-zinc-400'}`} />
-                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#55c4d5]' : 'text-[#c0d1dc]'}`} />
+                      {!isCollapsed && (
+                        <span
+                          style={{
+                            color: isActive ? '#55c4d5' : '#eef7fa',
+                            WebkitTextFillColor: isActive ? '#55c4d5' : '#eef7fa',
+                          }}
+                          className="truncate"
+                        >
+                          {item.label}
+                        </span>
+                      )}
                     </div>
 
                     {!isCollapsed && item.badge && (
                       <span
                         className={`text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                          item.badgeColor || 'bg-[var(--ui-border)] text-zinc-300'
+                          item.badgeColor || 'bg-[#182b3a] text-[#eef7fa]'
                         }`}
                       >
                         {item.badge}
