@@ -151,10 +151,19 @@
   -webkit-text-fill-color:#d4e4ed !important;
   cursor:pointer;
 }
-.text-mobile-nav .mobile-nav-emoji {
-  font-size:16px;
-  line-height:1;
-  -webkit-text-fill-color:initial !important;
+.text-mobile-nav .mobile-nav-icon {
+  width:22px;
+  height:22px;
+  object-fit:contain;
+  display:block;
+  flex-shrink:0;
+  opacity:0.9;
+  transition:transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+.text-mobile-nav button:is([aria-current="page"], [aria-expanded="true"]) .mobile-nav-icon {
+  opacity:1;
+  transform:scale(1.06);
+  filter:drop-shadow(0 0 6px rgba(85, 196, 213, 0.55));
 }
 .text-mobile-nav .mobile-nav-label {
   display:block;
