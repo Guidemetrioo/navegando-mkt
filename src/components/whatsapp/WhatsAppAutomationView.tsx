@@ -68,7 +68,7 @@ export function WhatsAppAutomationView() {
   const handleSimulateReply = (replyText: string) => {
     const targetId = simSelectedEventId || eligibleEvents[0]?.id;
     if (!targetId) {
-      alert('Selecione uma gravação para simular a resposta do cliente.');
+      alert('Selecione uma gravação para registrar o retorno do cliente.');
       return;
     }
     processClientWhatsAppReply(targetId, replyText);
@@ -426,24 +426,24 @@ export function WhatsAppAutomationView() {
             </div>
           </div>
 
-          {/* Card 2: SIMULADOR AO VIVO DE CONFIRMAÇÃO DO CLIENTE */}
+          {/* Card 2: REGISTRO MANUAL DE CONFIRMAÇÃO DO CLIENTE */}
           <div className="p-5 sm:p-6 rounded-3xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4">
             <div className="pb-3 border-b border-[var(--ui-border)]">
               <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                Simulador Interativo
+                Controle Manual
               </span>
               <h3 className="text-base font-bold text-foreground">
-                Simulação de Resposta do Cliente
+                Disparo & Confirmação Manual
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Teste em tempo real como o envio da mensagem e a resposta do cliente alteram o status da agenda automaticamente.
+                Dispare a confirmação manualmente ou registre o retorno recebido do cliente no WhatsApp para atualizar a agenda.
               </p>
             </div>
 
-            {/* Seletor do Evento a Testar */}
+            {/* Seletor do Evento */}
             <div>
               <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Selecione a Gravação para Testar
+                Selecione a Gravação
               </label>
               <select
                 value={simSelectedEventId || eligibleEvents[0]?.id || ''}
@@ -481,7 +481,7 @@ export function WhatsAppAutomationView() {
                   </span>
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Data: {selectedEvent.data} • Horário: {selectedEvent.hora_inicio} às {selectedEvent.hora_fim} • WhatsApp: {clients.find((c) => c.id === selectedEvent.client_id)?.telefone || '(11) 98765-4321'}
+                  Data: {selectedEvent.data} • Horário: {selectedEvent.hora_inicio} às {selectedEvent.hora_fim} • WhatsApp: {clients.find((c) => c.id === selectedEvent.client_id)?.telefone || 'Não cadastrado'}
                 </div>
 
                 {/* Botão de Enviar Mensagem para este Evento */}
@@ -496,10 +496,10 @@ export function WhatsAppAutomationView() {
               </div>
             )}
 
-            {/* Botões de Ação para Simular Resposta */}
+            {/* Botões de Ação para Registrar Resposta */}
             <div className="flex flex-col gap-2 pt-2">
               <span className="text-xs font-bold text-zinc-300">
-                2. Simular Resposta que o Cliente Enviou no WhatsApp:
+                2. Registrar Resposta Recebida do Cliente:
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -552,7 +552,7 @@ export function WhatsAppAutomationView() {
                   disabled={!simCustomReply.trim()}
                   className="px-3.5 py-2 rounded-xl brand-solid bg-[var(--ui-accent)] disabled:opacity-50 text-foreground font-bold text-xs cursor-pointer"
                 >
-                  Simular
+                  Registrar
                 </button>
               </div>
             </div>

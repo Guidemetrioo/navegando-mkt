@@ -1,4 +1,20 @@
-import type { TransacaoFinanceira, DespesaGravacao } from '@/types/database';
+import type { TransacaoFinanceira, DespesaGravacao, Employee, FuncionarioSalario } from '@/types/database';
+
+/** Builds a clean default salary record for an active team member without mock presets. */
+export function buildDefaultSalario(employeeId: string, emp?: Employee): FuncionarioSalario {
+  const regime = emp?.regime || (emp?.funcao === 'filmmaker' || emp?.funcao === 'modelo' ? 'externo' : 'interno');
+  return {
+    employee_id: employeeId,
+    nome: emp?.nome || employeeId,
+    cargo: emp?.cargo_detalhado || emp?.funcao || 'Colaborador',
+    regime,
+    tipo_contrato: regime === 'interno' ? 'clt' : 'pj',
+    valor_base: 0,
+    dia_pagamento: 5,
+    chave_pix: '',
+    status_mes_atual: 'pendente',
+  };
+}
 export function financialInsights(transactions:TransacaoFinanceira[], reimbursements:DespesaGravacao[], month:string, today:string) {
   const active=transactions.filter(row=>row.status!=='cancelado');
   const scheduled=active.filter(row=>row.data_vencimento?.slice(0,7)===month);

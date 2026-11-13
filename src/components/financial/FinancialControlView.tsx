@@ -3,11 +3,12 @@
 import { FinancialInsights } from './FinancialInsights';
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
-import { Building, Plus, Check, FileText, Sparkles, Database } from 'lucide-react';
+import { buildDefaultSalario } from '@/lib/financial-insights';
+import { Building, Plus, Check, FileText } from 'lucide-react';
 import {
   TransacaoTipo,
   TransacaoCategoria,
+  FuncionarioSalario,
 } from '@/types/database';
 
 export function FinancialControlView() {
@@ -33,7 +34,6 @@ export function FinancialControlView() {
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transacoes' | 'salarios' | 'despesas_gravacao'>('dashboard');
   const [transacaoFilter, setTransacaoFilter] = useState<'todas' | 'receita' | 'despesa' | 'pendente'>('todas');
-  const [originFilter, setOriginFilter] = useState<'todos' | 'reais' | 'simulados'>('todos');
   const [searchTransacao, setSearchTransacao] = useState('');
 
   // Modal de Nova Transação
@@ -46,23 +46,14 @@ export function FinancialControlView() {
   const [novoClientId, setNovoClientId] = useState('');
   const [novoFormaPagamento] = useState<'pix' | 'boleto' | 'transferencia' | 'cartao'>('pix');
 
-  // Filtragem por origem (Todos / Reais / Simulados)
-  const visibleTransacoes = useMemo(() => {
-    if (originFilter === 'reais') return transacoes.filter((t) => !isSimulatedRecord(t.id));
-    if (originFilter === 'simulados') return transacoes.filter((t) => isSimulatedRecord(t.id));
-    return transacoes;
-  }, [transacoes, originFilter]);
+  const visibleTransacoes = transacoes;
+  const visibleDespesas = allDespesasGravacao;
 
-  const visibleDespesas = useMemo(() => {
-    if (originFilter === 'reais') return allDespesasGravacao.filter((d) => !isSimulatedRecord(d.id));
-    if (originFilter === 'simulados') return allDespesasGravacao.filter((d) => isSimulatedRecord(d.id));
-    return allDespesasGravacao;
-  }, [allDespesasGravacao, originFilter]);
-
-  const countRealTransacoes = useMemo(() => transacoes.filter((t) => !isSimulatedRecord(t.id)).length, [transacoes]);
-  const countSimTransacoes = useMemo(() => transacoes.filter((t) => isSimulatedRecord(t.id)).length, [transacoes]);
-  const countRealDespesas = useMemo(() => allDespesasGravacao.filter((d) => !isSimulatedRecord(d.id)).length, [allDespesasGravacao]);
-  const countSimDespesas = useMemo(() => allDespesasGravacao.filter((d) => isSimulatedRecord(d.id)).length, [allDespesasGravacao]);
+  // Base salarial combinada com toda a equipe cadastrada (sem dados pré-populados fictícios)
+  const displayedSalarios = useMemo<FuncionarioSalario[]>(() => {
+    const byEmp = new Map(salarios.map((s) => [s.employee_id, s]));
+    return employees.map((emp) => byEmp.get(emp.id) || buildDefaultSalario(emp.id, emp));
+  }, [employees, salarios]);
 
   // Cálculos Financeiros
   const totalReceitas = useMemo(() => {
@@ -88,8 +79,8 @@ export function FinancialControlView() {
   }, [visibleDespesas]);
 
   const totalSalariosMensais = useMemo(() => {
-    return salarios.reduce((acc, s) => acc + s.valor_base, 0);
-  }, [salarios]);
+    return displayedSalarios.reduce((acc, s) => acc + s.valor_base, 0);
+  }, [displayedSalarios]);
 
   // Médias Salariais por Hierarquia
   const mediasPorFuncao = useMemo(() => {
@@ -99,7 +90,7 @@ export function FinancialControlView() {
       modelo: [] as number[],
       interno: [] as number[],
     };
-    salarios.forEach((s) => {
+    displayedSalarios.forEach((s) => {
       const role = roleMap.get(s.employee_id);
       if (role === 'filmmaker') groups.filmmaker.push(s.valor_base);
       else if (role === 'modelo') groups.modelo.push(s.valor_base);
@@ -114,7 +105,7 @@ export function FinancialControlView() {
       modelo: { media: avg(groups.modelo, 0), total: sum(groups.modelo), qtd: groups.modelo.length },
       interno: { media: avg(groups.interno, 0), total: sum(groups.interno), qtd: groups.interno.length },
     };
-  }, [salarios, employees]);
+  }, [displayedSalarios, employees]);
 
   // Total Geral de Despesas Operacionais (Transações + Salários + Reembolsos)
   const totalDespesasGeral = totalDespesasFixasVariaveis + totalSalariosMensais + totalReembolsosGeral;
@@ -286,65 +277,6 @@ export function FinancialControlView() {
         </div>
       </div>
 
-      {/* Painel de Transparência: Dados Simulados vs Dados Reais */}
-      <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/25 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex items-start sm:items-center gap-3">
-
-          <div className="text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-foreground">Identificação Clara: Dados Simulados vs Dados Reais</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                {countSimTransacoes + countSimDespesas} Simulados (Demonstração)
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                {countRealTransacoes + countRealDespesas} Lançamentos Reais
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">
-              Itens com selo <strong className="text-amber-300">SIMULADO</strong> compõem a simulação financeira da agência. Qualquer lançamento ou reembolso criado pela equipe recebe o selo <strong className="text-emerald-400">REAL</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-[var(--ui-surface)] p-1 rounded-xl border border-[var(--ui-border)] shrink-0 self-start lg:self-center">
-          <button
-            type="button"
-            onClick={() => setOriginFilter('todos')}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-              originFilter === 'todos'
-                ? 'brand-solid bg-[var(--ui-accent)] text-foreground'
-                : 'text-zinc-400 hover:text-foreground'
-            }`}
-          >
-            Todos (Reais + Simulados)
-          </button>
-          <button
-            type="button"
-            onClick={() => setOriginFilter('reais')}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              originFilter === 'reais'
-                ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
-                : 'text-zinc-400 hover:text-foreground'
-            }`}
-          >
-            <Database className="w-3 h-3" />
-            <span>Apenas Reais ({countRealTransacoes + countRealDespesas})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setOriginFilter('simulados')}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              originFilter === 'simulados'
-                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40'
-                : 'text-zinc-400 hover:text-foreground'
-            }`}
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>Apenas Simulados ({countSimTransacoes + countSimDespesas})</span>
-          </button>
-        </div>
-      </div>
-
       {/* Cards de KPIs Financeiros */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Receita Total Prevista */}
@@ -420,15 +352,12 @@ export function FinancialControlView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--ui-border)]">
           <div>
             <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-              Benchmarking de Remuneração da Agência
+              Remuneração da Agência
             </span>
             <h3 className="text-base font-bold text-foreground">
               Média de Ganhos Mensais por Hierarquia
             </h3>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 self-start sm:self-center">
-            SIMULADO • Base Salarial Configurada
-          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -691,7 +620,6 @@ export function FinancialControlView() {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b border-[var(--ui-border)] text-zinc-400 uppercase text-[10px]">
-                    <th className="py-2.5 px-3">Origem</th>
                     <th className="py-2.5 px-3">Tipo / Descrição</th>
                     <th className="py-2.5 px-3">Categoria</th>
                     <th className="py-2.5 px-3">Vencimento</th>
@@ -704,22 +632,9 @@ export function FinancialControlView() {
                   {filteredTransacoes.map((t) => {
                     const isIncome = t.tipo === 'receita';
                     const isPaid = t.status === 'pago';
-                    const isSim = isSimulatedRecord(t.id);
 
                     return (
                       <tr key={t.id} className="hover:bg-[var(--ui-raised)]/50 transition-colors">
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          {isSim ? (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                              SIMULADO
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                              REAL
-                            </span>
-                          )}
-                        </td>
-
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full shrink-0 ${isIncome ? 'bg-emerald-400' : 'bg-rose-400'}`} />
@@ -796,7 +711,7 @@ export function FinancialControlView() {
             <div>
               <h3 className="text-base font-bold text-foreground">Folha de Pagamento & Salários por Hierarquia</h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Médias configuradas: Filmmakers R$ 3.000 • Modelos R$ 3.500 • Internos CLT R$ 5.000 ({salarios.length} integrantes)
+                Configure o valor base, regime de contrato, dia de pagamento e chave PIX de cada membro ({displayedSalarios.length} integrantes)
               </p>
             </div>
             <div className="text-right">
@@ -808,7 +723,7 @@ export function FinancialControlView() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {salarios.map((s) => {
+            {displayedSalarios.map((s) => {
               const isPaid = s.status_mes_atual === 'pago';
               const isEditingThis = editingSalId === s.employee_id;
 
@@ -821,9 +736,6 @@ export function FinancialControlView() {
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h4 className="text-sm font-bold text-foreground">{s.nome}</h4>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          BASE SIMULADA
-                        </span>
                       </div>
                       <span className="text-[11px] text-zinc-400 block">{s.cargo}</span>
                       <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[var(--ui-surface)] text-amber-400 border border-amber-500/20 mt-1 inline-block">
@@ -1012,7 +924,6 @@ export function FinancialControlView() {
               {visibleDespesas.map((d) => {
                 const isPending = d.status === 'pendente';
                 const isReimbursed = d.status === 'reembolsado';
-                const isSim = isSimulatedRecord(d.id);
 
                 return (
                   <div
@@ -1021,15 +932,6 @@ export function FinancialControlView() {
                   >
                     <div className="flex flex-col gap-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        {isSim ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            SIMULADO
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            REAL
-                          </span>
-                        )}
                         <span className="font-bold text-foreground text-sm">{d.descricao}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           isReimbursed

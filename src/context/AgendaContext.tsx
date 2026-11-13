@@ -27,16 +27,13 @@ import {
   WhatsAppConfig,
   WhatsAppMessageLog,
 } from '@/types/database';
-import { INITIAL_EMPLOYEES, INITIAL_CLIENTS, INITIAL_EVENTS } from '@/lib/supabase/mock-data';
-import { INITIAL_REELS, INITIAL_MENTIONS, INITIAL_SOCIAL_ACCOUNTS } from '@/lib/supabase/mock-social-data';
-import { INITIAL_PONTOS } from '@/lib/supabase/mock-ponto-data';
-import { INITIAL_DELIVERABLES } from '@/lib/supabase/mock-deliverables-data';
-import { INITIAL_SALARIOS, INITIAL_DESPESAS_GRAVACOES, INITIAL_TRANSACOES, isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
+import { INITIAL_EMPLOYEES } from '@/lib/supabase/mock-data';
 import { whatsappConnection, normalizeWhatsAppPhone, validPairingCode } from '@/lib/whatsapp-connection';
-import { INITIAL_WHATSAPP_CONFIG, INITIAL_WHATSAPP_LOGS } from '@/lib/supabase/mock-whatsapp-data';
+import { INITIAL_WHATSAPP_CONFIG } from '@/lib/supabase/mock-whatsapp-data';
 import { findEventConflicts } from '@/lib/conflicts';
 import { createClient } from '@/lib/supabase/client';
 import { IS_DEMO } from '@/lib/app-mode';
+import { buildDefaultSalario } from '@/lib/financial-insights';
 import { useCentralWorkspace, SyncStatus } from '@/hooks/useCentralWorkspace';
 import { isManager, Workspace, Member } from '@/lib/workspace';
 import { formatDateIso, parseDateIso, todayInSaoPaulo } from '@/lib/date-utils';
@@ -49,7 +46,7 @@ import {
 } from '@/lib/storage-backup';
 import { ToastContainer, ToastItem, ToastType } from '@/components/ui/Toast';
 import { verifyCredentials, canUserAccessView } from '@/lib/auth-users';
-import { BancoHorasLancamento, INITIAL_BANCO_HORAS_LANCAMENTOS, isSimulatedBancoHorasRecord, generateBalancedMonthlyRoster } from '@/lib/clt-roster-engine';
+import { BancoHorasLancamento, generateBalancedMonthlyRoster } from '@/lib/clt-roster-engine';
 
 export type AgendaView =
   | 'home'
@@ -249,12 +246,12 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   // State principal Agenda
   const [employees, setEmployees] = useState<Employee[]>(IS_DEMO ? INITIAL_EMPLOYEES : []);
-  const [clients, setClients] = useState<Client[]>(IS_DEMO ? INITIAL_CLIENTS : []);
-  const [events, setEvents] = useState<EventItem[]>(IS_DEMO ? INITIAL_EVENTS : []);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   // State Central de Arquivos & Entregáveis (DAM)
-  const [deliverables, setDeliverables] = useState<MediaDeliverable[]>(IS_DEMO ? INITIAL_DELIVERABLES : []);
+  const [deliverables, setDeliverables] = useState<MediaDeliverable[]>([]);
   const [isDeliverableModalOpen, setIsDeliverableModalOpen] = useState(false);
   const [deliverableModalClientId, setDeliverableModalClientId] = useState<string | null>(null);
   const [editingDeliverable, setEditingDeliverable] = useState<MediaDeliverable | null>(null);
@@ -283,9 +280,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [isDataSaved, setIsDataSaved] = useState<boolean>(true);
 
   // State principal Social / Instagram
-  const [reels, setReels] = useState<ReelMetric[]>(IS_DEMO ? INITIAL_REELS : []);
-  const [mentions, setMentions] = useState<ClientMention[]>(IS_DEMO ? INITIAL_MENTIONS : []);
-  const [socialAccounts, setSocialAccounts] = useState<ClientSocialAccount[]>(IS_DEMO ? INITIAL_SOCIAL_ACCOUNTS : []);
+  const [reels, setReels] = useState<ReelMetric[]>([]);
+  const [mentions, setMentions] = useState<ClientMention[]>([]);
+  const [socialAccounts, setSocialAccounts] = useState<ClientSocialAccount[]>([]);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
 
   // Estado de Autenticação & Sessão com Ponto Obrigatório
@@ -308,7 +305,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
 
   // State Ponto Eletrônico & Geolocalização
-  const [pontos, setPontos] = useState<PontoRegistro[]>(IS_DEMO ? INITIAL_PONTOS : []);
+  const [pontos, setPontos] = useState<PontoRegistro[]>([]);
   const [atestados, setAtestados] = useState<AtestadoMedico[]>([]);
   const [isPontoModalOpen, setIsPontoModalOpen] = useState(false);
   const [pontoModalConfig, setPontoModalConfig] = useState<{
@@ -318,51 +315,16 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   } | null>(null);
 
   // Gestão Financeira (Apenas Gestores)
-  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(IS_DEMO ? INITIAL_TRANSACOES : []);
-  const [salarios, setSalarios] = useState<FuncionarioSalario[]>(IS_DEMO ? INITIAL_SALARIOS : []);
-  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>(IS_DEMO ? INITIAL_DESPESAS_GRAVACOES : []);
+  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>([]);
+  const [salarios, setSalarios] = useState<FuncionarioSalario[]>([]);
+  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>([]);
 
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
-  const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
-  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(IS_DEMO ? INITIAL_BANCO_HORAS_LANCAMENTOS : []);
+  const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>([]);
+  const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>([]);
 
   const [localHydrated, setLocalHydrated] = useState(false);
-  const mergeInitialClients = useCallback((list: Client[], seedIfEmpty = false): Client[] => {
-    const defById = new Map(INITIAL_CLIENTS.map((c) => [c.id, c]));
-    const enrichedClients = (list || []).map((c) => {
-      const def = defById.get(c.id);
-      return def
-        ? {
-            ...c,
-            nome: c.nome || def.nome,
-            endereco: c.endereco || def.endereco,
-            telefone: c.telefone || def.telefone,
-            contato: c.contato || def.contato,
-            latitude: c.latitude ?? def.latitude,
-            longitude: c.longitude ?? def.longitude,
-          }
-        : c;
-    });
-    // Só semeia a base inicial caso o servidor ainda não tenha nenhum restaurante cadastrado na primeira carga.
-    // Nunca ressuscita restaurantes excluídos (tombstones gerariam conflito 409).
-    if (seedIfEmpty && enrichedClients.length === 0) {
-      return INITIAL_CLIENTS;
-    }
-    return enrichedClients;
-  }, []);
-  const mergeInitialEvents = useCallback((list: EventItem[], seedIfEmpty = false): EventItem[] => {
-    const current = list || [];
-    if (seedIfEmpty && current.length === 0) {
-      return INITIAL_EVENTS;
-    }
-    return current;
-  }, []);
-  const mergeInitialPontos = useCallback((list: PontoRegistro[], empId?: string, manager?: boolean): PontoRegistro[] => { const real = (list || []).filter((p) => !isSimulatedRecord(p.id)); const byId = new Set(real.map((p) => p.id)); const simPool = manager || !empId ? INITIAL_PONTOS : INITIAL_PONTOS.filter((p) => p.employee_id === empId); return [...real, ...simPool.filter((p) => !byId.has(p.id))].sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime()); }, []);
-  const mergeInitialDespesas = useCallback((list: DespesaGravacao[], empId?: string, manager?: boolean): DespesaGravacao[] => { const real = (list || []).filter((d) => !isSimulatedRecord(d.id)); const byId = new Set(real.map((d) => d.id)); const simPool = manager || !empId ? INITIAL_DESPESAS_GRAVACOES : INITIAL_DESPESAS_GRAVACOES.filter((d) => d.employee_id === empId); return [...real, ...simPool.filter((d) => !byId.has(d.id))]; }, []);
-  const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
-  const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
-  const mergeInitialBancoHoras = useCallback((list: BancoHorasLancamento[]): BancoHorasLancamento[] => { const real = (list || []).filter((b) => !isSimulatedBancoHorasRecord(b.id)); const byId = new Set(real.map((b) => b.id)); return [...real, ...INITIAL_BANCO_HORAS_LANCAMENTOS.filter((b) => !byId.has(b.id))]; }, []);
   const localWorkspace = useMemo<Workspace>(() => ({ employees, clients, events, pontos, deliverables, reels, mentions, despesas: extraDespesas, transacoes, salarios: salarios.map(s => ({ ...s, id: s.employee_id })), banco_horas: bancoHorasLancamentos }), [employees, clients, events, pontos, deliverables, reels, mentions, extraDespesas, transacoes, salarios, bancoHorasLancamentos]);
   const applyCloud = useCallback((data: Workspace, member: Member | null) => {
     setEmployees(data.employees);
@@ -409,18 +371,15 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           for (const key of ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions'] as const) if (!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
           const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
             (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-          setEmployees(ensureOfficial(saved.employees)); setClients(mergeInitialClients(saved.clients)); setEvents(mergeInitialEvents(saved.events)); setPontos(mergeInitialPontos(sanitizePontos(saved.pontos), undefined, true)); setDeliverables(saved.deliverables); setReels(saved.reels); setMentions(saved.mentions);
+          setEmployees(ensureOfficial(saved.employees)); setClients(saved.clients); setEvents(saved.events); setPontos(sanitizePontos(saved.pontos)); setDeliverables(saved.deliverables); setReels(saved.reels); setMentions(saved.mentions);
         }
 
         const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
         if (savedFin) {
           const parsedFin = JSON.parse(savedFin);
-          if (Array.isArray(parsedFin.transacoes)) setTransacoes(mergeInitialTransacoes(parsedFin.transacoes));
-          if (Array.isArray(parsedFin.salarios)) {
-            const salById = new Map((parsedFin.salarios as FuncionarioSalario[]).map((s) => [s.employee_id, s]));
-            setSalarios(mergeInitialSalarios(parsedFin.salarios));
-          }
-          if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(mergeInitialDespesas(parsedFin.extraDespesas, undefined, true));
+          if (Array.isArray(parsedFin.transacoes)) setTransacoes(parsedFin.transacoes);
+          if (Array.isArray(parsedFin.salarios)) setSalarios(parsedFin.salarios);
+          if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(parsedFin.extraDespesas);
         }
 
         const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');
@@ -433,7 +392,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         const savedBh = localStorage.getItem('navegando_mkt_banco_horas_real_v1');
         if (savedBh) {
           const parsedBh = JSON.parse(savedBh);
-          if (Array.isArray(parsedBh)) setBancoHorasLancamentos(mergeInitialBancoHoras(parsedBh));
+          if (Array.isArray(parsedBh)) setBancoHorasLancamentos(parsedBh);
         }
         setLocalHydrated(true);
       } catch { setIsDataSaved(false); toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.', 'error'); }
@@ -805,8 +764,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         deliverables.some((d) => d.client_id === id) ||
         reels.some((r) => r.client_id === id) ||
         mentions.some((m) => m.client_id === id) ||
-        pontos.some((p) => !isSimulatedRecord(p.id) && p.client_id === id) ||
-        transacoes.some((t) => !isSimulatedRecord(t.id) && t.client_id === id);
+        pontos.some((p) => p.client_id === id) ||
+        transacoes.some((t) => t.client_id === id);
 
       if (hasLinkedHistory) {
         setClients((prev) =>
@@ -880,7 +839,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       setReels([]);
       setMentions([]);
       setTransacoes([]);
-      setSalarios(INITIAL_SALARIOS);
+      setSalarios([]);
       setExtraDespesas([]);
       setWhatsappLogs([]);
       if (typeof window !== 'undefined') {
@@ -1038,26 +997,33 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // Atualizar salário da equipe e marcar pagamento mensal
   const updateSalario = useCallback(
     (employeeId: string, patch: Partial<FuncionarioSalario>) => {
-      setSalarios((prev) =>
-        prev.map((s) => (s.employee_id === employeeId ? { ...s, ...patch } : s))
-      );
+      const emp = employees.find((e) => e.id === employeeId);
+      setSalarios((prev) => {
+        if (prev.some((s) => s.employee_id === employeeId)) {
+          return prev.map((s) => (s.employee_id === employeeId ? { ...s, ...patch } : s));
+        }
+        return [...prev, { ...buildDefaultSalario(employeeId, emp), ...patch }];
+      });
       toast('Dados salariais atualizados com sucesso!', 'success');
     },
-    [toast]
+    [employees, toast]
   );
 
   const markSalarioPago = useCallback(
     (employeeId: string) => {
-      const sal = salarios.find((s) => s.employee_id === employeeId);
-      if (!sal) return;
+      const emp = employees.find((e) => e.id === employeeId);
+      const sal = salarios.find((s) => s.employee_id === employeeId) || buildDefaultSalario(employeeId, emp);
       const todayIso = new Date().toISOString().slice(0, 10);
-      setSalarios((prev) =>
-        prev.map((s) =>
-          s.employee_id === employeeId
-            ? { ...s, status_mes_atual: 'pago', data_ultimo_pagamento: todayIso }
-            : s
-        )
-      );
+      setSalarios((prev) => {
+        if (prev.some((s) => s.employee_id === employeeId)) {
+          return prev.map((s) =>
+            s.employee_id === employeeId
+              ? { ...s, status_mes_atual: 'pago', data_ultimo_pagamento: todayIso }
+              : s
+          );
+        }
+        return [...prev, { ...sal, status_mes_atual: 'pago', data_ultimo_pagamento: todayIso }];
+      });
       if (sal.valor_base > 0) {
         const novoLancamento: TransacaoFinanceira = {
           id: `tr-sal-${Date.now()}`,

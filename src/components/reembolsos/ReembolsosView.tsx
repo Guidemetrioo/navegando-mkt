@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { StatusDespesa, DespesaGravacao } from '@/types/database';
 import { todayInSaoPaulo } from '@/lib/date-utils';
-import { isSimulatedRecord } from '@/lib/supabase/mock-financial-data';
+
 import { Receipt, CheckCircle2, Clock, Eye, DollarSign, FileText, Check, Sparkles } from 'lucide-react';
 
 export function ReembolsosView() {
@@ -38,7 +38,7 @@ export function ReembolsosView() {
   // Filtros exclusivos para Gestores
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('todos');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [originFilter, setOriginFilter] = useState<'todos' | 'reais' | 'simulados'>('todos');
+
 
   // Modal de visualização de comprovante
   const [previewReceipt, setPreviewReceipt] = useState<DespesaGravacao | null>(null);
@@ -137,12 +137,10 @@ export function ReembolsosView() {
         if (filterStatus !== 'todos' && d.status !== filterStatus) {
           return false;
         }
-        if (originFilter === 'reais' && isSimulatedRecord(d.id)) return false;
-        if (originFilter === 'simulados' && !isSimulatedRecord(d.id)) return false;
         return true;
       })
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  }, [allDespesasGravacao, canManage, loggedEmployeeId, filterEmployeeId, filterStatus, originFilter]);
+  }, [allDespesasGravacao, canManage, loggedEmployeeId, filterEmployeeId, filterStatus]);
 
   // Totais calculados sobre a visão permitida ao usuário
   const stats = useMemo(() => {
@@ -397,11 +395,7 @@ export function ReembolsosView() {
             {/* Filtros de Gestor */}
             {canManage && (
               <div className="flex flex-wrap items-center gap-2" data-filter-bar="true">
-                <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value as 'todos' | 'reais' | 'simulados')} className="px-3 py-1.5 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs text-foreground">
-                  <option value="todos">Todos (Reais + Simulados)</option>
-                  <option value="reais">Apenas Reais</option>
-                  <option value="simulados">Apenas Simulados</option>
-                </select>
+
                 <select
                   value={filterEmployeeId}
                   onChange={(e) => setFilterEmployeeId(e.target.value)}
@@ -477,7 +471,7 @@ export function ReembolsosView() {
 
                       <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${isSimulatedRecord(item.id) ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'}`}>{isSimulatedRecord(item.id) ? 'SIMULADO' : 'REAL'}</span>
+
                           <span className="text-sm font-black text-foreground">
                             {item.descricao}
                           </span>

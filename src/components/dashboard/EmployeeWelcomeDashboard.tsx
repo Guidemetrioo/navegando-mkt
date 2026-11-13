@@ -112,54 +112,13 @@ export function EmployeeWelcomeDashboard() {
   };
 
   // Tarefas prioritárias específicas por colaborador interno
-  const getInternalTasks = (empId: string) => {
-    switch (empId) {
-      case 'usr-carol':
-        return [
-          { title: 'Edição de 4 Reels de Destaque', desc: 'Cantina Bella Massa e Sushi Hoshi (cortes rápidos, sound design e ritmo)', priority: 'Alta' },
-          { title: 'Sincronização de Áudio & ASMR', desc: 'Equalizar som da brasa e maçarico nos vídeos de gastronomia', priority: 'Média' },
-          { title: 'Subir v1 no Funil DAM', desc: 'Encaminhar entregáveis para aprovação do atendimento e clientes', priority: 'Alta' },
-        ];
-      case 'usr-lucas':
-        return [
-          { title: 'Color Grading & Pós-Produção', desc: 'Colorimetria quente para Churrascaria Fogo Nobre e Paris 6', priority: 'Alta' },
-          { title: 'Montagem de Cortes em 9:16', desc: 'Enquadramentos verticais dinâmicos para reels gastronômicos', priority: 'Alta' },
-          { title: 'Exportação em 4K no Drive', desc: 'Garantir versões finais com bitrate otimizado para o Instagram', priority: 'Média' },
-        ];
-      case 'usr-bruna':
-        return [
-          { title: 'Roteiros & Ganchos (Hooks)', desc: 'Criar 6 ganchos de alta retenção para os 3 primeiros segundos dos Reels', priority: 'Alta' },
-          { title: 'Redação de Copys & Legendas', desc: 'Escrever legendas com CTAs de chamada para reserva e WhatsApp', priority: 'Alta' },
-          { title: 'Planejamento Editorial', desc: 'Distribuir publicações da semana no calendário de cada cliente', priority: 'Média' },
-        ];
-      case 'usr-evelin':
-        return [
-          { title: 'Design de 4 Capas de Reels', desc: 'Capas minimalistas elegantes para Bistrô Paris 6 e Café Grão Real', priority: 'Alta' },
-          { title: 'Carrossel Gastronômico', desc: 'Diagramação de carrossel de sobremesas grand gateau', priority: 'Média' },
-          { title: 'Atualização do Manual de Marca', desc: 'Ajustar padrões tipográficos e guias visuais dos novos clientes', priority: 'Baixa' },
-        ];
-      case 'usr-juliaint':
-        return [
-          { title: 'Otimização de Campanhas Meta Ads', desc: 'Revisar campanhas de tráfego local no raio de 5km dos restaurantes', priority: 'Alta' },
-          { title: 'Impulsionamento de Reels Vencedores', desc: 'Alocar verba nos 3 reels com maior taxa de retenção orgânica', priority: 'Alta' },
-          { title: 'Relatório Semanal de Conversão', desc: 'Calcular custo por mensagem no direct e cliques no cardápio digital', priority: 'Média' },
-        ];
-      case 'usr-augusto':
-        return [
-          { title: 'Follow-up com Clientes Parceiros', desc: 'Coletar aprovação com Gianluca (Bella Massa) e Kenji (Sushi Hoshi)', priority: 'Alta' },
-          { title: 'Agendamento das Gravações', desc: 'Confirmar escala de videomakers e cardápios para a próxima semana', priority: 'Alta' },
-          { title: 'Suporte no WhatsApp VIP', desc: 'Responder dúvidas e solicitações de alterações dos donos de restaurantes', priority: 'Média' },
-        ];
-      default:
-        return [
-          { title: 'Supervisão de Prazos e Entregas', desc: 'Acompanhar o fluxo de trabalho do estúdio e pós-produção', priority: 'Alta' },
-          { title: 'Conferência de Ponto CLT da Equipe', desc: 'Validar as 3 batidas diárias dos colaboradores internos', priority: 'Alta' },
-          { title: 'Suporte Operacional', desc: 'Garantir recursos e equipamentos para todas as gravações', priority: 'Média' },
-        ];
-    }
-  };
-
-  const internalTasks = IS_DEMO ? getInternalTasks(currentMember.id) : myDeliverables.filter(d=>!['aprovado','publicado'].includes(d.status)).map(d=>({title:d.titulo,desc:d.descricao || 'Consulte a central de arquivos.',priority:'Normal'}));
+  const internalTasks = myDeliverables
+    .filter((d) => !['aprovado', 'publicado'].includes(d.status))
+    .map((d) => ({
+      title: d.titulo,
+      desc: d.descricao || 'Consulte a central de arquivos.',
+      priority: 'Normal',
+    }));
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-200">

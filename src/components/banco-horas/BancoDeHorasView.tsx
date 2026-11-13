@@ -9,7 +9,6 @@ import {
   BancoHorasAdjustmentType,
   calculateEmployeeMonthlyTimeBank,
   formatDurationHoursMinutes,
-  isSimulatedBancoHorasRecord,
 } from '@/lib/clt-roster-engine';
 import { Plus, Download, ShieldCheck, SlidersHorizontal, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
@@ -205,9 +204,6 @@ export function BancoDeHorasView() {
               {isDataSaved
                 ? 'Dados Salvos Automaticamente (Zero Perda)'
                 : 'Sincronizando banco de horas...'}
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              SIMULADO vs REAL Identificados
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-extrabold text-foreground font-heading mt-1">
@@ -624,15 +620,6 @@ export function BancoDeHorasView() {
                                 <span className="font-extrabold text-foreground">
                                   {weekdayShort}, {day.dateIso.slice(8, 10)}/{day.dateIso.slice(5, 7)}
                                 </span>
-                                <span
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider border ${
-                                    day.isSimulated
-                                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                  }`}
-                                >
-                                  {day.isSimulated ? 'SIMULADO' : 'REAL'}
-                                </span>
                               </div>
                               <span className="font-mono font-extrabold text-[var(--ui-accent)]">
                                 {formatDurationHoursMinutes(day.totalWorkedMinutes)}
@@ -702,15 +689,6 @@ export function BancoDeHorasView() {
                                   }`}
                                 >
                                   {formatDurationHoursMinutes(adj.minutos, true)}
-                                </span>
-                                <span
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider border ${
-                                    isSimulatedBancoHorasRecord(adj.id)
-                                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                  }`}
-                                >
-                                  {isSimulatedBancoHorasRecord(adj.id) ? 'SIMULADO' : 'REAL'}
                                 </span>
                                 <span className="font-bold text-foreground">{adj.motivo}</span>
                               </div>
