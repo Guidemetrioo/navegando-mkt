@@ -128,15 +128,19 @@ export function BancoDeHorasView() {
 
     const author = employees.find((emp) => emp.id === loggedEmployeeId)?.nome || 'Gestão';
 
-    addBancoHorasLancamento({
-      employee_id: targetEmp.id,
-      employee_nome: targetEmp.nome,
-      data: compDate,
-      tipo: compTipo,
-      minutos: signedMinutes,
-      motivo: compMotivo.trim(),
-      registrado_por: author,
-    });
+    try {
+      addBancoHorasLancamento({
+        employee_id: targetEmp.id,
+        employee_nome: targetEmp.nome,
+        data: compDate,
+        tipo: compTipo,
+        minutos: signedMinutes,
+        motivo: compMotivo.trim(),
+        registrado_por: author,
+      });
+    } catch {
+      return;
+    }
 
     setShowCompModal(false);
     setCompMotivo('');
@@ -718,7 +722,7 @@ export function BancoDeHorasView() {
                             {canManage && (
                               <button
                                 type="button"
-                                onClick={() => deleteBancoHorasLancamento(adj.id)}
+                                onClick={() => { try { deleteBancoHorasLancamento(adj.id); } catch {} }}
                                 className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                                 title="Remover lançamento"
                                data-text-action="true"><span className="text-action-label">{"Remover"}</span></button>

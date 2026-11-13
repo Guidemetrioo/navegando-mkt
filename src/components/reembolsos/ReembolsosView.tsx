@@ -90,7 +90,9 @@ export function ReembolsosView() {
       return;
     }
 
-    const submitted=addDespesaGravacao({
+    let submitted: ReturnType<typeof addDespesaGravacao> | undefined;
+    try {
+      submitted = addDespesaGravacao({
       event_id: 'reembolso-direto',
       employee_id: currentMember?.id || loggedEmployeeId,
       employee_nome: currentMember?.nome || 'Colaborador',
@@ -103,7 +105,11 @@ export function ReembolsosView() {
       status: 'pendente',
     });
 
-    if(!submitted) return;
+    } catch {
+      return;
+    }
+
+    if (!submitted) return;
 
     // Limpa os 3 campos após enviar
     setValorInput('');
@@ -534,7 +540,7 @@ export function ReembolsosView() {
                           {item.status === 'pendente' && (
                             <button
                               type="button"
-                              onClick={() => updateDespesaStatus(item.id, 'aprovado')}
+                              onClick={() => { try { updateDespesaStatus(item.id, 'aprovado'); } catch {} }}
                               className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-[10px] font-bold cursor-pointer flex items-center gap-1"
                               title="Aprovar reembolso"
                             >
@@ -546,7 +552,7 @@ export function ReembolsosView() {
                           {item.status !== 'reembolsado' && (
                             <button
                               type="button"
-                              onClick={() => updateDespesaStatus(item.id, 'reembolsado')}
+                              onClick={() => { try { updateDespesaStatus(item.id, 'reembolsado'); } catch {} }}
                               className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold cursor-pointer flex items-center gap-1"
                               title="Confirmar pagamento do reembolso"
                             >
@@ -558,7 +564,7 @@ export function ReembolsosView() {
                           {item.status !== 'recusado' && item.status !== 'reembolsado' && (
                             <button
                               type="button"
-                              onClick={() => updateDespesaStatus(item.id, 'recusado')}
+                              onClick={() => { try { updateDespesaStatus(item.id, 'recusado'); } catch {} }}
                               className="p-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-[10px] cursor-pointer"
                               title="Recusar reembolso"
                              data-text-action="true"><span className="text-action-label">{"Recusar reembolso"}</span></button>

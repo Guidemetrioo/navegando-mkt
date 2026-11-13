@@ -89,10 +89,14 @@ export function ClientModal() {
       briefing: briefing.trim() || undefined,
     };
 
-    if (editingClient) {
-      updateClient(editingClient.id, payload);
-    } else {
-      addClient(payload);
+    try {
+      if (editingClient) {
+        updateClient(editingClient.id, payload);
+      } else {
+        addClient(payload);
+      }
+    } catch {
+      return;
     }
 
     closeClientModal();

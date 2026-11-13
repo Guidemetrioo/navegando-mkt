@@ -215,7 +215,10 @@ export function FinancialControlView() {
   // Submissão de Nova Transação Real
   const handleCreateTransacao = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(novoValor.replace(',', '.'));
+    const normalizedValor = novoValor.includes(',')
+      ? novoValor.replace(/\./g, '').replace(',', '.')
+      : novoValor;
+    const val = parseFloat(normalizedValor);
     if (!val || val <= 0) {
       alert('Informe um valor numérico válido.');
       return;
@@ -227,18 +230,22 @@ export function FinancialControlView() {
 
     const client = clients.find((c) => c.id === novoClientId);
 
-    addTransacao({
-      tipo: novoTipo,
-      categoria: novaCategoria,
-      descricao: novaDescricao.trim(),
-      valor: val,
-      data_vencimento: novoVencimento,
-      data_pagamento: null,
-      status: 'pendente',
-      client_id: novoClientId || null,
-      forma_pagamento: novoFormaPagamento,
-      cliente_nome: client?.nome,
-    });
+    try {
+      addTransacao({
+        tipo: novoTipo,
+        categoria: novaCategoria,
+        descricao: novaDescricao.trim(),
+        valor: val,
+        data_vencimento: novoVencimento,
+        data_pagamento: null,
+        status: 'pendente',
+        client_id: novoClientId || null,
+        forma_pagamento: novoFormaPagamento,
+        cliente_nome: client?.nome,
+      });
+    } catch {
+      return;
+    }
 
     setIsModalOpen(false);
     setNovaDescricao('');
@@ -755,7 +762,7 @@ export function FinancialControlView() {
                           {!isPaid ? (
                             <button
                               type="button"
-                              onClick={() => updateTransacaoStatus(t.id, 'pago')}
+                              onClick={() => { try { updateTransacaoStatus(t.id, 'pago'); } catch {} }}
                               className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-bold text-[11px] transition-all cursor-pointer inline-flex items-center gap-1"
                               title="Marcar como Pago"
                             >
@@ -765,7 +772,7 @@ export function FinancialControlView() {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => updateTransacaoStatus(t.id, 'pendente')}
+                              onClick={() => { try { updateTransacaoStatus(t.id, 'pendente'); } catch {} }}
                               className="text-[10px] text-zinc-500 hover:text-zinc-300 cursor-pointer"
                             >
                               Reabrir
@@ -894,13 +901,17 @@ export function FinancialControlView() {
                         <button
                           type="button"
                           onClick={() => {
-                            updateSalario(s.employee_id, {
-                              valor_base: Math.max(0, Number(editSalValor) || 0),
-                              dia_pagamento: Math.min(31, Math.max(1, Number(editSalDia) || 5)),
-                              tipo_contrato: editSalContrato,
-                              chave_pix: editSalPix.trim(),
-                            });
-                            setEditingSalId(null);
+                            try {
+                              updateSalario(s.employee_id, {
+                                valor_base: Math.max(0, Number(editSalValor) || 0),
+                                dia_pagamento: Math.min(31, Math.max(1, Number(editSalDia) || 5)),
+                                tipo_contrato: editSalContrato,
+                                chave_pix: editSalPix.trim(),
+                              });
+                              setEditingSalId(null);
+                            } catch {
+                              return;
+                            }
                           }}
                           className="px-2.5 py-1 rounded-lg brand-solid bg-[var(--ui-accent)] text-foreground font-bold text-[11px] cursor-pointer"
                         >
@@ -948,7 +959,7 @@ export function FinancialControlView() {
                         {!isPaid ? (
                           <button
                             type="button"
-                            onClick={() => markSalarioPago(s.employee_id)}
+                            onClick={() => { try { markSalarioPago(s.employee_id); } catch {} }}
                             className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 font-bold text-[11px] cursor-pointer"
                           >
                             Marcar Pago
@@ -956,7 +967,7 @@ export function FinancialControlView() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => updateSalario(s.employee_id, { status_mes_atual: 'pendente' })}
+                            onClick={() => { try { updateSalario(s.employee_id, { status_mes_atual: 'pendente' }); } catch {} }}
                             className="py-1.5 px-2.5 rounded-lg bg-[var(--ui-surface)] text-zinc-400 hover:text-zinc-200 text-[11px] cursor-pointer"
                           >
                             Reabrir
@@ -1068,7 +1079,7 @@ export function FinancialControlView() {
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => updateDespesaStatus(d.id, 'reembolsado')}
+                            onClick={() => { try { updateDespesaStatus(d.id, 'reembolsado'); } catch {} }}
                             className="px-3 py-1.5 rounded-xl brand-solid bg-[var(--ui-accent)] hover:bg-[var(--ui-accent-hover)] text-foreground text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                             title="Aprovar e pagar reembolso via PIX"
                           >

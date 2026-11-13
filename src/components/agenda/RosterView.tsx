@@ -279,7 +279,7 @@ export function RosterView() {
             <>
               <button
                 type="button"
-                onClick={() => autoGenerateMonthlyRoster(year, month, 'only_incomplete')}
+                onClick={() => { try { autoGenerateMonthlyRoster(year, month, 'only_incomplete'); } catch {} }}
                 className="px-3.5 py-2 rounded-xl bg-[var(--ui-raised)] hover:bg-[var(--ui-border)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Preenche automaticamente apenas as gravações que ainda estão sem Filmmaker ou sem Modelo"
               >
@@ -289,7 +289,7 @@ export function RosterView() {
 
               <button
                 type="button"
-                onClick={() => autoGenerateMonthlyRoster(year, month, 'rebalance_all')}
+                onClick={() => { try { autoGenerateMonthlyRoster(year, month, 'rebalance_all'); } catch {} }}
                 className="gradient-cta px-4 py-2 rounded-xl text-foreground font-extrabold text-xs shadow-lg flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
                 title="Distribui e equilibra todas as gravações do mês automaticamente para que todos trabalhem igual dentro dos limites CLT"
               >

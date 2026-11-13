@@ -11,7 +11,6 @@ import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import { ExecutiveDashboardView } from '@/components/dashboard/ExecutiveDashboardView';
 import { ControlCenterDashboard as EmployeeWelcomeDashboard } from '@/components/dashboard/ControlCenterDashboard';
 import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
-import { FilesDeliverablesView } from '@/components/files/FilesDeliverablesView';
 import { ProductionReportsView } from '@/components/reports/ProductionReportsView';
 import { BriefingView } from '@/components/briefing/BriefingView';
 import { ReembolsosView } from '@/components/reembolsos/ReembolsosView';
@@ -21,8 +20,6 @@ import { MonthView } from '@/components/agenda/MonthView';
 import { WeekView } from '@/components/agenda/WeekView';
 import { RosterView } from '@/components/agenda/RosterView';
 import { MyAgendaView } from '@/components/agenda/MyAgendaView';
-import { InstagramMetricsView } from '@/components/social/InstagramMetricsView';
-import { MentionsUgcView } from '@/components/social/MentionsUgcView';
 import { PontoView } from '@/components/ponto/PontoView';
 import { BancoDeHorasView } from '@/components/banco-horas/BancoDeHorasView';
 import { FinancialControlView } from '@/components/financial/FinancialControlView';
@@ -53,7 +50,6 @@ function AgendaMainContent() {
     loggedEmployeeId,
     openPontoModal,
     openNewEventModal,
-    openDeliverableModal,
     openClientModal,
   } = useAgenda();
   const [showAgendaFilters, setShowAgendaFilters] = useState(false);
@@ -155,10 +151,10 @@ function AgendaMainContent() {
               {currentView === 'escala' && 'Escala da Equipe'}
               {currentView === 'minha-agenda' && 'Minha Agenda'}
               {currentView === 'ponto' && 'Ponto & GPS'}
-              {currentView === 'banco-horas' && 'Banco de Horas (42h Semanais)'}
+              {currentView === 'banco-horas' && 'Banco de Horas'}
               {currentView === 'relatorios' && 'Relatórios de Produção'}
               {currentView === 'briefing' && 'Briefing & Roteiros'}
-              {currentView === 'briefing-edicao' && 'Briefing de Edição (Modelos)'}
+              {currentView === 'briefing-edicao' && 'Briefing de Edição'}
               {currentView === 'reembolsos' && 'Reembolsos'}
               {currentView === 'clientes' && 'Restaurantes'}
               {currentView === 'financeiro' && 'Controle Financeiro'}

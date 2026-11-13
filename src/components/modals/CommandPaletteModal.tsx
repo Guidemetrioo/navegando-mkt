@@ -196,7 +196,14 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
           id: `emp-${emp.id}`,
           category: 'Equipe da Agência',
           title: emp.nome,
-          subtitle: emp.funcao === 'filmmaker' ? 'Filmmaker / Câmera' : emp.funcao === 'criadora' ? 'Apresentadora / Vídeos' : 'Gestão',
+          subtitle:
+            emp.funcao === 'filmmaker'
+              ? 'Filmmaker / Câmera'
+              : emp.funcao === 'modelo' || emp.funcao === 'criadora'
+                ? 'Modelo / Criadora'
+                : emp.funcao === 'interno'
+                  ? 'Equipe Interna'
+                  : 'Gestão',
           icon: Users,
           iconColor: 'text-emerald-400',
           badge: emp.funcao || 'Equipe',
@@ -285,7 +292,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
               type="button"
               onClick={() => setQuery('')}
               className="p-1 rounded-lg text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] cursor-pointer"
-             data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
+             data-text-action="true"><span className="text-action-label">{"Limpar"}</span></button>
           ) : (
             <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono text-zinc-400 bg-[var(--ui-hover)] border border-[var(--ui-border)] rounded-md">
               ESC

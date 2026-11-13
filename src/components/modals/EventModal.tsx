@@ -178,18 +178,22 @@ export function EventModal() {
 
   const handleCreateNewClient = () => {
     if (!newClientName.trim()) return;
-    const created = addClient({
-      nome: newClientName.trim(),
-      contato: newClientContact.trim() || undefined,
-      endereco: newClientAddress.trim() || undefined,
-    });
-    setClientId(created.id);
-    setClientSearch(created.nome);
-    if (created.endereco) {
-      setLocal(created.endereco);
+    try {
+      const created = addClient({
+        nome: newClientName.trim(),
+        contato: newClientContact.trim() || undefined,
+        endereco: newClientAddress.trim() || undefined,
+      });
+      setClientId(created.id);
+      setClientSearch(created.nome);
+      if (created.endereco) {
+        setLocal(created.endereco);
+      }
+      setShowNewClientForm(false);
+      setIsClientDropdownOpen(false);
+    } catch {
+      return;
     }
-    setShowNewClientForm(false);
-    setIsClientDropdownOpen(false);
   };
 
   // Outros compromissos já marcados nesta mesma data
@@ -289,7 +293,12 @@ export function EventModal() {
       assigned_employee_ids: selectedEmpIds,
     };
 
-    const res = saveEvent(payload, allowOverride);
+    let res: ReturnType<typeof saveEvent>;
+    try {
+      res = saveEvent(payload, allowOverride);
+    } catch {
+      return;
+    }
 
     if (!res.success && res.conflicts && res.conflicts.length > 0) {
       setConflicts(res.conflicts);
@@ -324,15 +333,19 @@ export function EventModal() {
       return;
     }
     const loggedMember = employees.find((e) => e.id === loggedEmployeeId);
-    saveEventReport(editingEvent.id, {
-      preenchido: true,
-      preenchido_por_id: loggedEmployeeId,
-      preenchido_por_nome: loggedMember ? loggedMember.nome : 'Filmmaker',
-      preenchido_em: new Date().toISOString(),
-      relatorio_texto: relatorioTexto.trim(),
-      observacoes: relatorioTexto.trim(),
-      pasta_brutos_link: driveFolderLink,
-    });
+    try {
+      saveEventReport(editingEvent.id, {
+        preenchido: true,
+        preenchido_por_id: loggedEmployeeId,
+        preenchido_por_nome: loggedMember ? loggedMember.nome : 'Filmmaker',
+        preenchido_em: new Date().toISOString(),
+        relatorio_texto: relatorioTexto.trim(),
+        observacoes: relatorioTexto.trim(),
+        pasta_brutos_link: driveFolderLink,
+      });
+    } catch {
+      return;
+    }
     closeEventModal();
   };
 
@@ -347,6 +360,16 @@ export function EventModal() {
   const handleDespFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+      alert('Use JPG, PNG, WebP ou PDF.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      alert('O arquivo do comprovante deve ter no máximo 1MB.');
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -374,18 +397,22 @@ export function EventModal() {
     }
     const emp = employees.find((e) => e.id === loggedEmployeeId) || employees[0];
 
-    addDespesaGravacao({
-      event_id: editingEvent.id,
-      employee_id: emp.id,
-      employee_nome: emp.nome,
-      categoria: 'outros',
-      descricao: despDescricao.trim(),
-      valor: val,
-      data: date || new Date().toISOString().slice(0, 10),
-      comprovante_arquivo: despComprovanteArquivo,
-      comprovante_nome: despComprovanteNome || 'comprovante.jpg',
-      status: 'pendente',
-    });
+    try {
+      addDespesaGravacao({
+        event_id: editingEvent.id,
+        employee_id: emp.id,
+        employee_nome: emp.nome,
+        categoria: 'outros',
+        descricao: despDescricao.trim(),
+        valor: val,
+        data: date || new Date().toISOString().slice(0, 10),
+        comprovante_arquivo: despComprovanteArquivo,
+        comprovante_nome: despComprovanteNome || 'comprovante.jpg',
+        status: 'pendente',
+      });
+    } catch {
+      return;
+    }
 
     setDespDescricao('');
     setDespValor('');
@@ -1519,7 +1546,11 @@ export function EventModal() {
               type="button"
               onClick={() => {
                 if (confirm('Deseja realmente excluir esta gravação?')) {
-                  deleteEvent(editingEvent.id);
+                  try {
+                    deleteEvent(editingEvent.id);
+                  } catch {
+                    // Aviso já exibido pelo AgendaContext
+                  }
                 }
               }}
               className="flex items-center gap-1.5 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors p-2 rounded-xl hover:bg-red-500/10 cursor-pointer"
