@@ -123,7 +123,7 @@ interface AgendaContextType {
   exportSystemBackup: () => void;
   restoreSystemBackup: (file: File) => Promise<boolean>;
   resetToInitialData: () => void;
-  
+
   // Dados Social & Instagram
   reels: ReelMetric[];
   mentions: ClientMention[];
@@ -145,7 +145,7 @@ interface AgendaContextType {
   canGoBackView: boolean;
   navigate: (direction: 'prev' | 'next' | 'today') => void;
   setDate: (date: Date) => void;
-  
+
   // Filtros
   selectedEmployeeIds: string[];
   setSelectedEmployeeIds: (ids: string[]) => void;
@@ -287,14 +287,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [mentions, setMentions] = useState<ClientMention[]>(IS_DEMO ? INITIAL_MENTIONS : []);
   const [socialAccounts, setSocialAccounts] = useState<ClientSocialAccount[]>(IS_DEMO ? INITIAL_SOCIAL_ACCOUNTS : []);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
-  
+
   // Estado de Autenticação & Sessão com Ponto Obrigatório
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [lastLoginPonto, setLastLoginPonto] = useState<PontoRegistro | null>(null);
 
   // Visão e Data (Inicia na Central de Boas-Vindas)
-  const [currentDate, setCurrentDate] = useState<Date>(()=>new Date(0));
-  useEffect(()=>{queueMicrotask(()=>setCurrentDate(parseDateIso(todayInSaoPaulo())));},[]);
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(0));
+  useEffect(() => { queueMicrotask(() => setCurrentDate(parseDateIso(todayInSaoPaulo()))); }, []);
   const [viewHistory, setViewHistory] = useState<AgendaView[]>(['home']);
   const currentView = viewHistory[viewHistory.length - 1];
 
@@ -318,17 +318,16 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   } | null>(null);
 
   // Gestão Financeira (Apenas Gestores)
-  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(INITIAL_TRANSACOES);
-  const [salarios, setSalarios] = useState<FuncionarioSalario[]>(INITIAL_SALARIOS);
-  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>(INITIAL_DESPESAS_GRAVACOES);
+  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(IS_DEMO ? INITIAL_TRANSACOES : []);
+  const [salarios, setSalarios] = useState<FuncionarioSalario[]>(IS_DEMO ? INITIAL_SALARIOS : []);
+  const [extraDespesas, setExtraDespesas] = useState<DespesaGravacao[]>(IS_DEMO ? INITIAL_DESPESAS_GRAVACOES : []);
 
   // WhatsApp Bot & Automação de Confirmação
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>(INITIAL_WHATSAPP_CONFIG);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsAppMessageLog[]>(IS_DEMO ? INITIAL_WHATSAPP_LOGS : []);
   const [bancoHorasLancamentos, setBancoHorasLancamentos] = useState<BancoHorasLancamento[]>(IS_DEMO ? INITIAL_BANCO_HORAS_LANCAMENTOS : []);
 
-  const hasCloudHydratedRef = useRef(false);
-  const [localHydrated,setLocalHydrated] = useState(false);
+  const [localHydrated, setLocalHydrated] = useState(false);
   const mergeInitialClients = useCallback((list: Client[], seedIfEmpty = false): Client[] => {
     const defById = new Map(INITIAL_CLIENTS.map((c) => [c.id, c]));
     const enrichedClients = (list || []).map((c) => {
@@ -364,27 +363,18 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const mergeInitialTransacoes = useCallback((list: TransacaoFinanceira[]): TransacaoFinanceira[] => { const real = (list || []).filter((t) => !isSimulatedRecord(t.id)); const byId = new Set(real.map((t) => t.id)); return [...real, ...INITIAL_TRANSACOES.filter((t) => !byId.has(t.id))]; }, []);
   const mergeInitialSalarios = useCallback((list: FuncionarioSalario[]): FuncionarioSalario[] => { const byId = new Map((list || []).map((s) => [s.employee_id, s])); return INITIAL_SALARIOS.map((def) => { const saved = byId.get(def.employee_id); return saved ? { ...def, ...saved, valor_base: saved.valor_base && saved.valor_base > 0 ? saved.valor_base : def.valor_base, chave_pix: saved.chave_pix || def.chave_pix } : def; }); }, []);
   const mergeInitialBancoHoras = useCallback((list: BancoHorasLancamento[]): BancoHorasLancamento[] => { const real = (list || []).filter((b) => !isSimulatedBancoHorasRecord(b.id)); const byId = new Set(real.map((b) => b.id)); return [...real, ...INITIAL_BANCO_HORAS_LANCAMENTOS.filter((b) => !byId.has(b.id))]; }, []);
-  const localWorkspace=useMemo<Workspace>(()=>({employees,clients,events,pontos:IS_DEMO?pontos:pontos.filter(p=>!isSimulatedRecord(p.id)),deliverables,reels,mentions,despesas:IS_DEMO?extraDespesas:extraDespesas.filter(d=>!isSimulatedRecord(d.id)),transacoes:IS_DEMO?transacoes:transacoes.filter(t=>!isSimulatedRecord(t.id)),salarios:salarios.map(s=>({...s,id:s.employee_id})),banco_horas:IS_DEMO?bancoHorasLancamentos:bancoHorasLancamentos.filter(b=>!isSimulatedBancoHorasRecord(b.id))}),[employees,clients,events,pontos,deliverables,reels,mentions,extraDespesas,transacoes,salarios,bancoHorasLancamentos]);
-  const applyCloud=useCallback((data:Workspace,member:Member|null)=>{
-    const managerSeed = isManager(member?.role);
-    const firstEmptySeed = managerSeed && !hasCloudHydratedRef.current && data.clients.length === 0 && data.events.length === 0;
-    if (member) hasCloudHydratedRef.current = true;
-    else hasCloudHydratedRef.current = false;
+  const localWorkspace = useMemo<Workspace>(() => ({ employees, clients, events, pontos, deliverables, reels, mentions, despesas: extraDespesas, transacoes, salarios: salarios.map(s => ({ ...s, id: s.employee_id })), banco_horas: bancoHorasLancamentos }), [employees, clients, events, pontos, deliverables, reels, mentions, extraDespesas, transacoes, salarios, bancoHorasLancamentos]);
+  const applyCloud = useCallback((data: Workspace, member: Member | null) => {
     setEmployees(data.employees);
-    setClients(managerSeed ? mergeInitialClients(data.clients, firstEmptySeed) : data.clients);
-    setEvents(managerSeed ? mergeInitialEvents(data.events, firstEmptySeed) : data.events);
-    setPontos(mergeInitialPontos(data.pontos, member?.employee_id, managerSeed));
-    setDeliverables(data.deliverables);setReels(data.reels);setMentions(data.mentions);
-    setExtraDespesas(mergeInitialDespesas(data.despesas, member?.employee_id, managerSeed));
-    setTransacoes(managerSeed ? mergeInitialTransacoes(data.transacoes) : data.transacoes);
-    setSalarios(managerSeed ? mergeInitialSalarios(data.salarios) : data.salarios);
-    setBancoHorasLancamentos(mergeInitialBancoHoras(data.banco_horas));
-    setIsAuthenticated(Boolean(member));
-    setCloudMemberRole(member?.role);
-    if(member) setLoggedEmployeeId(member.employee_id);
-  },[mergeInitialClients,mergeInitialEvents,mergeInitialPontos,mergeInitialDespesas,mergeInitialTransacoes,mergeInitialSalarios,mergeInitialBancoHoras]);
+    setClients(data.clients); setEvents(data.events); setPontos(data.pontos);
+    setDeliverables(data.deliverables); setReels(data.reels); setMentions(data.mentions);
+    setExtraDespesas(data.despesas); setTransacoes(data.transacoes); setSalarios(data.salarios);
+    setBancoHorasLancamentos(data.banco_horas);
+    setIsAuthenticated(Boolean(member)); setCloudMemberRole(member?.role);
+    if (member) setLoggedEmployeeId(member.employee_id);
+  }, []);
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
-  const memberRole=employees.find(e=>e.id===loggedEmployeeId)?.funcao ?? cloudMemberRole;
+  const memberRole=IS_DEMO ? employees.find(e=>e.id===loggedEmployeeId)?.funcao : cloudMemberRole;
   const canManage=isManager(memberRole);
   const userRole:UserRole=canManage ? 'admin' : 'funcionario';
   const writable=IS_DEMO || !['conflict','recovery','loading','signed-out','setup'].includes(cloud.status);
@@ -408,55 +398,55 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('navegando_mkt_auth_session');
       for(const key of Object.values(STORAGE_KEYS)) localStorage.removeItem(key);
 
-      const ensureOfficial = (list: Employee[]): Employee[] => {
-        const byId = new Map((list || []).map((e) => [e.id, e]));
-        return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
-      };
+        const ensureOfficial = (list: Employee[]): Employee[] => {
+          const byId = new Map((list || []).map((e) => [e.id, e]));
+          return INITIAL_EMPLOYEES.map((off) => (byId.has(off.id) ? { ...byId.get(off.id)!, ...off } : off));
+        };
 
-      const snapshot=localStorage.getItem('navegando_mkt_workspace_real_v1');
-      if(snapshot) {
-        const saved=JSON.parse(snapshot) as Workspace;
-        for(const key of ['employees','clients','events','pontos','deliverables','reels','mentions'] as const) if(!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
-        const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
-          (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
-        setEmployees(ensureOfficial(saved.employees));setClients(mergeInitialClients(saved.clients));setEvents(mergeInitialEvents(saved.events));setPontos(mergeInitialPontos(sanitizePontos(saved.pontos), undefined, true));setDeliverables(saved.deliverables);setReels(saved.reels);setMentions(saved.mentions);
-      }
-
-      const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
-      if (savedFin) {
-        const parsedFin = JSON.parse(savedFin);
-        if (Array.isArray(parsedFin.transacoes)) setTransacoes(mergeInitialTransacoes(parsedFin.transacoes));
-        if (Array.isArray(parsedFin.salarios)) {
-          const salById = new Map((parsedFin.salarios as FuncionarioSalario[]).map((s) => [s.employee_id, s]));
-          setSalarios(mergeInitialSalarios(parsedFin.salarios));
+        const snapshot = localStorage.getItem('navegando_mkt_workspace_real_v1');
+        if (snapshot) {
+          const saved = JSON.parse(snapshot) as Workspace;
+          for (const key of ['employees', 'clients', 'events', 'pontos', 'deliverables', 'reels', 'mentions'] as const) if (!Array.isArray(saved[key])) throw new Error('Cópia local inválida.');
+          const sanitizePontos = (list: PontoRegistro[]): PontoRegistro[] =>
+            (list || []).map((p) => (p.foto_url && p.foto_url.includes('unsplash.com') ? { ...p, foto_url: '' } : p));
+          setEmployees(ensureOfficial(saved.employees)); setClients(mergeInitialClients(saved.clients)); setEvents(mergeInitialEvents(saved.events)); setPontos(mergeInitialPontos(sanitizePontos(saved.pontos), undefined, true)); setDeliverables(saved.deliverables); setReels(saved.reels); setMentions(saved.mentions);
         }
-        if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(mergeInitialDespesas(parsedFin.extraDespesas, undefined, true));
-      }
 
-      const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');
-      if (savedWpp) {
-        const parsedWpp = JSON.parse(savedWpp);
-        if (parsedWpp.config) setWhatsappConfig({...parsedWpp.config,...whatsappConnection({})});
-        if (Array.isArray(parsedWpp.logs)) setWhatsappLogs(parsedWpp.logs);
-      }
+        const savedFin = localStorage.getItem('navegando_mkt_financial_real_v1');
+        if (savedFin) {
+          const parsedFin = JSON.parse(savedFin);
+          if (Array.isArray(parsedFin.transacoes)) setTransacoes(mergeInitialTransacoes(parsedFin.transacoes));
+          if (Array.isArray(parsedFin.salarios)) {
+            const salById = new Map((parsedFin.salarios as FuncionarioSalario[]).map((s) => [s.employee_id, s]));
+            setSalarios(mergeInitialSalarios(parsedFin.salarios));
+          }
+          if (Array.isArray(parsedFin.extraDespesas)) setExtraDespesas(mergeInitialDespesas(parsedFin.extraDespesas, undefined, true));
+        }
 
-      const savedBh = localStorage.getItem('navegando_mkt_banco_horas_real_v1');
-      if (savedBh) {
-        const parsedBh = JSON.parse(savedBh);
-        if (Array.isArray(parsedBh)) setBancoHorasLancamentos(mergeInitialBancoHoras(parsedBh));
-      }
-      setLocalHydrated(true);
-    } catch {setIsDataSaved(false);toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.','error');}
+        const savedWpp = localStorage.getItem('navegando_mkt_whatsapp_real_v1');
+        if (savedWpp) {
+          const parsedWpp = JSON.parse(savedWpp);
+          if (parsedWpp.config) setWhatsappConfig({ ...parsedWpp.config, ...whatsappConnection({}) });
+          if (Array.isArray(parsedWpp.logs)) setWhatsappLogs(parsedWpp.logs);
+        }
+
+        const savedBh = localStorage.getItem('navegando_mkt_banco_horas_real_v1');
+        if (savedBh) {
+          const parsedBh = JSON.parse(savedBh);
+          if (Array.isArray(parsedBh)) setBancoHorasLancamentos(mergeInitialBancoHoras(parsedBh));
+        }
+        setLocalHydrated(true);
+      } catch { setIsDataSaved(false); toast('Não foi possível ler a cópia local. Ela foi preservada. Exporte os dados antes de restaurar um backup.', 'error'); }
     });
-  },[toast]);
-  useEffect(()=>{
-    if(!IS_DEMO || !localHydrated) return;
-    const saved=saveToStorage('navegando_mkt_workspace_real_v1',localWorkspace);
-    saveToStorage('navegando_mkt_financial_real_v1',{transacoes,salarios,extraDespesas});
-    saveToStorage('navegando_mkt_whatsapp_real_v1',{config:whatsappConfig,logs:whatsappLogs});
-    saveToStorage('navegando_mkt_banco_horas_real_v1',bancoHorasLancamentos);
-    queueMicrotask(()=>setIsDataSaved(saved));
-  },[localWorkspace,transacoes,salarios,extraDespesas,whatsappConfig,whatsappLogs,bancoHorasLancamentos,localHydrated]);
+  }, [toast]);
+  useEffect(() => {
+    if (!IS_DEMO || !localHydrated) return;
+    const saved = saveToStorage('navegando_mkt_workspace_real_v1', localWorkspace);
+    saveToStorage('navegando_mkt_financial_real_v1', { transacoes, salarios, extraDespesas });
+    saveToStorage('navegando_mkt_whatsapp_real_v1', { config: whatsappConfig, logs: whatsappLogs });
+    saveToStorage('navegando_mkt_banco_horas_real_v1', bancoHorasLancamentos);
+    queueMicrotask(() => setIsDataSaved(saved));
+  }, [localWorkspace, transacoes, salarios, extraDespesas, whatsappConfig, whatsappLogs, bancoHorasLancamentos, localHydrated]);
 
   const autoGenerateMonthlyRoster = useCallback(
     (year: number, month: number, mode: 'only_incomplete' | 'rebalance_all') => {
@@ -500,13 +490,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [toast]
   );
 
-  // Hidratação e persistência dos atestados médicos enviados pela equipe
+  // Legacy local attachments remain untouched; never read them as company records in production.
   useEffect(() => {
+    if (!IS_DEMO) return;
     try {
       const savedAtestados = localStorage.getItem('navegando_mkt_atestados_real_v1');
       if (savedAtestados) {
         const parsed = JSON.parse(savedAtestados);
-        if (Array.isArray(parsed)) setAtestados(parsed);
+        if (Array.isArray(parsed)) queueMicrotask(() => setAtestados(parsed));
       }
     } catch {
       // ignora erro de leitura local
@@ -609,65 +600,65 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         observacao?: string;
       }
     ) => {
-      if(!IS_DEMO) return {success:false,error:'Use o login individual da base central.'};
-    const check = verifyCredentials(employeeId, password);
-    if (!check.valid) {
-      return { success: false, error: check.error };
-    }
+      if (!IS_DEMO) return { success: false, error: 'Use o login individual da base central.' };
+      const check = verifyCredentials(employeeId, password);
+      if (!check.valid) {
+        return { success: false, error: check.error };
+      }
 
-    if(!pontoData.photoUrl || !Number.isFinite(pontoData.lat) || !Number.isFinite(pontoData.lng) || !pontoData.accuracy) return {success:false,error:'Foto e localização reais são obrigatórias.'};
-    const emp = employees.find((e) => e.id === employeeId);
-    const nowIso = new Date().toISOString();
-    const tipo = pontoData.tipo || 'entrada';
-    const isInterno = emp?.regime === 'interno' || emp?.funcao === 'interno';
+      if (!pontoData.photoUrl || !Number.isFinite(pontoData.lat) || !Number.isFinite(pontoData.lng) || !pontoData.accuracy) return { success: false, error: 'Foto e localização reais são obrigatórias.' };
+      const emp = employees.find((e) => e.id === employeeId);
+      const nowIso = new Date().toISOString();
+      const tipo = pontoData.tipo || 'entrada';
+      const isInterno = emp?.regime === 'interno' || emp?.funcao === 'interno';
 
-    const defaultAddress = pontoData.address || '';
+      const defaultAddress = pontoData.address || '';
 
-    const defaultObs = pontoData.observacao || (
-      isInterno
-        ? `Ponto CLT (${tipo.toUpperCase()}) registrado no escritório interno.`
-        : `Check-in de ${tipo.toUpperCase()} no restaurante parceiro com GPS e foto.`
-    );
+      const defaultObs = pontoData.observacao || (
+        isInterno
+          ? `Ponto CLT (${tipo.toUpperCase()}) registrado no escritório interno.`
+          : `Check-in de ${tipo.toUpperCase()} no restaurante parceiro com GPS e foto.`
+      );
 
-    const novoPonto: PontoRegistro = {
-      id: `ponto-login-${Date.now()}`,
-      employee_id: employeeId,
-      tipo,
-      data_hora: nowIso,
-      foto_url: pontoData.photoUrl || '',
-      latitude: pontoData.lat!,
-      longitude: pontoData.lng!,
-      precisao_metros: pontoData.accuracy!,
-      distancia_metros: pontoData.distancia_metros,
-      endereco: defaultAddress,
-      client_id: pontoData.clientId || null,
-      status_localizacao: pontoData.status_localizacao || 'no_local',
-      observacao: defaultObs,
-      created_at: nowIso,
-    };
+      const novoPonto: PontoRegistro = {
+        id: `ponto-login-${Date.now()}`,
+        employee_id: employeeId,
+        tipo,
+        data_hora: nowIso,
+        foto_url: pontoData.photoUrl || '',
+        latitude: pontoData.lat!,
+        longitude: pontoData.lng!,
+        precisao_metros: pontoData.accuracy!,
+        distancia_metros: pontoData.distancia_metros,
+        endereco: defaultAddress,
+        client_id: pontoData.clientId || null,
+        status_localizacao: pontoData.status_localizacao || 'no_local',
+        observacao: defaultObs,
+        created_at: nowIso,
+      };
 
-    setPontos((prev) => [novoPonto, ...prev]);
-    setLastLoginPonto(novoPonto);
-    setLoggedEmployeeId(employeeId);
-    setIsAuthenticated(true);
-    setViewHistory(['home']);
+      setPontos((prev) => [novoPonto, ...prev]);
+      setLastLoginPonto(novoPonto);
+      setLoggedEmployeeId(employeeId);
+      setIsAuthenticated(true);
+      setViewHistory(['home']);
 
-    saveToStorage('navegando_mkt_auth_session', {
-      isAuth: true,
-      employeeId,
-      lastPonto: novoPonto ? { ...novoPonto, foto_url: '' } : null,
-    });
+      saveToStorage('navegando_mkt_auth_session', {
+        isAuth: true,
+        employeeId,
+        lastPonto: novoPonto ? { ...novoPonto, foto_url: '' } : null,
+      });
 
-    toast(`Bem-vindo, ${emp?.nome || 'Equipe'}! Ponto (${tipo.toUpperCase()}) registrado com sucesso.`, 'success');
-    return { success: true };
-  },
-  [employees, toast]
-);
+      toast(`Bem-vindo, ${emp?.nome || 'Equipe'}! Ponto (${tipo.toUpperCase()}) registrado com sucesso.`, 'success');
+      return { success: true };
+    },
+    [employees, toast]
+  );
 
   const loginDirect = useCallback(
     (employeeId: string, password: string) => {
-      if(!IS_DEMO) return {success:false,error:'Use o login individual da base central.'};
-    const check = verifyCredentials(employeeId, password);
+      if (!IS_DEMO) return { success: false, error: 'Use o login individual da base central.' };
+      const check = verifyCredentials(employeeId, password);
       if (!check.valid) {
         return { success: false, error: check.error };
       }
@@ -687,10 +678,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    if(!IS_DEMO) {
+    if (!IS_DEMO) {
       void Promise.all([
-        fetch('/api/auth/team-session', { method: 'DELETE' }).catch(() => {}),
-        createClient().auth.signOut().catch(() => {}),
+        fetch('/api/auth/team-session', { method: 'DELETE' }).catch(() => { }),
+        createClient().auth.signOut().catch(() => { }),
       ]).finally(() => {
         window.location.assign('/login');
       });
@@ -767,11 +758,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         prev.map((d) =>
           d.id === id
             ? {
-                ...d,
-                status,
-                observacoes_ajuste: observacao !== undefined ? observacao : d.observacoes_ajuste,
-                versao: status === 'ajustes_solicitados' ? d.versao + 1 : d.versao,
-              }
+              ...d,
+              status,
+              observacoes_ajuste: observacao !== undefined ? observacao : d.observacoes_ajuste,
+              versao: status === 'ajustes_solicitados' ? d.versao + 1 : d.versao,
+            }
             : d
         )
       );
@@ -838,8 +829,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
 
   // Ações de Backup do Sistema
   const exportSystemBackup = () => {
-    if(!canManage || !IS_DEMO && cloud.status!=='saved') {toast('A exportação exige gestão e dados confirmados.','error');return;}
-    const exported=downloadSystemBackup({
+    if (!canManage || !IS_DEMO && cloud.status !== 'saved') { toast('A exportação exige gestão e dados confirmados.', 'error'); return; }
+    const exported = downloadSystemBackup({
       version: '2.4.0',
       exportedAt: new Date().toISOString(),
       agencyName: 'Navegando MKT',
@@ -850,36 +841,36 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         pontos,
         deliverables,
         reels,
-        mentions, despesas:extraDespesas, transacoes, salarios:salarios.map(s=>({...s,id:s.employee_id})), banco_horas:bancoHorasLancamentos,
+        mentions, despesas: extraDespesas, transacoes, salarios: salarios.map(s => ({ ...s, id: s.employee_id })), banco_horas: bancoHorasLancamentos,
       },
     });
-    if(exported) toast('Dados operacionais exportados. Esta exportação não substitui o backup do banco e dos arquivos privados.','info');
+    if (exported) toast('Dados operacionais exportados. Esta exportação não substitui o backup do banco e dos arquivos privados.', 'info');
   };
 
   const restoreSystemBackup = async (file: File): Promise<boolean> => {
-      if(!IS_DEMO || !canManage) {toast('Restauração central deve ser feita em ambiente separado pelo responsável técnico.','error');return false;}
-      try {
-        const backup = await parseBackupFile(file);
-        if (!backup || !backup.data) return false;
-        if (Array.isArray(backup.data.events)) setEvents(backup.data.events);
-        if (Array.isArray(backup.data.clients)) setClients(backup.data.clients);
-        if (Array.isArray(backup.data.employees)) setEmployees(backup.data.employees);
-        if (Array.isArray(backup.data.pontos)) setPontos(backup.data.pontos);
-        if (Array.isArray(backup.data.deliverables)) setDeliverables(backup.data.deliverables);
-        if (Array.isArray(backup.data.reels)) setReels(backup.data.reels);
-        if (Array.isArray(backup.data.mentions)) setMentions(backup.data.mentions);
-        setExtraDespesas(backup.data.despesas);setTransacoes(backup.data.transacoes);setSalarios(backup.data.salarios);
-        toast('Backup restaurado com sucesso! Todos os dados e arquivos foram recarregados.', 'success');
-        return true;
-      } catch (e) {
-        console.error('Falha ao restaurar backup:', e);
-        toast('Falha ao ler arquivo de backup. Verifique o formato do arquivo.', 'error');
-        return false;
-      }
-    };
+    if (!IS_DEMO || !canManage) { toast('Restauração central deve ser feita em ambiente separado pelo responsável técnico.', 'error'); return false; }
+    try {
+      const backup = await parseBackupFile(file);
+      if (!backup || !backup.data) return false;
+      if (Array.isArray(backup.data.events)) setEvents(backup.data.events);
+      if (Array.isArray(backup.data.clients)) setClients(backup.data.clients);
+      if (Array.isArray(backup.data.employees)) setEmployees(backup.data.employees);
+      if (Array.isArray(backup.data.pontos)) setPontos(backup.data.pontos);
+      if (Array.isArray(backup.data.deliverables)) setDeliverables(backup.data.deliverables);
+      if (Array.isArray(backup.data.reels)) setReels(backup.data.reels);
+      if (Array.isArray(backup.data.mentions)) setMentions(backup.data.mentions);
+      setExtraDespesas(backup.data.despesas); setTransacoes(backup.data.transacoes); setSalarios(backup.data.salarios);
+      toast('Backup restaurado com sucesso! Todos os dados e arquivos foram recarregados.', 'success');
+      return true;
+    } catch (e) {
+      console.error('Falha ao restaurar backup:', e);
+      toast('Falha ao ler arquivo de backup. Verifique o formato do arquivo.', 'error');
+      return false;
+    }
+  };
 
   const resetToInitialData = () => {
-    if(!IS_DEMO || !canManage) {toast('Reinicialização indisponível na base central.','error');return;}
+    if (!IS_DEMO || !canManage) { toast('Reinicialização indisponível na base central.', 'error'); return; }
     if (confirm('Tem certeza de que deseja limpar todos os cadastros? Isso deixará o sistema zerado (mantendo apenas os 20 membros da equipe).')) {
       setEmployees(INITIAL_EMPLOYEES);
       setClients([]);
@@ -893,7 +884,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       setExtraDespesas([]);
       setWhatsappLogs([]);
       if (typeof window !== 'undefined') {
-        for(const key of Object.values(STORAGE_KEYS)) localStorage.removeItem(key);
+        for (const key of Object.values(STORAGE_KEYS)) localStorage.removeItem(key);
         localStorage.removeItem('navegando_mkt_workspace_v3');
         localStorage.removeItem('navegando_mkt_workspace_real_v1');
         localStorage.removeItem('navegando_mkt_financial_real_v1');
@@ -991,10 +982,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       prev.map((m) =>
         m.id === mentionId
           ? {
-              ...m,
-              reposted: !m.reposted,
-              reposted_at: !m.reposted ? new Date().toISOString() : null,
-            }
+            ...m,
+            reposted: !m.reposted,
+            reposted_at: !m.reposted ? new Date().toISOString() : null,
+          }
           : m
       )
     );
@@ -1260,13 +1251,13 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         prev.map((t) =>
           t.id === id
             ? {
-                ...t,
-                status,
-                data_pagamento:
-                  status === 'pago'
-                    ? dataPagamento || new Date().toISOString().slice(0, 10)
-                    : t.data_pagamento,
-              }
+              ...t,
+              status,
+              data_pagamento:
+                status === 'pago'
+                  ? dataPagamento || new Date().toISOString().slice(0, 10)
+                  : t.data_pagamento,
+            }
             : t
         )
       );
@@ -1297,9 +1288,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         prev.map((ev) =>
           ev.id === item.event_id
             ? {
-                ...ev,
-                despesas: [...(ev.despesas || []), item],
-              }
+              ...ev,
+              despesas: [...(ev.despesas || []), item],
+            }
             : ev
         )
       );
@@ -1341,10 +1332,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           despesas: (ev.despesas || []).map((d) =>
             d.id === id
               ? {
-                  ...d,
-                  status,
-                  observacao_gestor: obs || d.observacao_gestor,
-                }
+                ...d,
+                status,
+                observacao_gestor: obs || d.observacao_gestor,
+              }
               : d
           ),
         }))
@@ -1353,10 +1344,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         prev.map((d) =>
           d.id === id
             ? {
-                ...d,
-                status,
-                observacao_gestor: obs || d.observacao_gestor,
-              }
+              ...d,
+              status,
+              observacao_gestor: obs || d.observacao_gestor,
+            }
             : d
         )
       );
@@ -1367,20 +1358,19 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           prev.map((tr) =>
             tr.despesa_gravacao_id === id
               ? {
-                  ...tr,
-                  status: status === 'reembolsado' ? 'pago' : 'pendente',
-                  data_pagamento:
-                    status === 'reembolsado' ? new Date().toISOString().slice(0, 10) : tr.data_pagamento,
-                }
+                ...tr,
+                status: status === 'reembolsado' ? 'pago' : 'pendente',
+                data_pagamento:
+                  status === 'reembolsado' ? new Date().toISOString().slice(0, 10) : tr.data_pagamento,
+              }
               : tr
           )
         );
       }
       toast(
-        `Despesa ${
-          status === 'reembolsado'
-            ? 'marcada como reembolsada'
-            : status === 'aprovado'
+        `Despesa ${status === 'reembolsado'
+          ? 'marcada como reembolsada'
+          : status === 'aprovado'
             ? 'aprovada'
             : 'atualizada'
         }.`,
@@ -1393,56 +1383,56 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // WhatsApp Config & Actions
   const updateWhatsAppConfig = useCallback(
     (patch: Partial<WhatsAppConfig>) => {
-      if(patch.auto_confirmacao_d1 && !IS_DEMO) {toast('O agendamento automático precisa de um processo central no servidor. Use o envio manual por enquanto.','error');return;}
+      if (patch.auto_confirmacao_d1 && !IS_DEMO) { toast('O agendamento automático precisa de um processo central no servidor. Use o envio manual por enquanto.', 'error'); return; }
       setWhatsappConfig((prev) => ({ ...prev, ...patch }));
-      toast('Configurações do WhatsApp atualizadas com sucesso.', 'success');
+      toast(IS_DEMO ? 'Configurações atualizadas nesta demonstração.' : 'Preferências aplicadas somente nesta sessão. Ainda não há salvamento central dessas configurações.', 'info');
     },
     [toast]
   );
 
   const connectWhatsApp = useCallback(async () => {
-    setWhatsappConfig(prev => ({...prev,...whatsappConnection({}),status:'gerando_qrcode'}));
+    setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection({}), status: 'gerando_qrcode' }));
     try {
-      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'connect'})});
-      const data=await response.json();
-      if(!response.ok) throw new Error(data.error || 'Não foi possível conectar o serviço WhatsApp.');
-      setWhatsappConfig(prev=>({...prev,...whatsappConnection(data)}));
+      const response = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'connect' }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível conectar o serviço WhatsApp.');
+      setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection(data) }));
       toast(data.conectado ? 'WhatsApp conectado.' : data.qrCode ? 'QR Code recebido. Escaneie em Aparelhos conectados.' : 'Serviço acessível. Aguardando o WhatsApp emitir um QR Code.', 'info');
-    } catch(error) {
-      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
+    } catch (error) {
+      setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection({}) }));
       toast(error instanceof Error ? error.message : 'Serviço WhatsApp indisponível.', 'error');
     }
-  },[toast]);
+  }, [toast]);
 
-  const requestWhatsAppPairingCode = useCallback(async(phoneNumber:string):Promise<{success:boolean;code?:string;error?:string}>=>{
-    const phone=normalizeWhatsAppPhone(phoneNumber);
-    if(!phone)return {success:false,error:'Informe um número válido com país e DDD.'};
-    setWhatsappConfig(prev=>({...prev,pairing_code:undefined,qr_code:undefined,conectado:false,status:'gerando_qrcode'}));
+  const requestWhatsAppPairingCode = useCallback(async (phoneNumber: string): Promise<{ success: boolean; code?: string; error?: string }> => {
+    const phone = normalizeWhatsAppPhone(phoneNumber);
+    if (!phone) return { success: false, error: 'Informe um número válido com país e DDD.' };
+    setWhatsappConfig(prev => ({ ...prev, pairing_code: undefined, qr_code: undefined, conectado: false, status: 'gerando_qrcode' }));
     try {
-      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request-code',phoneNumber:phone})});
-      const data=await response.json();
-      if(!response.ok || !validPairingCode(data.pairingCode))throw new Error(data.error || 'O WhatsApp não emitiu um código válido.');
-      setWhatsappConfig(prev=>({...prev,pairing_code:data.pairingCode,qr_code:undefined,conectado:false,status:'gerando_qrcode'}));
+      const response = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'request-code', phoneNumber: phone }) });
+      const data = await response.json();
+      if (!response.ok || !validPairingCode(data.pairingCode)) throw new Error(data.error || 'O WhatsApp não emitiu um código válido.');
+      setWhatsappConfig(prev => ({ ...prev, pairing_code: data.pairingCode, qr_code: undefined, conectado: false, status: 'gerando_qrcode' }));
       toast('Código recebido do WhatsApp. Confirme no celular para concluir a conexão.', 'info');
-      return {success:true,code:data.pairingCode};
-    } catch(error) {
-      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
-      return {success:false,error:error instanceof Error ? error.message : 'Não foi possível solicitar o código.'};
+      return { success: true, code: data.pairingCode };
+    } catch (error) {
+      setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection({}) }));
+      return { success: false, error: error instanceof Error ? error.message : 'Não foi possível solicitar o código.' };
     }
-  },[toast]);
+  }, [toast]);
 
-  const disconnectWhatsApp = useCallback(async()=>{
+  const disconnectWhatsApp = useCallback(async () => {
     try {
-      const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})});
-      const data=await response.json();
-      if(!response.ok || data.success!==true)throw new Error(data.error || 'Desconexão não confirmada.');
-      setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));
-      toast('WhatsApp desconectado.','info');
-    } catch(error) {toast(error instanceof Error ? error.message : 'Não foi possível desconectar.','error');}
-  },[toast]);
+      const response = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+      const data = await response.json();
+      if (!response.ok || data.success !== true) throw new Error(data.error || 'Desconexão não confirmada.');
+      setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection({}) }));
+      toast('WhatsApp desconectado.', 'info');
+    } catch (error) { toast(error instanceof Error ? error.message : 'Não foi possível desconectar.', 'error'); }
+  }, [toast]);
 
   // Envio de mensagem de confirmação para um evento
-  const sendingWhatsApp=useRef(new Set<string>());
+  const sendingWhatsApp = useRef(new Set<string>());
   const dispatchConfirmationMessage = useCallback(
     async (event: EventItem, client: Client | undefined) => {
       const equipeNomes =
@@ -1462,16 +1452,16 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         .replace(/{{restaurante}}/g, client?.nome || 'Restaurante')
         .replace(/{{equipe}}/g, equipeNomes);
 
-      const phone=normalizeWhatsAppPhone(client?.telefone || client?.contato || '');
-      if(!phone) {toast('Cadastre um telefone válido para o restaurante.','error');return null;}
-      if(sendingWhatsApp.current.has(event.id)) return null;
+      const phone = normalizeWhatsAppPhone(client?.telefone || client?.contato || '');
+      if (!phone) { toast('Cadastre um telefone válido para o restaurante.', 'error'); return null; }
+      if (sendingWhatsApp.current.has(event.id)) return null;
       sendingWhatsApp.current.add(event.id);
       try {
-        const response=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send',phone,message:msg})});
-        const result=await response.json();
-        if(!response.ok || result.success!==true)throw new Error(result.error || 'O WhatsApp não confirmou o envio.');
-      } catch(error) {toast(error instanceof Error ? error.message : 'Envio não confirmado.','error');return null;}
-      finally {sendingWhatsApp.current.delete(event.id);}
+        const response = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', phone, message: msg }) });
+        const result = await response.json();
+        if (!response.ok || result.success !== true) throw new Error(result.error || 'O WhatsApp não confirmou o envio.');
+      } catch (error) { toast(error instanceof Error ? error.message : 'Envio não confirmado.', 'error'); return null; }
+      finally { sendingWhatsApp.current.delete(event.id); }
 
       const logItem: WhatsAppMessageLog = {
         id: `wpp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1491,15 +1481,15 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         prev.map((ev) =>
           ev.id === event.id
             ? {
-                ...ev,
-                confirmacao_whatsapp: {
-                  enviado: true,
-                  enviado_em: new Date().toISOString(),
-                  telefone_destino: client?.telefone,
-                  status_resposta: 'pendente',
-                  ultima_mensagem: msg,
-                },
-              }
+              ...ev,
+              confirmacao_whatsapp: {
+                enviado: true,
+                enviado_em: new Date().toISOString(),
+                telefone_destino: client?.telefone,
+                status_resposta: 'pendente',
+                ultima_mensagem: msg,
+              },
+            }
             : ev
         )
       );
@@ -1509,14 +1499,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [employees, whatsappConfig.template_mensagem, toast]
   );
 
-  const sendManualWhatsAppConfirmation = useCallback(async(eventId:string):Promise<boolean>=>{
-    const event=events.find(e=>e.id===eventId);
-    if(!event)return false;
-    const client=clients.find(c=>c.id===event.client_id);
-    const sent=await dispatchConfirmationMessage(event,client);
-    if(!sent)return false;
-    toast('Mensagem enviada pelo serviço WhatsApp.','success');return true;
-  },[events,clients,dispatchConfirmationMessage,toast]);
+  const sendManualWhatsAppConfirmation = useCallback(async (eventId: string): Promise<boolean> => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return false;
+    const client = clients.find(c => c.id === event.client_id);
+    const sent = await dispatchConfirmationMessage(event, client);
+    if (!sent) return false;
+    toast('Mensagem enviada pelo serviço WhatsApp.', 'success'); return true;
+  }, [events, clients, dispatchConfirmationMessage, toast]);
 
   const checkAndSendD1Reminders = useCallback(async () => {
     const today = parseDateIso(todayInSaoPaulo());
@@ -1532,7 +1522,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     for (const ev of eligible) {
       const client = clients.find((c) => c.id === ev.client_id);
       const text = await dispatchConfirmationMessage(ev, client);
-      if(text)messages.push(`${client?.nome}: ${text}`);
+      if (text) messages.push(`${client?.nome}: ${text}`);
     }
 
     setWhatsappConfig((prev) => ({
@@ -1581,17 +1571,17 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           prev.map((ev) =>
             ev.id === eventId
               ? {
-                  ...ev,
-                  status: ev.status === 'cancelado' ? 'agendado' : ev.status,
-                  confirmacao_whatsapp: {
-                    enviado: true,
-                    enviado_em: ev.confirmacao_whatsapp?.enviado_em || new Date().toISOString(),
-                    telefone_destino: client?.telefone,
-                    status_resposta: 'confirmado',
-                    resposta_recebida_em: new Date().toISOString(),
-                    ultima_mensagem: replyText,
-                  },
-                }
+                ...ev,
+                status: ev.status === 'cancelado' ? 'agendado' : ev.status,
+                confirmacao_whatsapp: {
+                  enviado: true,
+                  enviado_em: ev.confirmacao_whatsapp?.enviado_em || new Date().toISOString(),
+                  telefone_destino: client?.telefone,
+                  status_resposta: 'confirmado',
+                  resposta_recebida_em: new Date().toISOString(),
+                  ultima_mensagem: replyText,
+                },
+              }
               : ev
           )
         );
@@ -1601,18 +1591,18 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           prev.map((ev) =>
             ev.id === eventId
               ? {
-                  ...ev,
-                  status: 'cancelado',
-                  observacoes: `${ev.observacoes ? ev.observacoes + ' | ' : ''}Remarcação solicitada pelo cliente via WhatsApp: "${replyText}"`,
-                  confirmacao_whatsapp: {
-                    enviado: true,
-                    enviado_em: ev.confirmacao_whatsapp?.enviado_em || new Date().toISOString(),
-                    telefone_destino: client?.telefone,
-                    status_resposta: 'remarcar',
-                    resposta_recebida_em: new Date().toISOString(),
-                    ultima_mensagem: replyText,
-                  },
-                }
+                ...ev,
+                status: 'cancelado',
+                observacoes: `${ev.observacoes ? ev.observacoes + ' | ' : ''}Remarcação solicitada pelo cliente via WhatsApp: "${replyText}"`,
+                confirmacao_whatsapp: {
+                  enviado: true,
+                  enviado_em: ev.confirmacao_whatsapp?.enviado_em || new Date().toISOString(),
+                  telefone_destino: client?.telefone,
+                  status_resposta: 'remarcar',
+                  resposta_recebida_em: new Date().toISOString(),
+                  ultima_mensagem: replyText,
+                },
+              }
               : ev
           )
         );
@@ -1627,30 +1617,30 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
           detected === 'confirmado'
             ? 'Gravação confirmada com sucesso na agenda!'
             : detected === 'remarcar'
-            ? 'Remarcação solicitada. A equipe e o gestor foram alertados.'
-            : 'Mensagem recebida e registrada no log.',
+              ? 'Remarcação solicitada. A equipe e o gestor foram alertados.'
+              : 'Mensagem recebida e registrada no log.',
       };
     },
     [events, clients, toast]
   );
 
   // Connection state is always read from the authenticated server, never from browser localhost.
-  useEffect(()=>{
-    if(currentView!=='whatsapp' || !canManage)return;
-    let active=true;
-    let pending=false;
-    const sync=async()=>{
-      if(pending)return;pending=true;
+  useEffect(() => {
+    if (currentView !== 'whatsapp' || !canManage) return;
+    let active = true;
+    let pending = false;
+    const sync = async () => {
+      if (pending) return; pending = true;
       try {
-        const response=await fetch('/api/whatsapp',{cache:'no-store'});
-        const data=await response.json();
-        if(active)setWhatsappConfig(prev=>({...prev,...whatsappConnection(response.ok?data:{})}));
-      } catch {if(active)setWhatsappConfig(prev=>({...prev,...whatsappConnection({})}));}
-      finally {pending=false;}
+        const response = await fetch('/api/whatsapp', { cache: 'no-store' });
+        const data = await response.json();
+        if (active) setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection(response.ok ? data : {}) }));
+      } catch { if (active) setWhatsappConfig(prev => ({ ...prev, ...whatsappConnection({}) })); }
+      finally { pending = false; }
     };
-    void sync();const timer=setInterval(()=>{void sync();},3500);
-    return()=>{active=false;clearInterval(timer);};
-  },[currentView,canManage]);
+    void sync(); const timer = setInterval(() => { void sync(); }, 3500);
+    return () => { active = false; clearInterval(timer); };
+  }, [currentView, canManage]);
 
   // Agendador automático: envia mensagem de confirmação no tempo escolhido para cada horário marcado
   useEffect(() => {
@@ -1704,8 +1694,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [deliverables, clients, events, employees]);
 
-  const guarded = <A extends unknown[], R,>(condition:boolean,fn:(...args:A)=>R)=>(...args:A):R=>{
-    if(!allowed(condition)) throw new Error('Operação não permitida para este perfil ou estado de sincronização.');
+  const guarded = <A extends unknown[], R,>(condition: boolean, fn: (...args: A) => R) => (...args: A): R => {
+    if (!allowed(condition)) throw new Error('Operação não permitida para este perfil ou estado de sincronização.');
     return fn(...args);
   };
   return (
@@ -1719,10 +1709,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         setSelectedEmployeeIds,
         // Central de Arquivos & Entregáveis (DAM)
         deliverables: enrichedDeliverables,
-        addDeliverable:guarded(canUserAccessView(memberRole,'arquivos'),addDeliverable),
-        updateDeliverable:guarded(canUserAccessView(memberRole,'arquivos'),updateDeliverable),
-        updateDeliverableStatus:(id,status,obs)=>guarded(canUserAccessView(memberRole,'arquivos') && (canManage || !['aprovado','publicado','ajustes_solicitados'].includes(status)),updateDeliverableStatus)(id,status,obs),
-        deleteDeliverable:guarded(canManage,deleteDeliverable),
+        addDeliverable: guarded(canUserAccessView(memberRole, 'arquivos'), addDeliverable),
+        updateDeliverable: guarded(canUserAccessView(memberRole, 'arquivos'), updateDeliverable),
+        updateDeliverableStatus: (id, status, obs) => guarded(canUserAccessView(memberRole, 'arquivos') && (canManage || !['aprovado', 'publicado', 'ajustes_solicitados'].includes(status)), updateDeliverableStatus)(id, status, obs),
+        deleteDeliverable: guarded(canManage, deleteDeliverable),
         isDeliverableModalOpen,
         deliverableModalClientId,
         editingDeliverable,
@@ -1730,21 +1720,21 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         openEditDeliverableModal,
         closeDeliverableModal,
         // Clientes
-        addClient:guarded(canManage,addClient),
-        updateClient:guarded(canManage,updateClient),
-        deleteClient:guarded(canManage,deleteClient),
+        addClient: guarded(canManage, addClient),
+        updateClient: guarded(canManage, updateClient),
+        deleteClient: guarded(canManage, deleteClient),
         isClientModalOpen,
         editingClient,
-        openClientModal:guarded(canManage,openClientModal),
+        openClientModal: guarded(canManage, openClientModal),
         closeClientModal,
         // Segurança & Backup
-        isDataSaved:IS_DEMO ? isDataSaved : cloud.status==='saved',
-        syncStatus:cloud.status,
-        syncMessage:cloud.message,
-        retrySync:cloud.retry,
-        exportPendingDraft:cloud.exportDraft,
-        reloadWorkspace:cloud.reload,
-        refreshWorkspace:cloud.refresh,
+        isDataSaved: IS_DEMO ? isDataSaved : cloud.status === 'saved',
+        syncStatus: cloud.status,
+        syncMessage: cloud.message,
+        retrySync: cloud.retry,
+        exportPendingDraft: cloud.exportDraft,
+        reloadWorkspace: cloud.reload,
+        refreshWorkspace: cloud.refresh,
         exportSystemBackup,
         restoreSystemBackup,
         resetToInitialData,
@@ -1752,11 +1742,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         reels: enrichedReels,
         mentions: enrichedMentions,
         socialAccounts,
-        pontos: canManage ? enrichedPontos : enrichedPontos.filter(p=>p.employee_id===loggedEmployeeId),
-        addPonto:(entry)=>guarded(entry.employee_id===loggedEmployeeId,addPonto)(entry),
+        pontos: canManage ? enrichedPontos : enrichedPontos.filter(p => p.employee_id === loggedEmployeeId),
+        addPonto: (entry) => guarded(entry.employee_id === loggedEmployeeId, addPonto)(entry),
         atestados: canManage ? atestados : atestados.filter((a) => a.employee_id === loggedEmployeeId),
-        addAtestado,
-        abonarAtestado,
+        addAtestado: guarded(IS_DEMO, addAtestado),
+        abonarAtestado: guarded(IS_DEMO && canManage, abonarAtestado),
         isPontoModalOpen,
         pontoModalConfig,
         openPontoModal,
@@ -1770,7 +1760,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         addMention: guarded(canManage, addMention),
         deleteMention: guarded(canManage, deleteMention),
         currentDate,
-        currentView:canUserAccessView(memberRole,currentView) ? currentView : 'home',
+        currentView: canUserAccessView(memberRole, currentView) ? currentView : 'home',
         setCurrentView: (view) => {
           if (!canUserAccessView(memberRole, view)) {
             toast('Módulo não permitido para seu perfil.', 'error');
@@ -1791,34 +1781,34 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         isEventModalOpen,
         editingEvent,
         dayDetailDate,
-        openNewEventModal:guarded(canManage,openNewEventModal),
+        openNewEventModal: guarded(canManage, openNewEventModal),
         openEditEventModal,
         closeEventModal,
         openDayDetailModal,
         closeDayDetailModal,
-        saveEvent:(eventData,allowConflictOverride)=>guarded(
-          canManage || Boolean(eventData.id && events.some(e=>e.id===eventData.id) && canUserAccessView(memberRole,'briefing')),
+        saveEvent: (eventData, allowConflictOverride) => guarded(
+          canManage || Boolean(eventData.id && events.some(e => e.id === eventData.id) && canUserAccessView(memberRole, 'briefing')),
           saveEvent
-        )(eventData,allowConflictOverride),
-        deleteEvent:guarded(canManage,deleteEvent),
-        saveEventReport:(id,report)=>guarded(canManage || memberRole==='filmmaker' && Boolean(events.find(e=>e.id===id)?.assigned_employee_ids?.includes(loggedEmployeeId)),saveEventReport)(id,report),
-        autoGenerateMonthlyRoster:guarded(canManage,autoGenerateMonthlyRoster),
-        updateEventTeamAssignment:guarded(canManage,updateEventTeamAssignment),
-        bancoHorasLancamentos:canManage ? bancoHorasLancamentos : bancoHorasLancamentos.filter(b=>b.employee_id===loggedEmployeeId),
-        addBancoHorasLancamento:guarded(canManage,addBancoHorasLancamento),
-        deleteBancoHorasLancamento:guarded(canManage,deleteBancoHorasLancamento),
+        )(eventData, allowConflictOverride),
+        deleteEvent: guarded(canManage, deleteEvent),
+        saveEventReport: (id, report) => guarded(canManage || memberRole === 'filmmaker' && Boolean(events.find(e => e.id === id)?.assigned_employee_ids?.includes(loggedEmployeeId)), saveEventReport)(id, report),
+        autoGenerateMonthlyRoster: guarded(canManage, autoGenerateMonthlyRoster),
+        updateEventTeamAssignment: guarded(canManage, updateEventTeamAssignment),
+        bancoHorasLancamentos: canManage ? bancoHorasLancamentos : bancoHorasLancamentos.filter(b => b.employee_id === loggedEmployeeId),
+        addBancoHorasLancamento: guarded(canManage, addBancoHorasLancamento),
+        deleteBancoHorasLancamento: guarded(canManage, deleteBancoHorasLancamento),
         userRole,
-        setUserRole:()=>{toast('As permissões são definidas pelo cargo do membro.','info');},
+        setUserRole: () => { toast('As permissões são definidas pelo cargo do membro.', 'info'); },
         loggedEmployeeId,
-        setLoggedEmployeeId:(id)=>{if(IS_DEMO) {setLoggedEmployeeId(id);saveToStorage('navegando_mkt_auth_session',{isAuth:true,employeeId:id,lastPonto:lastLoginPonto});}},
-        isSupabaseConnected:!IS_DEMO && isAuthenticated && cloud.status==='saved',
+        setLoggedEmployeeId: (id) => { if (IS_DEMO) { setLoggedEmployeeId(id); saveToStorage('navegando_mkt_auth_session', { isAuth: true, employeeId: id, lastPonto: lastLoginPonto }); } },
+        isSupabaseConnected: !IS_DEMO && isAuthenticated && cloud.status === 'saved',
         theme,
         setTheme,
         toggleTheme,
         toast,
         // Autenticação & Ponto Obrigatório no Login
         isAuthenticated,
-        setIsAuthenticated:(value)=>{if(IS_DEMO) setIsAuthenticated(value);},
+        setIsAuthenticated: (value) => { if (IS_DEMO) setIsAuthenticated(value); },
         lastLoginPonto,
         loginWithCheckIn,
         loginDirect,
@@ -1827,11 +1817,11 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         // Gestão Financeira
         transacoes,
         salarios,
-        allDespesasGravacao:canManage ? allDespesasGravacao : allDespesasGravacao.filter(d=>d.employee_id===loggedEmployeeId),
+        allDespesasGravacao: canManage ? allDespesasGravacao : allDespesasGravacao.filter(d => d.employee_id === loggedEmployeeId),
         addTransacao: guarded(canManage, addTransacao),
         updateTransacaoStatus: guarded(canManage, updateTransacaoStatus),
         deleteTransacao: guarded(canManage, deleteTransacao),
-        addDespesaGravacao:(d)=>guarded(d.employee_id===loggedEmployeeId && d.status==='pendente',addDespesaGravacao)(d),
+        addDespesaGravacao: (d) => guarded(d.employee_id === loggedEmployeeId && d.status === 'pendente', addDespesaGravacao)(d),
         updateDespesaStatus: guarded(canManage, updateDespesaStatus),
         updateSalario: guarded(canManage, updateSalario),
         markSalarioPago: guarded(canManage, markSalarioPago),
@@ -1839,8 +1829,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         whatsappConfig,
         whatsappLogs,
         updateWhatsAppConfig: guarded(canManage, updateWhatsAppConfig),
-        checkAndSendD1Reminders: ()=>guarded(canManage, checkAndSendD1Reminders)(),
-        sendManualWhatsAppConfirmation: (id)=>guarded(canManage, sendManualWhatsAppConfirmation)(id),
+        checkAndSendD1Reminders: () => guarded(canManage, checkAndSendD1Reminders)(),
+        sendManualWhatsAppConfirmation: (id) => guarded(canManage, sendManualWhatsAppConfirmation)(id),
         processClientWhatsAppReply: guarded(canManage, processClientWhatsAppReply),
         connectWhatsApp: guarded(canManage, connectWhatsApp),
         requestWhatsAppPairingCode: guarded(canManage, requestWhatsAppPairingCode),

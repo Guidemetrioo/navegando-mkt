@@ -1,44 +1,15 @@
 import { cookies } from 'next/headers';
-import { authenticateTeamMember, encodeTeamSession, TEAM_SESSION_COOKIE } from '@/lib/server/team-session';
+import { TEAM_SESSION_COOKIE } from '@/lib/server/team-session';
+import { apiFailure, checkOrigin, privateHeaders } from '@/lib/server/workspace-api';
 
-export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as { login?: string; password?: string };
-    const result = authenticateTeamMember(body?.login || '', body?.password || '');
-
-    if (!result.ok) {
-      return Response.json({ error: result.error }, { status: 401 });
-    }
-
-    const token = encodeTeamSession(result.session);
-    const store = await cookies();
-    store.set(TEAM_SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 dias
-    });
-
-    return Response.json({
-      ok: true,
-      member: {
-        employee_id: result.session.employeeId,
-        role: result.session.role,
-        nome: result.session.nome,
-      },
-    });
-  } catch {
-    return Response.json({ error: 'Falha ao processar o login da equipe.' }, { status: 400 });
-  }
+export async function POST() {
+  return Response.json({ error: 'O acesso por senha padrão foi desativado. Use seu e-mail e senha cadastrados no Supabase.' }, { status: 410, headers: privateHeaders });
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
-    const store = await cookies();
-    store.delete(TEAM_SESSION_COOKIE);
-    return Response.json({ ok: true });
-  } catch {
-    return Response.json({ ok: true });
-  }
+    checkOrigin(request);
+    (await cookies()).delete(TEAM_SESSION_COOKIE);
+    return Response.json({ ok: true }, { headers: privateHeaders });
+  } catch (error) { return apiFailure(error); }
 }
-

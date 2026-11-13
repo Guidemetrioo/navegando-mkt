@@ -1,4 +1,5 @@
 'use client';
+import { IS_DEMO } from '@/lib/app-mode';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { todayInSaoPaulo } from '@/lib/date-utils';
@@ -183,6 +184,11 @@ export function PontoView() {
       </div>
 
       {/* 1.5 CAMPO DE ATESTADO MÉDICO: UPLOAD DE ARQUIVO DO ATESTADO */}
+      {!IS_DEMO ? (
+        <p role="status" className="rounded-xl border border-[var(--ui-border)] p-4 text-sm text-[var(--ui-muted)]">
+          O envio de atestados está indisponível até a ativação do armazenamento central desses documentos. Entregue-os pelo canal definido pela agência.
+        </p>
+      ) : (
       <section
         aria-label="Envio de Atestado Médico"
         className="p-4 sm:p-5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-4"
@@ -325,6 +331,7 @@ export function PontoView() {
           </div>
         )}
       </section>
+      )}
 
       {/* 2. Barra de Controle: Filtros e Botão de Ação */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">

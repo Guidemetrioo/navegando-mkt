@@ -413,15 +413,14 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     initialMode || (currentView === 'briefing-edicao' ? 'edicao' : 'video')
   );
 
-  useEffect(() => {
-    if (initialMode) {
-      setBriefingMode(initialMode);
-    } else if (currentView === 'briefing-edicao') {
-      setBriefingMode('edicao');
-    } else if (currentView === 'briefing') {
-      setBriefingMode('video');
-    }
-  }, [initialMode, currentView]);
+  // Reset only when navigation changes, before rendering children with the old category.
+  const [previousNavigation, setPreviousNavigation] = useState({ initialMode, currentView });
+  if (previousNavigation.initialMode !== initialMode || previousNavigation.currentView !== currentView) {
+    setPreviousNavigation({ initialMode, currentView });
+    if (initialMode) setBriefingMode(initialMode);
+    else if (currentView === 'briefing-edicao') setBriefingMode('edicao');
+    else if (currentView === 'briefing') setBriefingMode('video');
+  }
 
   // Regras de permissão:
   // - Modelos podem editar APENAS o Briefing de Edição (no Briefing do Vídeo têm acesso somente leitura)

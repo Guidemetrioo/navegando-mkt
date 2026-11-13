@@ -1,203 +1,25 @@
 import { createClient } from '@/lib/supabase/server';
 import { unstable_rethrow } from 'next/navigation';
 import { HAS_CLOUD_CONFIG, IS_DEMO } from '@/lib/app-mode';
-import { identifyEmployeeFromLogin } from '@/lib/employee-login-matcher';
-import { readTeamSessionCookie } from '@/lib/server/team-session';
-import { INITIAL_CLIENTS, INITIAL_EMPLOYEES, INITIAL_EVENTS } from '@/lib/supabase/mock-data';
-import type { Change, CloudRecord, CloudSnapshot } from '@/lib/workspace';
-import type { TeamRole } from '@/types/database';
+import type { CloudSnapshot } from '@/lib/workspace';
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-  }
-}
-
-// Estado compartilhado em memória para membros autenticados via sessão da equipe ou fallback 42501
-const sharedFallbackRecords = new Map<string, CloudRecord>();
-let fallbackSeeded = false;
-
-function ensureFallbackSeeded() {
-  if (fallbackSeeded) return;
-  fallbackSeeded = true;
-  for (const e of INITIAL_EMPLOYEES) {
-    sharedFallbackRecords.set(`employees/${e.id}`, {
-      kind: 'employees',
-      id: e.id,
-      revision: 1,
-      data: structuredClone(e) as unknown as Record<string, unknown>,
-    });
-  }
-  for (const c of INITIAL_CLIENTS) {
-    sharedFallbackRecords.set(`clients/${c.id}`, {
-      kind: 'clients',
-      id: c.id,
-      revision: 1,
-      data: structuredClone(c) as unknown as Record<string, unknown>,
-    });
-  }
-  for (const ev of INITIAL_EVENTS) {
-    sharedFallbackRecords.set(`events/${ev.id}`, {
-      kind: 'events',
-      id: ev.id,
-      revision: 1,
-      data: structuredClone(ev) as unknown as Record<string, unknown>,
-    });
-  }
-}
-
-export function buildFallbackSnapshot(
-  employeeId: string,
-  role: TeamRole,
-  userId: string
-): CloudSnapshot {
-  ensureFallbackSeeded();
-  const isMgmt = role === 'dono' || role === 'gerente';
-  const records: CloudRecord[] = [];
-
-  for (const rec of sharedFallbackRecords.values()) {
-    if (rec.kind === 'clients' && !isMgmt) {
-      const c = rec.data;
-      records.push({
-        kind: 'clients',
-        id: rec.id,
-        revision: rec.revision,
-        data: {
-          id: rec.id,
-          nome: c.nome,
-          endereco: c.endereco,
-          latitude: c.latitude,
-          longitude: c.longitude,
-          drive_folder_url: c.drive_folder_url,
-          cardapio_link: c.cardapio_link,
-        },
-      });
-    } else if (
-      !isMgmt &&
-      ['pontos', 'despesas', 'transacoes', 'banco_horas'].includes(rec.kind) &&
-      rec.data.employee_id !== employeeId
-    ) {
-      continue;
-    } else if (!isMgmt && rec.kind === 'salarios') {
-      continue;
-    } else {
-      records.push(structuredClone(rec));
-    }
-  }
-
-  return {
-    member: {
-      employee_id: employeeId,
-      role,
-      user_id: userId,
-    },
-    records,
-  };
-}
-
-export function applyFallbackChanges(
-  employeeId: string,
-  role: TeamRole,
-  userId: string,
-  changes: Change[]
-): CloudSnapshot {
-  ensureFallbackSeeded();
-  for (const change of changes) {
-    const key = `${change.kind}/${change.id}`;
-    const existing = sharedFallbackRecords.get(key);
-    if (change.data === null) {
-      sharedFallbackRecords.delete(key);
-    } else {
-      sharedFallbackRecords.set(key, {
-        kind: change.kind,
-        id: change.id,
-        revision: (existing?.revision ?? 0) + 1,
-        data: structuredClone(change.data),
-      });
-    }
-  }
-  return buildFallbackSnapshot(employeeId, role, userId);
+  constructor(public status: number, message: string) { super(message); }
 }
 
 export async function requireMember() {
   if (IS_DEMO || !HAS_CLOUD_CONFIG) throw new ApiError(503, 'Base central ainda não configurada.');
   const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  // 1. Se não há sessão ativa no Supabase Auth, verifica o cookie de sessão da equipe Navegando MKT
-  if (error || !user) {
-    const teamSession = await readTeamSessionCookie();
-    if (teamSession) {
-      const snapshot = buildFallbackSnapshot(
-        teamSession.employeeId,
-        teamSession.role,
-        teamSession.userId
-      );
-      return {
-        supabase,
-        user: { id: teamSession.userId, email: teamSession.email },
-        snapshot,
-        schemaVersion: 2,
-        isFallbackMember: true,
-      };
-    }
-    throw new ApiError(401, 'Entre novamente para continuar.');
-  }
-
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new ApiError(401, 'Entre com seu e-mail e senha cadastrados no Supabase.');
   const version = await supabase.rpc('agency_workspace_version');
-  if (version.error || (version.data !== 2 && version.data !== 3)) {
-    throw new ApiError(503, 'Execute as migrações da base central antes de usar o sistema.');
-  }
-
+  if (version.error || ![2, 3].includes(version.data)) throw new ApiError(503, 'Não foi possível verificar a versão da base central.');
   const result = await supabase.rpc('agency_snapshot');
   if (result.error) {
-    if (result.error.code === '42501') {
-      // Conta autenticada no Supabase Auth mas ainda sem user_id vinculado em agency_members
-      const matched = identifyEmployeeFromLogin(
-        user.email,
-        user.user_metadata as Record<string, unknown> | undefined
-      );
-      if (matched) {
-        const snapshot = buildFallbackSnapshot(matched.employee.id, matched.role, user.id);
-        return {
-          supabase,
-          user,
-          snapshot,
-          schemaVersion: version.data as number,
-          isFallbackMember: true,
-        };
-      }
-      // Também verifica se há cookie de equipe ativo
-      const teamSession = await readTeamSessionCookie();
-      if (teamSession) {
-        const snapshot = buildFallbackSnapshot(
-          teamSession.employeeId,
-          teamSession.role,
-          user.id
-        );
-        return {
-          supabase,
-          user,
-          snapshot,
-          schemaVersion: version.data as number,
-          isFallbackMember: true,
-        };
-      }
-      throw new ApiError(403, 'Sua conta ainda não foi vinculada a um membro ativo da agência.');
-    }
+    if (result.error.code === '42501') throw new ApiError(403, 'Sua conta precisa ser vinculada a um membro ativo da agência pelo administrador.');
     throw new ApiError(503, 'Não foi possível consultar a base central.');
   }
-
-  return {
-    supabase,
-    user,
-    snapshot: result.data as CloudSnapshot,
-    schemaVersion: version.data as number,
-    isFallbackMember: false,
-  };
+  return { supabase, user, snapshot: result.data as CloudSnapshot, schemaVersion: version.data as number };
 }
 
 export function checkOrigin(request: Request) {

@@ -193,3 +193,16 @@ Os backups do PostgreSQL/Supabase não incluem os bytes do Storage. O script com
 - Guardar acesso de recuperação da organização Supabase, do GitHub e da chave de criptografia com responsáveis definidos.
 
 Situação desta entrega: migração, rotina e ensaio preparados e testados localmente. Ativação do banco real, Secrets, primeiro backup real, restauração em Supabase de homologação e publicação ainda precisam ser confirmados.
+
+
+## Revisão de produção — 13/11/2026
+
+O login de produção agora aceita somente o e-mail/senha reais do Supabase. Cada Auth User precisa ter vínculo ativo em agency_members. Usuário, apelido, senha padrão ou cookie legado não substituem esse vínculo. A demonstração continua explicitamente separada.
+
+Execute `npm run check:cloud` para verificar configuração local e consultar a versão pública do banco. O comando não altera a base, não imprime chaves e retorna código 1 quando encontra pendências. O resultado não confirma que secrets do GitHub/Vercel foram preenchidos, que existe backup ou que a restauração foi validada.
+
+A migração 007 permanece necessária para banco de horas, recibos reforçados e exportação administrativa consistente. Até aplicá-la, os demais registros compatíveis continuam usando o commit transacional da versão 2. Não há descarte silencioso de ajustes: se um lote incluir banco de horas na versão 2, o lote inteiro fica pendente e deve ser reenviado após a atualização, sem repetir cadastros.
+
+Atestados salvos em navegadores antigos precisam ser conferidos individualmente com o responsável. A implementação antiga era local; ela não constitui envio central. Não limpe o armazenamento desses dispositivos antes de preservar eventuais cópias. O envio de novos documentos médicos ficará indisponível em produção até ter persistência privada, controle de acesso e recuperação apropriados.
+
+Para a homologação real, não compartilhe senhas de funcionários. Cada participante entra com sua própria conta e confere as permissões de seu perfil. Teste a criação de um registro identificado como teste, visibilidade em outro dispositivo e recuperação de erro sem duplicação. Evite aprovar reembolsos, alterar salários ou bater pontos oficiais apenas para teste; prefira projeto de homologação.

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { HAS_CLOUD_CONFIG } from '@/lib/app-mode';
-import { USERS_DATABASE } from '@/lib/auth-users';
 import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import { DesignSelector } from '@/components/design/DesignSelector';
 
@@ -18,7 +17,6 @@ export function ProductionLogin({
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [showTeamList, setShowTeamList] = useState(false);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -28,41 +26,13 @@ export function ProductionLogin({
     setBusy(true);
     setNotice('');
     try {
-      // 1. Se digitou um e-mail com @, tenta primeiro autenticar no Supabase Auth
-      if (rawLogin.includes('@')) {
-        const { error } = await createClient().auth.signInWithPassword({
-          email: rawLogin,
-          password,
-        });
-        if (!error) {
-          await fetch('/api/auth/team-session', { method: 'DELETE' }).catch(() => {});
-          window.location.assign('/');
-          return;
-        }
-      }
-
-      // 2. Autenticação direta da Equipe Navegando MKT (aceita usuário, nome ou e-mail para todos os 19 membros)
-      const teamRes = await fetch('/api/auth/team-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: rawLogin, password }),
-      });
-      const teamData = (await teamRes.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-      };
-
-      if (teamRes.ok && teamData.ok) {
-        await createClient()
-          .auth.signOut()
-          .catch(() => {});
-        window.location.assign('/');
+      const { error } = await createClient().auth.signInWithPassword({ email: rawLogin, password });
+      if (error) {
+        setNotice('Não foi possível entrar. Confira seu e-mail e sua senha cadastrados.');
         return;
       }
-
-      setNotice(
-        teamData.error || 'Não foi possível entrar. Confira seu usuário/e-mail e a senha.'
-      );
+      await fetch('/api/auth/team-session', { method: 'DELETE' }).catch(() => {});
+      window.location.reload();
     } catch {
       setNotice('Não foi possível conectar. Tente novamente.');
     } finally {
@@ -73,9 +43,7 @@ export function ProductionLogin({
   const recover = async () => {
     const rawLogin = login.trim();
     if (!rawLogin.includes('@')) {
-      setNotice(
-        'Para login por usuário da equipe, a senha padrão é o seu usuário seguido de 123 (ex: alexandre123, victor123, isa123).'
-      );
+      setNotice('Informe seu e-mail cadastrado para recuperar a senha.');
       return;
     }
     setBusy(true);
@@ -112,10 +80,7 @@ export function ProductionLogin({
             : 'Espaço da Equipe Navegando'}
         </h1>
         <p className="text-xs text-zinc-400">
-          Digite seu <strong>e-mail</strong> ou seu <strong>usuário da equipe</strong> (ex:{' '}
-          <code>felipe</code>, <code>gabriela</code>, <code>matheus</code>,{' '}
-          <code>alexandre</code>, <code>vitinho</code>, <code>larissa</code>,{' '}
-          <code>victor</code>, <code>isa</code>...).
+          Use seu e-mail e senha individuais. O administrador precisa vincular sua conta ao cadastro da equipe.
         </p>
 
         {!HAS_CLOUD_CONFIG ? (
@@ -132,12 +97,12 @@ export function ProductionLogin({
         ) : (
           <form onSubmit={submit} className="grid gap-4 mt-5">
             <label className="grid gap-1.5 text-sm">
-              <span>E-mail ou Usuário da equipe</span>
+              <span>E-mail da equipe</span>
               <input
-                type="text"
+                type="email"
                 autoComplete="username"
                 required
-                placeholder="Ex: seu@email.com ou usuario (ex: victor, isa, carol)"
+                placeholder="seu@email.com"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3 text-sm"
@@ -150,7 +115,7 @@ export function ProductionLogin({
                 type="password"
                 autoComplete="current-password"
                 required
-                placeholder="Sua senha (ou usuario123)"
+                placeholder="Sua senha cadastrada"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-raised)] p-3 text-sm"
@@ -169,15 +134,6 @@ export function ProductionLogin({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setShowTeamList((v) => !v)}
-                className="underline underline-offset-4 hover:text-foreground cursor-pointer"
-              >
-                {showTeamList ? 'Ocultar lista de acessos' : 'Ver usuários da equipe (19)'}
-              </button>
-
-              <button
-                type="button"
-                disabled={busy}
                 onClick={recover}
                 className="underline underline-offset-4 hover:text-foreground cursor-pointer"
               >
@@ -185,31 +141,6 @@ export function ProductionLogin({
               </button>
             </div>
 
-            {showTeamList && (
-              <div className="mt-1 p-3 rounded-xl bg-[var(--ui-page)] border border-[var(--ui-border)] max-h-52 overflow-y-auto space-y-1.5 text-xs">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ui-accent)] mb-2">
-                  Clique em um membro para preencher o usuário:
-                </div>
-                {USERS_DATABASE.map((u) => (
-                  <button
-                    key={u.employeeId}
-                    type="button"
-                    onClick={() => {
-                      setLogin(u.username);
-                      setPassword(`${u.username}123`);
-                      setShowTeamList(false);
-                    }}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-[var(--ui-raised)] text-left transition-colors cursor-pointer"
-                  >
-                    <span className="font-semibold text-foreground">{u.nome}</span>
-                    <span className="text-[11px] text-zinc-400">
-                      usuário: <code className="text-[var(--ui-accent)]">{u.username}</code> • senha:{' '}
-                      <code>{u.username}123</code>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </form>
         )}
 
@@ -226,7 +157,7 @@ export function ProductionLogin({
       </main>
 
       <footer className="text-center text-xs text-zinc-500">
-        Acesso individual para todos os 19 membros da equipe Navegando MKT.
+        Acesso individual e informações compartilhadas pela base central.
       </footer>
     </div>
   );

@@ -1,3 +1,40 @@
+# Verificação de confiabilidade — 13/11/2026
+
+Esta seção prevalece sobre os registros históricos abaixo.
+
+## Correções desta revisão
+
+- Produção exige sessão Supabase Auth e vínculo ativo em agency_members. Não aceita cookies de equipe antigos, identificação por nome ou senha padrão como autorização.
+- Removido o workspace em memória. Falha de autenticação, autorização ou banco gera erro; nunca uma confirmação alternativa de salvamento.
+- Respostas de produção não são enriquecidas com clientes, agenda, pontos, reembolsos, salários ou ajustes de horas demonstrativos. Dados existentes recebidos do banco são preservados, inclusive IDs com prefixos de simulação; removê-los automaticamente produziria exclusões involuntárias.
+- Versão 2 continua atendendo os módulos compatíveis pelo RPC transacional existente. Lotes que contenham banco de horas são recusados integralmente antes de upload ou commit. Versão 3 usa os recibos com hash da migração 007.
+- Corrigido Início para voltar ao topo mesmo quando já está na página inicial; área de toque ampliada.
+- Atestados estavam exclusivamente no localStorage, sem armazenamento central e permissões de documentos. Novos envios e abonos foram bloqueados em produção até a implementação apropriada. Cópias locais existentes não foram apagadas; não representam registros corporativos confirmados.
+- Preferências de WhatsApp ainda são de sessão; a interface não deve informar salvamento central dessas configurações. Automação e logs duráveis não foram certificados.
+- Novo diagnóstico somente leitura: npm run check:cloud. Não certifica disponibilidade nem restauração real.
+
+## Evidências e limites
+
+- Consulta real em 13/11: Supabase acessível, esquema versão 2.
+- 93 testes passaram, incluindo autorização SQL, rollback, concorrência, duplicação, criptografia, restauração operacional isolada e nove regressões das rotas de produção.
+- TypeScript e build de produção passaram. Auditoria npm de dependências de produção: zero vulnerabilidades reportadas.
+- Servidor compilado: workspace sem identidade válida retorna 401; login legado retorna 410; health retorna 200 com schemaVersion 2. Health verifica conectividade/esquema, não prontidão operacional completa.
+- Não foram feitos cadastros, exclusões ou alterações na base real para os testes.
+- Chave administrativa local não configurada. SITE_URL administrativo não preenchido. Não foi possível gerar o primeiro backup real nem confirmar agendamento/secrets remotos.
+
+## Antes da adoção como única base
+
+1. Exportar rascunhos e conferir registros que possam ter existido somente nas sessões antigas. Dados do antigo fallback não estavam no PostgreSQL e não podem ser presumidos recuperáveis.
+2. Aplicar apenas supabase/migrations/007_durability.sql no SQL Editor. Não executar novamente o instalador completo. Confirmar SELECT public.agency_workspace_version(); retornando 3.
+3. Configurar ambiente administrativo e secrets do backup conforme docs/IMPLANTACAO.md. Gerar backup, testar descriptografia e executar backup:drill.
+4. Confirmar restauração em projeto Supabase de homologação, inclusive Auth e fotos; o ensaio local cobre tabelas operacionais e evidências, não contas/senhas/configuração do provedor.
+5. Testar uma conta de cada perfil em celular e computador reais: cadastros, fotos, conflitos, internet interrompida, sessão expirada e recuperação de senha.
+6. Configurar alertas de indisponibilidade/backup, responsáveis e política de retenção. Confirmar os requisitos de disponibilidade e recuperação com a agência.
+
+Situação: correções locais verificadas; infraestrutura e homologação real pendentes. Não há garantia de ausência de falhas ou perda zero.
+
+---
+
 # Atualização de 12/11/2026
 
 As informações abaixo de 22/10 são históricas. A atualização atual adiciona a migração 007 (versão 3), remove preenchimento demonstrativo em leituras de produção, compartilha banco de horas, isola rascunhos por sessão, preserva pendências após erro, protege repetições com fingerprint do conteúdo original e prepara backup a cada seis horas com ensaio de restauração isolado. O arquivo `docs/IMPLANTACAO.md`, seção Atualização de confiabilidade, contém a ativação.

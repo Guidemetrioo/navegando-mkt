@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto';
 import {
   ApiError,
   apiFailure,
-  applyFallbackChanges,
   checkOrigin,
   privateHeaders,
   readJson,
@@ -25,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     checkOrigin(request);
-    const { supabase, user, schemaVersion, snapshot, isFallbackMember } = await requireMember();
+    const { supabase, user, schemaVersion } = await requireMember();
     const body = (await readJson(request)) as { changes?: unknown; requestId?: unknown };
     if (
       typeof body?.requestId !== 'string' ||
@@ -38,25 +37,9 @@ export async function POST(request: Request) {
       throw new ApiError(400, error instanceof Error ? error.message : 'Dados inválidos.');
     }
 
-    // Se o membro logou via sessão da equipe ou fallback (sem vínculo user_id em agency_members),
-    // persiste as alterações no workspace compartilhado do servidor sem bloquear com 403.
-    if (isFallbackMember) {
-      for (const row of body.changes) {
-        if (row.kind !== 'pontos' || !row.data) continue;
-        const address = await reverseStreet(Number(row.data.latitude), Number(row.data.longitude));
-        if (address) {
-          row.data.rua = address.street;
-          row.data.endereco = address.address;
-          row.data.endereco_fonte = address.provider;
-        }
-      }
-      const updated = applyFallbackChanges(
-        snapshot.member.employee_id,
-        snapshot.member.role,
-        snapshot.member.user_id,
-        body.changes
-      );
-      return Response.json(updated, { headers: privateHeaders });
+    // Reject the complete batch before uploading evidence; never acknowledge discarded rows.
+    if (schemaVersion < 3 && body.changes.some(row => row.kind === 'banco_horas')) {
+      throw new ApiError(503, 'Banco de horas ainda não foi atualizado na base central. Execute a migração 007; nenhuma alteração deste lote foi confirmada.');
     }
 
     const inputHash = createHash('sha256').update(JSON.stringify(body.changes)).digest('hex');
@@ -119,23 +102,15 @@ export async function POST(request: Request) {
       row.data.evidence_sha256 = createHash('sha256').update(bytes).digest('hex');
     }
 
-    const effectiveChanges =
-      schemaVersion >= 3
-        ? body.changes
-        : body.changes.filter((row) => row.kind !== 'banco_horas');
-    if (effectiveChanges.length === 0) {
-      return Response.json(await signEvidence(snapshot, supabase), { headers: privateHeaders });
-    }
-
     const result =
       schemaVersion >= 3
         ? await supabase.rpc('agency_commit_checked', {
-            p_changes: effectiveChanges,
+            p_changes: body.changes,
             p_request: body.requestId,
             p_input_hash: inputHash,
           })
         : await supabase.rpc('agency_commit', {
-            p_changes: effectiveChanges,
+            p_changes: body.changes,
             p_request: body.requestId,
           });
 

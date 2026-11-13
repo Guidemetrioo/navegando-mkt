@@ -61,6 +61,13 @@ function AgendaMainContent() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
   const menuTrigger = React.useRef<HTMLElement | null>(null);
+  const workspaceScroll = React.useRef<HTMLDivElement | null>(null);
+  const goHome = () => {
+    setIsQuickActionOpen(false);
+    setCurrentView('home');
+    workspaceScroll.current?.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
   const openMobileMenu = () => {
     menuTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -132,11 +139,11 @@ function AgendaMainContent() {
       />
 
       {/* 2. Área de Trabalho Principal */}
-      <div className="crm-content flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10" inert={isMobileNavOpen}>
+      <div ref={workspaceScroll} className="crm-content flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10" inert={isMobileNavOpen}>
         {/* Barra Superior de Status & Breadcrumb com Glassmorphism */}
         <header className="crm-header h-14 border-b border-[var(--ui-border)] bg-[var(--ui-page)]/85 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="crm-breadcrumb flex items-center gap-2 text-xs min-w-0">
-            <button type="button" onClick={() => setCurrentView('home')} className="lg:hidden -ml-1 shrink-0 rounded-xl px-2 text-xs font-semibold text-[var(--ui-accent)]" aria-label="Ir para o início">Início</button>
+            <button type="button" onClick={goHome} className="lg:hidden -ml-1 min-h-11 min-w-11 shrink-0 rounded-xl px-2 text-xs font-semibold text-[var(--ui-accent)]" aria-label="Ir para o início">Início</button>
             <NavegandoLogo className="crm-header-logo" variant="symbol" size="sm" />
             <span className="font-extrabold text-[var(--ui-accent)] tracking-wider hidden sm:inline text-[11px]">NAVEGANDO MKT</span>
             <span className="text-zinc-700 hidden sm:inline">/</span>
