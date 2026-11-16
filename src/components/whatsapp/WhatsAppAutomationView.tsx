@@ -5,6 +5,7 @@ import { useAgenda } from '@/context/AgendaContext';
 import { Smartphone, CheckCircle2, RefreshCw, Send, Clock, Check, RotateCcw } from 'lucide-react';
 import { IS_DEMO } from '@/lib/app-mode';
 import { WhatsAppQr } from './WhatsAppQr';
+import { Time24hInput } from '../ui/Time24hInput';
 import { EventItem } from '@/types/database';
 
 export function WhatsAppAutomationView() {
@@ -686,11 +687,11 @@ export function WhatsAppAutomationView() {
             <label className="block text-xs font-semibold text-zinc-300 mb-1">
               Horário do Disparo na Véspera
             </label>
-            <input
-              type="time"
+            <Time24hInput
+              ariaLabel="Horário do Disparo na Véspera"
               value={whatsappConfig.horario_envio_padrao}
-              onChange={(e) => updateWhatsAppConfig({ horario_envio_padrao: e.target.value })}
-              className="bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] w-36 font-mono"
+              onChange={(nextVal) => updateWhatsAppConfig({ horario_envio_padrao: nextVal })}
+              className="w-40"
             />
           </div>
 

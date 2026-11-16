@@ -197,7 +197,7 @@ export function DayDetailModal() {
             className="gradient-cta flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-foreground font-bold text-sm shadow-lg transition-all cursor-pointer mt-1"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova gravação neste dia</span>
+            <span>Incluir agendamento</span>
           </button>
         )}
       </div>

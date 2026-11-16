@@ -122,7 +122,7 @@ export function validateChanges(value: unknown): asserts value is Change[] {
     if (row.kind === 'events') {
       const d = row.data;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.data)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_inicio)) || !/^\d{2}:\d{2}(:\d{2})?$/.test(String(d.hora_fim)) || String(d.hora_fim) <= String(d.hora_inicio)) throw new Error('Data ou intervalo da gravação inválido.');
-      if (!['gravacao','foto','edicao','reuniao'].includes(String(d.tipo)) || !['agendado','realizado','cancelado'].includes(String(d.status)) || !Array.isArray(d.assigned_employee_ids)) throw new Error('Dados da gravação inválidos.');
+      if (!['gravacao','foto','edicao','reuniao'].includes(String(d.tipo)) || !['agendado','confirmado','realizado','cancelado'].includes(String(d.status)) || !Array.isArray(d.assigned_employee_ids)) throw new Error('Dados da gravação inválidos.');
     }
     if(row.kind === 'banco_horas') {
       const d=row.data;

@@ -5,7 +5,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import { enumerateIsoDates } from '@/lib/date-utils';
+import { Time24hInput } from '../ui/Time24hInput';
+import { enumerateIsoDates, todayInSaoPaulo } from '@/lib/date-utils';
+import { buildNormalizedEventPayload } from '@/lib/event-normalization';
 import { EventBriefingReadOnly } from '../briefing/EventBriefingReadOnly';
 import { AlertTriangle, Trash2, Clock, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus } from 'lucide-react';
 
@@ -105,7 +107,12 @@ export function EventModal() {
     setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
     setObservacoes(editingEvent.observacoes || '');
     setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
-    setStatus(editingEvent.status || 'agendado');
+    setStatus(
+      editingEvent.status === 'confirmado' ||
+        (editingEvent.status === 'agendado' && editingEvent.confirmacao_whatsapp?.status_resposta === 'confirmado')
+        ? 'confirmado'
+        : editingEvent.status || 'agendado'
+    );
     const savedMin =
       editingEvent.tempo_antecedencia_minutos !== undefined && editingEvent.tempo_antecedencia_minutos !== null
         ? editingEvent.tempo_antecedencia_minutos
@@ -187,37 +194,45 @@ export function EventModal() {
   const handleSubmit = (allowOverride = false, keepOpenForSameDay = false) => {
     setErrorMessage('');
 
-    // Validações obrigatórias conforme especificação:
-    // 1. Cliente obrigatório
-    if (!clientId) {
-      setErrorMessage('Por favor, selecione um cliente.');
-      return;
-    }
-    // 2. Data obrigatória
-    if (!date) {
-      setErrorMessage('Por favor, selecione a data da gravação.');
-      return;
-    }
-    if (isMultiDay) {
-      if (!endDate || endDate < date) {
-        setErrorMessage('Informe uma data de término igual ou posterior à data de início.');
-        return;
+    // Resolve ou cria o restaurante automaticamente para nunca travar agendamentos incompletos
+    let resolvedClientId =
+      clientId && clients.some((c) => c.id === clientId) ? clientId : '';
+
+    if (!resolvedClientId) {
+      const typedName = clientSearch.trim();
+      if (typedName) {
+        const matched = clients.find(
+          (c) => c.nome.trim().toLowerCase() === typedName.toLowerCase()
+        );
+        if (matched) {
+          resolvedClientId = matched.id;
+        } else {
+          try {
+            const created = addClient({ nome: typedName });
+            resolvedClientId = created.id;
+          } catch (err) {
+            setErrorMessage(
+              err instanceof Error ? err.message : 'Não foi possível criar o cliente automaticamente.'
+            );
+            return;
+          }
+        }
+      } else {
+        const placeholder = clients.find((c) => c.nome.trim().toLowerCase() === 'a definir');
+        if (placeholder) {
+          resolvedClientId = placeholder.id;
+        } else {
+          try {
+            const created = addClient({ nome: 'A definir' });
+            resolvedClientId = created.id;
+          } catch (err) {
+            setErrorMessage(
+              err instanceof Error ? err.message : 'Não foi possível salvar o agendamento.'
+            );
+            return;
+          }
+        }
       }
-      const span = enumerateIsoDates(date, endDate, 32);
-      if (span.length > 31 || span[span.length - 1] !== endDate) {
-        setErrorMessage('O período contínuo de uma viagem deve ter no máximo 31 dias.');
-        return;
-      }
-    }
-    // 3. Fim depois do início
-    if (endTime <= startTime) {
-      setErrorMessage('O horário de término deve ser posterior ao horário de início.');
-      return;
-    }
-    // 4. Pelo menos 1 funcionário escalado
-    if (selectedEmpIds.length === 0) {
-      setErrorMessage('Selecione pelo menos 1 funcionário para esta gravação.');
-      return;
     }
 
     const resolvedMinutos =
@@ -225,25 +240,32 @@ export function EventModal() {
         ? Math.max(1, Number(customTempoValor) || 1) * (customTempoUnidade === 'horas' ? 60 : 1)
         : Number(tempoAntecedenciaSelect);
 
-    const payload = {
+    const payload = buildNormalizedEventPayload({
       id: editingEvent.id || undefined,
-      client_id: clientId,
+      clientId: resolvedClientId,
+      date,
+      fallbackDate: editingEvent.data || todayInSaoPaulo(),
+      isMultiDay,
+      endDate,
+      startTime,
+      endTime,
       tipo,
-      data: date,
-      ...(isMultiDay && endDate && endDate > date ? { endDate } : {}),
-      hora_inicio: startTime,
-      hora_fim: endTime,
       local: editingEvent.local || undefined,
-      observacoes: observacoes || undefined,
-      tempo_antecedencia_minutos: resolvedMinutos,
+      observacoes,
+      tempoAntecedenciaMinutos: resolvedMinutos,
       status,
-      assigned_employee_ids: selectedEmpIds,
-    };
+      selectedEmployeeIds: selectedEmpIds,
+      employees,
+      existingWhatsappConfirmacao: editingEvent.confirmacao_whatsapp,
+    });
 
     let res: ReturnType<typeof saveEvent>;
     try {
       res = saveEvent(payload, allowOverride);
-    } catch {
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Não foi possível salvar o agendamento.'
+      );
       return;
     }
 
@@ -569,7 +591,7 @@ export function EventModal() {
           {/* Cliente com Autocomplete */}
           <div className="relative">
             <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-              Cliente (Restaurante) *
+              Cliente (Restaurante)
             </label>
             <div className="relative">
               <input
@@ -577,9 +599,13 @@ export function EventModal() {
                 placeholder="Buscar cliente ou digitar novo..."
                 value={clientSearch}
                 onChange={(e) => {
-                  setClientSearch(e.target.value);
+                  const nextText = e.target.value;
+                  setClientSearch(nextText);
                   setIsClientDropdownOpen(true);
-                  if (!e.target.value) setClientId('');
+                  const selected = clients.find((c) => c.id === clientId);
+                  if (!nextText || (selected && selected.nome.trim().toLowerCase() !== nextText.trim().toLowerCase())) {
+                    setClientId('');
+                  }
                 }}
                 onFocus={() => setIsClientDropdownOpen(true)}
                 className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-sm text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
@@ -734,25 +760,23 @@ export function EventModal() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                  Início *
+                  Início
                 </label>
-                <input
-                  type="time"
+                <Time24hInput
+                  ariaLabel="Horário de início"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  onChange={setStartTime}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                  Fim *
+                  Fim
                 </label>
-                <input
-                  type="time"
+                <Time24hInput
+                  ariaLabel="Horário de término"
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  onChange={setEndTime}
                 />
               </div>
             </div>
@@ -842,7 +866,7 @@ export function EventModal() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700">
-                Escala da Equipe * (Filmmaker + Criadora)
+                Escala da Equipe (opcional)
               </label>
               <span className="text-[11px] text-zinc-400">
                 {selectedEmpIds.length} selecionado{selectedEmpIds.length !== 1 ? 's' : ''}
