@@ -466,11 +466,11 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [createComposerOpen, setCreateComposerOpen] = useState(false);
   const [composerEventId, setComposerEventId] = useState('');
-  const [composerTitle, setComposerTitle] = useState('');
-  const [composerScript, setComposerScript] = useState('');
-  const [composerRefUrl, setComposerRefUrl] = useState('');
+  const [composerDrafts, setComposerDrafts] = useState<EditableVideoDraft[]>([]);
   const [composerModelId, setComposerModelId] = useState('');
   const [composerError, setComposerError] = useState('');
+  const composerInputs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+  const focusComposerId = useRef<string | null>(null);
 
   // Compromisso selecionado ao clicar no card do restaurante
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
@@ -484,10 +484,21 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
   useEffect(() => {
     if (focusVideoId.current) {
-      videoInputs.current[focusVideoId.current]?.focus();
+      const target = videoInputs.current[focusVideoId.current];
+      target?.focus();
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       focusVideoId.current = null;
     }
   }, [videoDrafts]);
+
+  useEffect(() => {
+    if (focusComposerId.current) {
+      const target = composerInputs.current[focusComposerId.current];
+      target?.focus();
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      focusComposerId.current = null;
+    }
+  }, [composerDrafts]);
 
   const [showPdfPreview, setShowPdfPreview] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('');
@@ -713,15 +724,23 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const handleAddAnotherVideo = () => {
     if (isReadOnly) return;
     const video = createVideo();
-    setVideoDrafts((prev) => [...prev, video]);
-    setVideoQuantity(String(videoDrafts.length + 1));
+    setVideoDrafts((prev) => {
+      const next = [...prev, video];
+      setVideoQuantity(String(next.length));
+      return next;
+    });
     focusVideoId.current = video.id;
   };
 
   const advanceVideo = (index: number) => {
     if (isReadOnly) return;
-    if (index + 1 < videoDrafts.length) videoInputs.current[videoDrafts[index + 1].id]?.focus();
-    else handleAddAnotherVideo();
+    if (index + 1 < videoDrafts.length) {
+      const target = videoInputs.current[videoDrafts[index + 1].id];
+      target?.focus();
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      handleAddAnotherVideo();
+    }
   };
 
   const applyQuantity = () => {
@@ -873,13 +892,37 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       (preferredEventId && recordingEvents.find((ev) => ev.id === preferredEventId)) ||
       recordingEvents.find((ev) => !isEventDoneForMode(ev)) ||
       recordingEvents[0];
+    const firstCard = createVideo();
     setComposerEventId(defaultEv?.id || '');
-    setComposerTitle('');
-    setComposerScript('');
-    setComposerRefUrl('');
+    setComposerDrafts([firstCard]);
+    focusComposerId.current = firstCard.id;
     setComposerModelId(defaultEv ? resolveEventEditorModel(defaultEv)?.id || '' : '');
     setComposerError('');
     setCreateComposerOpen(true);
+  };
+
+  const addComposerCard = () => {
+    const nextCard = createVideo();
+    setComposerDrafts((prev) => [...prev, nextCard]);
+    focusComposerId.current = nextCard.id;
+  };
+
+  const advanceComposerCard = (index: number) => {
+    if (index + 1 < composerDrafts.length) {
+      const target = composerInputs.current[composerDrafts[index + 1].id];
+      target?.focus();
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      addComposerCard();
+    }
+  };
+
+  const updateComposerCard = (id: string, patch: Partial<EditableVideoDraft>) => {
+    setComposerDrafts((prev) => prev.map((card) => (card.id === id ? { ...card, ...patch } : card)));
+  };
+
+  const removeComposerCard = (id: string) => {
+    setComposerDrafts((prev) => (prev.length <= 1 ? prev : prev.filter((card) => card.id !== id)));
   };
 
   const handleSaveComposedBriefing = (e: React.FormEvent) => {
@@ -890,28 +933,28 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       setComposerError('Selecione uma gravação agendada para linkar este briefing.');
       return;
     }
-    if (!composerScript.trim() && !composerTitle.trim()) {
-      setComposerError('Escreva o conteúdo ou título do briefing antes de salvar.');
+    const chosenModelId =
+      briefingMode === 'edicao'
+        ? composerModelId || targetEvent.modelo_editora_id || undefined
+        : undefined;
+    const newFilledDrafts = composerDrafts
+      .filter((v) => v.roteiro.trim() || v.titulo.trim() || v.refUrl.trim())
+      .map((v) => ({
+        ...v,
+        titulo: v.titulo.trim(),
+        roteiro: v.roteiro.trim(),
+        refUrl: v.refUrl.trim(),
+        modeloEditoraId: chosenModelId,
+      }));
+    if (newFilledDrafts.length === 0) {
+      setComposerError('Escreva pelo menos um card de vídeo antes de salvar.');
       return;
     }
 
     const existingDrafts = loadEventBriefingDrafts(targetEvent, briefingMode).filter(
       (v) => v.titulo.trim() || v.roteiro.trim() || v.refUrl.trim() || (v.refsExtras && v.refsExtras.length > 0)
     );
-    const chosenModelId =
-      briefingMode === 'edicao'
-        ? composerModelId || targetEvent.modelo_editora_id || undefined
-        : undefined;
-    const newDraft: EditableVideoDraft = {
-      id: crypto.randomUUID(),
-      titulo: composerTitle.trim(),
-      formato: 'Automático',
-      roteiro: composerScript.trim(),
-      refRotulo: 'Referência',
-      refUrl: composerRefUrl.trim(),
-      modeloEditoraId: chosenModelId,
-    };
-    const combined = [...existingDrafts, newDraft];
+    const combined = [...existingDrafts, ...newFilledDrafts];
     const mappedVideos = combined.map((video) => ({
       titulo: video.titulo,
       formato: video.formato,
@@ -958,7 +1001,10 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     setCreateComposerOpen(false);
 
     const labelTipo = briefingMode === 'edicao' ? 'Briefing de Edição' : 'Briefing de Vídeo';
-    toast(`${labelTipo} criado e linkado a ${targetClient?.nome || 'Restaurante'}!`, 'success');
+    toast(
+      `${labelTipo} (${newFilledDrafts.length} ${newFilledDrafts.length === 1 ? 'vídeo' : 'vídeos'}) criado e linkado a ${targetClient?.nome || 'Restaurante'}!`,
+      'success'
+    );
   };
 
   // Função exclusiva para Victor Cordoba: Aprovar / Validar Briefing (muda a borda do card para azul)
@@ -1495,49 +1541,103 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             </label>
           )}
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-zinc-200">Título do vídeo (opcional)</span>
-            <input
-              type="text"
-              value={composerTitle}
-              onChange={(e) => setComposerTitle(e.target.value)}
-              placeholder={
-                briefingMode === 'edicao'
-                  ? 'Ex: Reel 01 — Cortes dinâmicos + legenda'
-                  : 'Ex: Vídeo 01 — Preparo na cozinha + degustação'
-              }
-              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-            />
-          </label>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-zinc-200">
+                Cards de Vídeos ({composerDrafts.length})
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Enter pula para o próximo vídeo (novo card) · Shift+Enter quebra linha
+              </span>
+            </div>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-zinc-200">
-              {briefingMode === 'edicao' ? 'Escrever Briefing de Edição *' : 'Escrever Briefing de Vídeo *'}
-            </span>
-            <textarea
-              autoFocus
-              rows={6}
-              value={composerScript}
-              onChange={(e) => setComposerScript(e.target.value)}
-              placeholder={
-                briefingMode === 'edicao'
-                  ? 'Descreva cortes, gancho nos 3 primeiros segundos, trilha, legenda e chamada final...'
-                  : 'Escreva o roteiro do vídeo: cenas, falas, ângulos e observações para gravação...'
-              }
-              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-sm text-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)]"
-            />
-          </label>
+            <div className="space-y-3">
+              {composerDrafts.map((card, idx) => (
+                <article
+                  key={card.id}
+                  className={`rounded-xl border p-3.5 space-y-2.5 bg-[var(--ui-raised)] ${
+                    briefingMode === 'edicao' ? 'border-purple-500/35' : 'border-[var(--ui-border)]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--ui-accent)]">
+                      {briefingMode === 'edicao' ? `Edição Vídeo ${idx + 1}` : `Vídeo ${idx + 1}`}
+                    </span>
+                    {composerDrafts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeComposerCard(card.id)}
+                        className="text-[11px] text-zinc-400 hover:text-rose-400 cursor-pointer"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-zinc-200">Link de referência (opcional)</span>
-            <input
-              type="url"
-              value={composerRefUrl}
-              onChange={(e) => setComposerRefUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-            />
-          </label>
+                  <input
+                    type="text"
+                    value={card.titulo}
+                    onChange={(ev) => updateComposerCard(card.id, { titulo: ev.target.value })}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        composerInputs.current[card.id]?.focus();
+                      }
+                    }}
+                    placeholder={
+                      briefingMode === 'edicao'
+                        ? `Título do Reel ${idx + 1} (opcional)`
+                        : `Título / Ideia do Vídeo ${idx + 1} (opcional)`
+                    }
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-lg px-3 py-1.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  />
+
+                  <textarea
+                    ref={(element) => {
+                      composerInputs.current[card.id] = element;
+                    }}
+                    rows={4}
+                    value={card.roteiro}
+                    onChange={(ev) => updateComposerCard(card.id, { roteiro: ev.target.value })}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter' && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+                        ev.preventDefault();
+                        advanceComposerCard(idx);
+                      }
+                    }}
+                    placeholder={
+                      briefingMode === 'edicao'
+                        ? 'Descreva cortes, gancho, trilha, legenda e CTA (Enter cria o próximo vídeo)...'
+                        : 'Escreva o roteiro deste vídeo (Enter cria o próximo vídeo)...'
+                    }
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-lg px-3 py-2 text-xs sm:text-sm text-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)]"
+                  />
+
+                  <input
+                    type="url"
+                    value={card.refUrl}
+                    onChange={(ev) => updateComposerCard(card.id, { refUrl: ev.target.value })}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        advanceComposerCard(idx);
+                      }
+                    }}
+                    placeholder="Link de referência (opcional) — https://..."
+                    className="w-full bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  />
+                </article>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addComposerCard}
+              className="w-full rounded-xl border border-dashed border-[var(--ui-accent)]/60 py-2.5 px-4 text-xs font-bold text-[var(--ui-accent)] hover:bg-[var(--ui-accent)]/10 cursor-pointer"
+            >
+              + Adicionar {briefingMode === 'edicao' ? `Edição Vídeo ${composerDrafts.length + 1}` : `Vídeo ${composerDrafts.length + 1}`}
+            </button>
+          </div>
 
           <div className="pt-2 border-t border-[var(--ui-border)] flex justify-end gap-2">
             <button
@@ -1553,7 +1653,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               className="px-5 py-2 rounded-xl gradient-cta text-foreground text-xs font-extrabold flex items-center gap-1.5 shadow-lg cursor-pointer disabled:opacity-40"
             >
               <Save className="w-4 h-4" />
-              <span>Salvar Briefing Linkado</span>
+              <span>
+                {`Salvar Briefing Linkado (${composerDrafts.length} ${composerDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`}
+              </span>
             </button>
           </div>
         </form>
