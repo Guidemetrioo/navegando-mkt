@@ -396,14 +396,14 @@ export function EventModal() {
       <div
         className={`relative w-full ${
           activeTab === 'briefing' ? 'max-w-4xl' : 'max-w-xl'
-        } bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6 transition-all`}
+        } bg-[var(--ui-surface)] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[var(--ui-border)] shadow-2xl p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto pb-safe sm:pb-6 transition-all`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab bar para mobile */}
         <div className="w-12 h-1.5 rounded-full bg-zinc-700 mx-auto -mt-1 sm:hidden shrink-0" />
 
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--ui-border)]">
           <button
             type="button"
             onClick={closeEventModal}
@@ -413,10 +413,10 @@ export function EventModal() {
             Voltar
           </button>
           <div className="min-w-0 flex-1 max-sm:ml-2">
-            <h3 className="text-xl font-bold text-foreground dark:text-foreground text-zinc-900 font-heading">
+            <h3 className="text-xl font-bold text-foreground font-heading">
               {isEditing ? (currentClient?.nome || 'Detalhes da Gravação') : 'Nova Gravação'}
             </h3>
-            <p className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-600 mt-0.5">
+            <p className="text-xs text-zinc-400 mt-0.5">
               {isEditing ? 'Alterne entre escala, relatório do filmmaker e despesas operacionais.' : 'Escalone a equipe e defina horário e local.'}
             </p>
           </div>
@@ -424,7 +424,7 @@ export function EventModal() {
           <button
             type="button"
             onClick={closeEventModal}
-            className="hidden sm:inline-flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 transition-colors cursor-pointer"
+            className="hidden sm:inline-flex p-1.5 rounded-xl text-zinc-400 hover:text-foreground hover:bg-[var(--ui-border)] transition-colors cursor-pointer"
            data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
@@ -590,7 +590,7 @@ export function EventModal() {
           <div className="flex flex-col gap-3.5">
           {/* Cliente com Autocomplete */}
           <div className="relative">
-            <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
               Cliente (Restaurante)
             </label>
             <div className="relative">
@@ -608,22 +608,22 @@ export function EventModal() {
                   }
                 }}
                 onFocus={() => setIsClientDropdownOpen(true)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-sm text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
               <Search className="w-4 h-4 text-zinc-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
 
             {/* Dropdown de Autocomplete */}
             {isClientDropdownOpen && (
-              <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-white border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl shadow-xl divide-y divide-[var(--ui-border)] dark:divide-[var(--ui-border)] divide-slate-100">
+              <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl shadow-xl divide-y divide-[var(--ui-border)]">
                 {filteredClients.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => handleSelectClient(c)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--ui-border)] dark:hover:bg-[var(--ui-border)] hover:bg-slate-100 flex flex-col cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--ui-border)] flex flex-col cursor-pointer"
                   >
-                    <span className="font-bold text-foreground dark:text-foreground text-zinc-900">
+                    <span className="font-bold text-foreground">
                       {c.nome}
                     </span>
                     {c.endereco && (
@@ -701,7 +701,7 @@ export function EventModal() {
           {/* Data e Horários */}
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 cursor-pointer select-none">
+              <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={isMultiDay}
@@ -726,7 +726,7 @@ export function EventModal() {
 
             <div className={`grid grid-cols-1 ${isMultiDay ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   {isMultiDay ? 'Data de início *' : 'Data *'}
                 </label>
                 <input
@@ -739,13 +739,13 @@ export function EventModal() {
                       setEndDate(nextDate);
                     }
                   }}
-                  className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
 
               {isMultiDay && (
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
                     Data de término *
                   </label>
                   <input
@@ -753,13 +753,13 @@ export function EventModal() {
                     min={date || undefined}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                    className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   Início
                 </label>
                 <Time24hInput
@@ -770,7 +770,7 @@ export function EventModal() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   Fim
                 </label>
                 <Time24hInput
@@ -841,7 +841,7 @@ export function EventModal() {
 
           {/* Tipo de Trabalho (Sem Fotografia) */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
               Tipo de Trabalho
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -865,7 +865,7 @@ export function EventModal() {
           {/* Seleção de Equipe (Filmmakers & Meninas dos Vídeos) */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700">
+              <label className="block text-xs font-semibold text-zinc-300">
                 Escala da Equipe (opcional)
               </label>
               <span className="text-[11px] text-zinc-400">
@@ -873,7 +873,7 @@ export function EventModal() {
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 flex flex-col gap-3">
+            <div className="p-3 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] flex flex-col gap-3">
               {/* Grupo Filmmakers */}
               <div>
                 <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#38bdf8] uppercase tracking-wider mb-1.5">
@@ -899,7 +899,7 @@ export function EventModal() {
               </div>
 
               {/* Divisor */}
-              <div className="border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200" />
+              <div className="border-t border-[var(--ui-border)]" />
 
               {/* Grupo Meninas dos Vídeos (Criadoras) */}
               <div>
@@ -950,7 +950,7 @@ export function EventModal() {
           {/* Status do Evento & Confirmação WhatsApp */}
           <div className="grid grid-cols-1 gap-3 p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+              <label className="block text-xs font-semibold text-zinc-300 mb-1">
                 Status da Gravação
               </label>
               <select
@@ -970,7 +970,7 @@ export function EventModal() {
 
           {/* Observações */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
               Observações da Produção
             </label>
             <textarea
@@ -978,7 +978,7 @@ export function EventModal() {
               placeholder="Ex: Levar gimbal, lentes macro, chegar 15 min antes..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-2 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
         </div>
@@ -1201,7 +1201,7 @@ export function EventModal() {
         )}
 
         {/* Rodapé com Ações */}
-        <div className="flex items-center justify-between pt-3 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 mt-2">
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--ui-border)] mt-2">
           {isEditing && userRole === 'admin' ? (
             <button
               type="button"
@@ -1227,7 +1227,7 @@ export function EventModal() {
             <button
               type="button"
               onClick={closeEventModal}
-              className="px-3.5 py-2 rounded-xl bg-[var(--ui-hover)] dark:bg-[var(--ui-hover)] bg-slate-100 hover:bg-[var(--ui-border)] text-xs font-medium text-zinc-300 dark:text-zinc-300 text-zinc-700 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[var(--ui-hover)] hover:bg-[var(--ui-border)] text-xs font-medium text-zinc-300 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
