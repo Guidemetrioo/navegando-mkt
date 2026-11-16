@@ -1,8 +1,9 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);require('./load-ts.cjs');
-const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges,validateCloudSnapshot,cloudSnapshotChanged}=require('../src/lib/workspace.ts');
+const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges,validateCloudSnapshot,cloudSnapshotChanged,isSelfOnlyRole,isEventAssignedToMember,scopeSnapshotForMember}=require('../src/lib/workspace.ts');
 const {saveToStorage,loadFromStorage,validateBackup}=require('../src/lib/storage-backup.ts');
 const {todayInSaoPaulo}=require('../src/lib/date-utils.ts');
+const {formatWhatsAppBriefingDocument,buildWhatsAppBriefingShareUrl}=require('../src/lib/briefing-whatsapp.ts');
 const base={member:{employee_id:'usr-felipe',user_id:'test',role:'dono'},records:[{kind:'clients',id:'c1',revision:2,data:{id:'c1',nome:'Original'}}]};
 test('unknown roles and modules fail closed',()=>{assert.equal(mayAccess(undefined,'home'),false);assert.equal(mayAccess('dono','unknown'),false);});
 test('hierarchy follows the supplied matrix',()=>{for(const role of ['dono','gerente']) for(const view of ['dashboard','clientes','backups','relatorios','arquivos','metricas-reels','mural-ugc']) assert(mayAccess(role,view));for(const role of ['modelo','interno']) for(const view of ['dashboard','clientes','backups','relatorios','metricas-reels','mural-ugc','escala']) assert(!mayAccess(role,view));assert(mayAccess('interno','arquivos'));assert(mayAccess('filmmaker','relatorios'));assert(!mayAccess('modelo','arquivos'));});
@@ -43,4 +44,63 @@ test('server membership updates refresh the interface without creating member wr
 test('snapshot change detection ignores order and temporary photo links',()=>{
  const before={member:{user_id:'u',employee_id:'manager',role:'gerente'},records:[{kind:'pontos',id:'p1',revision:1,data:{id:'p1',photo_storage_path:'u/p.jpg',foto_url:'https://temporary/1'}}]};
  const after=structuredClone(before);after.records[0].data.foto_url='https://temporary/2';assert.equal(cloudSnapshotChanged(before,after),false);
+});
+
+test('filmmakers, models and creators only receive their own records without coworker leaks or spurious mutations',()=>{
+ const records=[
+  {kind:'employees',id:'emp-film',revision:1,data:{id:'emp-film',nome:'Victor',funcao:'filmmaker'}},
+  {kind:'employees',id:'emp-model',revision:1,data:{id:'emp-model',nome:'Isa',funcao:'modelo'}},
+  {kind:'employees',id:'emp-other',revision:1,data:{id:'emp-other',nome:'Matheus',funcao:'filmmaker'}},
+  {kind:'clients',id:'c1',revision:1,data:{id:'c1',nome:'Restaurante A'}},
+  {kind:'events',id:'ev-mine',revision:2,data:{id:'ev-mine',client_id:'c1',data:'2026-11-17',hora_inicio:'10:00',hora_fim:'12:00',tipo:'gravacao',status:'agendado',assigned_employee_ids:['emp-film','emp-model'],relatorio_filmmaker:{preenchido:true}}},
+  {kind:'events',id:'ev-edit-model',revision:1,data:{id:'ev-edit-model',client_id:'c1',data:'2026-11-18',hora_inicio:'14:00',hora_fim:'16:00',tipo:'edicao',status:'agendado',assigned_employee_ids:['emp-other'],briefing_edicao_videos:[{id:'v1',modeloEditoraId:'emp-model'}]}},
+  {kind:'events',id:'ev-third-party',revision:3,data:{id:'ev-third-party',client_id:'c1',data:'2026-11-19',hora_inicio:'09:00',hora_fim:'11:00',tipo:'gravacao',status:'agendado',assigned_employee_ids:['emp-other']}},
+  {kind:'pontos',id:'pt-mine',revision:1,data:{id:'pt-mine',employee_id:'emp-film'}},
+  {kind:'pontos',id:'pt-other',revision:1,data:{id:'pt-other',employee_id:'emp-other'}},
+  {kind:'banco_horas',id:'bh-other',revision:1,data:{id:'bh-other',employee_id:'emp-other',minutos:60}},
+  {kind:'despesas',id:'dx-other',revision:1,data:{id:'dx-other',employee_id:'emp-other',valor:50}},
+ ];
+
+ assert.equal(isSelfOnlyRole('filmmaker'),true);
+ assert.equal(isSelfOnlyRole('modelo'),true);
+ assert.equal(isSelfOnlyRole('criadora'),true);
+ assert.equal(isSelfOnlyRole('gerente'),false);
+ assert.equal(isEventAssignedToMember(records[5].data,'emp-model'),true);
+ assert.equal(isEventAssignedToMember(records[6].data,'emp-model'),false);
+
+ const filmmakerSnap=scopeSnapshotForMember({member:{user_id:'u1',employee_id:'emp-film',role:'filmmaker'},records});
+ assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='employees').map(r=>r.id),['emp-film']);
+ assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine']);
+ assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='pontos').map(r=>r.id),['pt-mine']);
+ assert.equal(filmmakerSnap.records.some(r=>r.id==='bh-other'||r.id==='dx-other'),false);
+ assert.doesNotThrow(()=>validateCloudSnapshot(filmmakerSnap));
+ assert.deepEqual(diffWorkspace(filmmakerSnap,workspaceFrom(filmmakerSnap)),[]);
+
+ const modelSnap=scopeSnapshotForMember({member:{user_id:'u2',employee_id:'emp-model',role:'modelo'},records});
+ assert.deepEqual(modelSnap.records.filter(r=>r.kind==='employees').map(r=>r.id),['emp-model']);
+ assert.deepEqual(modelSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine','ev-edit-model']);
+ assert.equal('relatorio_filmmaker' in modelSnap.records.find(r=>r.id==='ev-mine').data,false);
+ assert.deepEqual(diffWorkspace(modelSnap,workspaceFrom(modelSnap)),[]);
+
+ const managerSnap={member:{user_id:'u3',employee_id:'emp-film',role:'gerente'},records};
+ assert.equal(scopeSnapshotForMember(managerSnap).records.length,records.length);
+});
+
+test('WhatsApp briefing document formats header, videos, references and phone URL consistently',()=>{
+ const doc=formatWhatsAppBriefingDocument(
+  {data:'2026-11-17',hora_inicio:'10:00',hora_fim:'14:00',client:{id:'c1',nome:'Flor do Paraiso',cor:'#fff'}},
+  [
+   {titulo:'Cena Abertura',roteiro:'Mostrar o balcao.',refUrl:'instagram.com/p/abc'},
+   {titulo:'Prato Chefe',roteiro:'Take em slow motion.'},
+  ]
+ );
+ assert.match(doc,/📋 \*DOCUMENTO DE BRIEFING DE GRAVAÇÃO — NAVEGANDO MKT\*/);
+ assert.match(doc,/🍽️ \*Cliente:\* Flor do Paraiso/);
+ assert.match(doc,/📅 \*Data da Gravação:\* 17\/11\/2026 \(10:00 às 14:00\)/);
+ assert.match(doc,/🎬 \*Total de Vídeos Planejados:\* 2/);
+ assert.match(doc,/🎥 \*VÍDEO 01\* — \*Cena Abertura\*/);
+ assert.match(doc,/🔗 Referência: https:\/\/instagram\.com\/p\/abc/);
+ assert.match(doc,/🎥 \*VÍDEO 02\* — \*Prato Chefe\*/);
+ assert.equal(buildWhatsAppBriefingShareUrl('oi','(11) 99999-8888').startsWith('https://wa.me/5511999998888?text='),true);
+ assert.equal(buildWhatsAppBriefingShareUrl('oi','').startsWith('https://wa.me/?text='),true);
 });

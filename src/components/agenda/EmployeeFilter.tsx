@@ -9,11 +9,14 @@ import { X, Video, Sparkles } from 'lucide-react';
 export function EmployeeFilter() {
   const {
     employees,
+    canManage,
     selectedEmployeeIds,
     setSelectedEmployeeIds,
     toggleEmployeeFilter,
     clearEmployeeFilter,
   } = useAgenda();
+
+  if (!canManage) return null;
 
   const isAnyFiltered = selectedEmployeeIds.length > 0;
 

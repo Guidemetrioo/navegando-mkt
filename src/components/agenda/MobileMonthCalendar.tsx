@@ -106,8 +106,8 @@ export function MobileMonthCalendar() {
               {Number(chosen.slice(-2))} de {MONTH_NAMES[month].toLowerCase()}
             </h2>
             <span className="text-[11px] text-zinc-400">
-              {agenda.length} {agenda.length === 1 ? 'compromisso' : 'compromissos'} · {freeEmployees.length}{' '}
-              disponíveis
+              {agenda.length} {agenda.length === 1 ? 'compromisso' : 'compromissos'}
+              {canManage ? ` · ${freeEmployees.length} disponíveis` : ''}
             </span>
           </div>
           <button
@@ -119,24 +119,26 @@ export function MobileMonthCalendar() {
           </button>
         </div>
 
-        {/* Disponíveis neste dia (mesma informação do desktop) */}
-        <div className="p-3 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-300">
-            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Disponíveis neste dia ({freeEmployees.length})</span>
-          </div>
-          {freeEmployees.length === 0 ? (
-            <p className="text-[11px] text-zinc-500 italic">Toda a equipe está escalada neste dia.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1">
-              {freeEmployees
-                .filter((e) => isFilmmaker(e) || e.funcao === 'modelo' || e.funcao === 'criadora')
-                .map((emp) => (
-                  <EmployeeBadge key={emp.id} employee={emp} size="sm" />
-                ))}
+        {/* Disponíveis neste dia (apenas para gestores) */}
+        {canManage && (
+          <div className="p-3 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-300">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Disponíveis neste dia ({freeEmployees.length})</span>
             </div>
-          )}
-        </div>
+            {freeEmployees.length === 0 ? (
+              <p className="text-[11px] text-zinc-500 italic">Toda a equipe está escalada neste dia.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {freeEmployees
+                  .filter((e) => isFilmmaker(e) || e.funcao === 'modelo' || e.funcao === 'criadora')
+                  .map((emp) => (
+                    <EmployeeBadge key={emp.id} employee={emp} size="sm" />
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {!agenda.length && <p className="text-xs text-zinc-400 py-2">Sem compromissos neste dia.</p>}
 

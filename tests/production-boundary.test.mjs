@@ -5,7 +5,8 @@ const require=createRequire(import.meta.url); require('./load-ts.cjs');
 const Module=require('node:module');
 let version=2, authError=null, user={id:'user-real'}, snapshotError=null, commitError=null;
 let calls=[],uploads=0;
-const snapshot={member:{user_id:'user-real',employee_id:'staff-real',role:'gerente'},records:[]};
+const defaultSnapshot={member:{user_id:'user-real',employee_id:'staff-real',role:'gerente'},records:[]};
+let snapshot=defaultSnapshot;
 const client={auth:{getUser:async()=>({data:{user},error:authError})},rpc:async(name,args)=>{
   calls.push({name,args});
   if(name==='agency_workspace_version') return {data:version};
@@ -26,7 +27,7 @@ const {requireMember}=require('../src/lib/server/workspace-api.ts');
 const workspace=require('../src/app/api/workspace/route.ts');
 const legacy=require('../src/app/api/auth/team-session/route.ts');
 Module._load=original;
-function reset(){version=2;authError=null;user={id:'user-real'};snapshotError=null;commitError=null;calls=[];uploads=0;}
+function reset(){version=2;authError=null;user={id:'user-real'};snapshotError=null;commitError=null;snapshot=defaultSnapshot;calls=[];uploads=0;}
 function request(changes,origin='https://agency.test'){return new Request('https://agency.test/api/workspace',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({requestId:'11111111-1111-4111-8111-111111111111',changes})});}
 const clientChange={kind:'clients',id:'c-real',expected:0,data:{id:'c-real',nome:'Real'}};
 test('production requires Supabase identity even if an old team cookie exists',async()=>{reset();user=null;await assert.rejects(requireMember(),e=>e.status===401);assert.equal(calls.length,0);});
@@ -38,3 +39,20 @@ test('v3 checks original request and commits through the fingerprint-protected R
 test('failed database commit is never acknowledged as saved',async()=>{reset();commitError={code:'08006'};assert.equal((await workspace.POST(request([clientChange]))).status,503);});
 test('cross-origin writes are rejected before database access',async()=>{reset();assert.equal((await workspace.POST(request([clientChange],'https://other.test'))).status,403);assert.equal(calls.length,0);});
 test('legacy predictable-password endpoint cannot create a session',async()=>{reset();const r=await legacy.POST();assert.equal(r.status,410);assert.equal(r.headers.get('set-cookie'),null);});
+test('GET /api/workspace scopes filmmakers and models to their own employee and event records',async()=>{
+  reset();
+  snapshot={
+    member:{user_id:'user-real',employee_id:'emp-model',role:'modelo'},
+    records:[
+      {kind:'employees',id:'emp-model',revision:1,data:{id:'emp-model',nome:'Isa',funcao:'modelo'}},
+      {kind:'employees',id:'emp-other',revision:1,data:{id:'emp-other',nome:'Victor',funcao:'filmmaker'}},
+      {kind:'events',id:'ev-own',revision:1,data:{id:'ev-own',assigned_employee_ids:['emp-model','emp-other']}},
+      {kind:'events',id:'ev-other',revision:1,data:{id:'ev-other',assigned_employee_ids:['emp-other']}},
+    ],
+  };
+  const r=await workspace.GET();
+  assert.equal(r.status,200);
+  const body=await r.json();
+  assert.deepEqual(body.records.filter(x=>x.kind==='employees').map(x=>x.id),['emp-model']);
+  assert.deepEqual(body.records.filter(x=>x.kind==='events').map(x=>x.id),['ev-own']);
+});

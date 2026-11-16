@@ -9,13 +9,14 @@ import {
   requireMember,
   signEvidence,
 } from '@/lib/server/workspace-api';
-import { validateChanges } from '@/lib/workspace';
+import { scopeSnapshotForMember, validateChanges } from '@/lib/workspace';
 import type { CloudSnapshot } from '@/lib/workspace';
 
 export async function GET() {
   try {
     const { supabase, snapshot } = await requireMember();
-    return Response.json(await signEvidence(snapshot, supabase), { headers: privateHeaders });
+    const scoped = scopeSnapshotForMember(snapshot);
+    return Response.json(await signEvidence(scoped, supabase), { headers: privateHeaders });
   } catch (error) {
     return apiFailure(error);
   }
@@ -59,10 +60,12 @@ export async function POST(request: Request) {
           'Não foi possível conferir a confirmação anterior. Tente novamente sem duplicar o cadastro.'
         );
       }
-      if (previous.data)
-        return Response.json(await signEvidence(previous.data as CloudSnapshot, supabase), {
+      if (previous.data) {
+        const scopedPrevious = scopeSnapshotForMember(previous.data as CloudSnapshot);
+        return Response.json(await signEvidence(scopedPrevious, supabase), {
           headers: privateHeaders,
         });
+      }
     }
 
     for (const row of body.changes) {
@@ -123,7 +126,8 @@ export async function POST(request: Request) {
       throw new ApiError(503, 'Falha na base central. A operação não foi confirmada.');
     }
 
-    return Response.json(await signEvidence(result.data as CloudSnapshot, supabase), {
+    const scopedResult = scopeSnapshotForMember(result.data as CloudSnapshot);
+    return Response.json(await signEvidence(scopedResult, supabase), {
       headers: privateHeaders,
     });
   } catch (error) {

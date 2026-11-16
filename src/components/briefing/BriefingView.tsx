@@ -7,6 +7,14 @@ import { todayInSaoPaulo } from '@/lib/date-utils';
 import { EventItem, EVENT_TYPE_LABELS, Employee } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
+  ScheduleStatusCalendar,
+  ViewStyleToggle,
+} from '../agenda/ScheduleStatusCalendar';
+import {
+  formatWhatsAppBriefingDocument,
+  buildWhatsAppBriefingShareUrl,
+} from '@/lib/briefing-whatsapp';
+import {
   Share2,
   Download,
   Sparkles,
@@ -464,6 +472,8 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   // Filtro de busca e status na tela de cards de compromissos
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendentes' | 'feitos'>('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewStyle, setViewStyle] = useState<'cards' | 'agenda'>('cards');
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
   const [createComposerOpen, setCreateComposerOpen] = useState(false);
   const [composerEventId, setComposerEventId] = useState('');
   const [composerDrafts, setComposerDrafts] = useState<EditableVideoDraft[]>([]);
@@ -1156,40 +1166,8 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const buildClientDocumentText = useCallback(
     (ev: EventItem, draftsToFormat?: EditableVideoDraft[]) => {
       const clientObj = ev.client || clients.find((c) => c.id === ev.client_id);
-      const nomeCliente = clientObj?.nome || 'Restaurante Parceiro';
-      const dataFmt = fmtDate(ev.data);
-      const horario = `${ev.hora_inicio.slice(0, 5)} às ${ev.hora_fim.slice(0, 5)}`;
-
-      const items = draftsToFormat
-        ? draftsToFormat.filter((d) => d.roteiro.trim() || d.titulo.trim())
-        : draftsFromRaw(ev.briefing_gravacao).filter((d) => d.roteiro.trim() || d.titulo.trim());
-
-      const header = [
-        `📋 *DOCUMENTO DE BRIEFING DE GRAVAÇÃO — NAVEGANDO MKT*`,
-        `🍽️ *Cliente:* ${nomeCliente}`,
-        `📅 *Data da Gravação:* ${dataFmt} (${horario})`,
-        `🎬 *Total de Vídeos Planejados:* ${items.length}`,
-        `----------------------------------------`,
-      ].join('\n');
-
-      const body =
-        items.length > 0
-          ? items
-              .map((v, idx) => {
-                const num = String(idx + 1).padStart(2, '0');
-                const titlePart = v.titulo.trim() ? ` — *${v.titulo.trim()}*` : '';
-                const refPart = v.refUrl.trim() ? `\n🔗 Referência: ${normalizarUrl(v.refUrl.trim())}` : '';
-                return `🎥 *VÍDEO ${num}*${titlePart}\n${v.roteiro.trim() || 'Roteiro em definição.'}${refPart}`;
-              })
-              .join('\n\n')
-          : 'Roteiros em preparação pela equipe Navegando MKT.';
-
-      const footer = [
-        `----------------------------------------`,
-        `✅ *Documento gerado pela Central Criativa Navegando MKT para visualização e alinhamento com o cliente.*`,
-      ].join('\n');
-
-      return `${header}\n\n${body}\n\n${footer}`;
+      const items = draftsToFormat || loadEventBriefingDrafts(ev, 'video');
+      return formatWhatsAppBriefingDocument(ev, items, clientObj?.nome);
     },
     [clients]
   );
@@ -1208,15 +1186,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const handleShareClientWhatsApp = (ev: EventItem, draftsToFormat?: EditableVideoDraft[]) => {
     const docText = buildClientDocumentText(ev, draftsToFormat);
     const clientObj = ev.client || clients.find((c) => c.id === ev.client_id);
-    const rawDigits = (clientObj?.contato || '').replace(/\D/g, '');
-    const phone =
-      rawDigits.length >= 10
-        ? rawDigits.startsWith('55')
-          ? rawDigits
-          : `55${rawDigits}`
-        : '';
-    const encoded = encodeURIComponent(docText);
-    const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+    const url = buildWhatsAppBriefingShareUrl(docText, clientObj?.contato);
     window.open(url, '_blank', 'noopener,noreferrer');
     toast('Abrindo WhatsApp com o documento de briefing para o cliente visualizar!');
   };
@@ -1876,20 +1846,50 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             </button>
           </div>
 
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar restaurante, modelo editora, data ou local..."
-              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 justify-end">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar restaurante, modelo editora, data ou local..."
+                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-xs text-foreground focus:outline-none focus:border-[var(--ui-accent)]"
+              />
+            </div>
+            <ViewStyleToggle value={viewStyle} onChange={setViewStyle} />
           </div>
         </div>
 
-        {/* Grid de Cards dos Compromissos dos Restaurantes */}
-        {filteredEvents.length === 0 ? (
+        {/* Grade de Cards OU Visão Alternativa de Agenda */}
+        {viewStyle === 'agenda' ? (
+          <ScheduleStatusCalendar
+            events={filteredEvents}
+            clients={clients}
+            currentMonth={calendarMonth}
+            onChangeMonth={setCalendarMonth}
+            legend={[
+              { tone: 'red', label: 'Sem briefing (nem vídeo, nem edição)' },
+              { tone: 'amber', label: '1 feito (só vídeo ou só edição)' },
+              { tone: 'green', label: 'Os 2 feitos (vídeo + edição)' },
+            ]}
+            getEventTone={(ev) => {
+              const videoDone = hasVideoBriefingDone(ev);
+              const edicaoDone = hasEditingBriefingDone(ev);
+              if (videoDone && edicaoDone) {
+                return { tone: 'green', badgeText: 'Vídeo + Edição OK' };
+              }
+              if (videoDone || edicaoDone) {
+                return {
+                  tone: 'amber',
+                  badgeText: videoDone ? 'Só Vídeo feito' : 'Só Edição feita',
+                };
+              }
+              return { tone: 'red', badgeText: 'Sem briefings' };
+            }}
+            onSelectEvent={(ev) => handleOpenEventBriefing(ev, briefingMode)}
+          />
+        ) : filteredEvents.length === 0 ? (
           <div className="p-10 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] text-center space-y-3">
             <Building className="w-10 h-10 text-zinc-500 mx-auto" />
             <div className="text-sm font-bold text-foreground">

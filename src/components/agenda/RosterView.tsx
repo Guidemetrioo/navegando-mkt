@@ -398,43 +398,45 @@ export function RosterView() {
               </p>
             </div>
 
-            {/* Filtro rápido por membro da equipe para destacar na agenda */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setCalendarEmpFilter('all')}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors cursor-pointer ${
-                  calendarEmpFilter === 'all'
-                    ? 'brand-solid bg-[var(--ui-accent)] text-foreground'
-                    : 'bg-[var(--ui-raised)] text-zinc-400 hover:text-foreground border border-[var(--ui-border)]'
-                }`}
-              >
-                Toda a Equipe ({monthEvents.length})
-              </button>
-              {[...filmmakers, ...modelos].map((emp) => {
-                const st = teamLoadStats.find((s) => s.employee.id === emp.id);
-                const isSelected = calendarEmpFilter === emp.id;
-                return (
-                  <button
-                    key={emp.id}
-                    type="button"
-                    onClick={() => setCalendarEmpFilter(isSelected ? 'all' : emp.id)}
-                    className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
-                      isSelected
-                        ? 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border-[var(--ui-accent)]'
-                        : 'bg-[var(--ui-raised)] text-zinc-300 hover:text-foreground border-[var(--ui-border)]'
-                    }`}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: `hsl(${emp.cor}, 78%, 56%)` }}
-                    />
-                    <span>{emp.nome}</span>
-                    <span className="text-[10px] opacity-75 font-mono">({st?.recordingsCount || 0})</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Filtro rápido por membro da equipe para destacar na agenda (apenas para gestores) */}
+            {canManage && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCalendarEmpFilter('all')}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors cursor-pointer ${
+                    calendarEmpFilter === 'all'
+                      ? 'brand-solid bg-[var(--ui-accent)] text-foreground'
+                      : 'bg-[var(--ui-raised)] text-zinc-400 hover:text-foreground border border-[var(--ui-border)]'
+                  }`}
+                >
+                  Toda a Equipe ({monthEvents.length})
+                </button>
+                {[...filmmakers, ...modelos].map((emp) => {
+                  const st = teamLoadStats.find((s) => s.employee.id === emp.id);
+                  const isSelected = calendarEmpFilter === emp.id;
+                  return (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      onClick={() => setCalendarEmpFilter(isSelected ? 'all' : emp.id)}
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                        isSelected
+                          ? 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border-[var(--ui-accent)]'
+                          : 'bg-[var(--ui-raised)] text-zinc-300 hover:text-foreground border-[var(--ui-border)]'
+                      }`}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: `hsl(${emp.cor}, 78%, 56%)` }}
+                      />
+                      <span>{emp.nome}</span>
+                      <span className="text-[10px] opacity-75 font-mono">({st?.recordingsCount || 0})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Cabeçalho dos Dias da Semana (Seg a Dom) */}
@@ -711,8 +713,9 @@ export function RosterView() {
       )}
 
       {/* =================================================================
-          4. MEDIDOR DE IGUALDADE DE DISTRIBUIÇÃO (FILMMAKER & MODELOS)
+          4. MEDIDOR DE IGUALDADE DE DISTRIBUIÇÃO (apenas para gestores)
           ================================================================= */}
+      {canManage && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Card Equilíbrio Filmmakers */}
         <div className="p-4 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col gap-3">
@@ -864,6 +867,7 @@ export function RosterView() {
           </div>
         </div>
       </div>
+      )}
 
       {/* =================================================================
           5. LISTA DE ESCALA MANUAL E AUTOMÁTICA POR SEMANA DO MÊS
@@ -1084,22 +1088,24 @@ export function RosterView() {
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {(['all', 'filmmaker', 'modelo'] as const).map((rf) => (
-                <button
-                  key={rf}
-                  type="button"
-                  onClick={() => setRoleFilter(rf)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer ${
-                    roleFilter === rf
-                      ? 'bg-[var(--ui-accent)] text-foreground'
-                      : 'bg-[var(--ui-raised)] text-zinc-400 hover:text-foreground'
-                  }`}
-                >
-                  {rf === 'all' ? 'Todos' : rf === 'filmmaker' ? 'Filmmakers' : 'Modelos'}
-                </button>
-              ))}
-            </div>
+            {canManage && (
+              <div className="flex items-center gap-1.5">
+                {(['all', 'filmmaker', 'modelo'] as const).map((rf) => (
+                  <button
+                    key={rf}
+                    type="button"
+                    onClick={() => setRoleFilter(rf)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                      roleFilter === rf
+                        ? 'bg-[var(--ui-accent)] text-foreground'
+                        : 'bg-[var(--ui-raised)] text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    {rf === 'all' ? 'Todos' : rf === 'filmmaker' ? 'Filmmakers' : 'Modelos'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto">

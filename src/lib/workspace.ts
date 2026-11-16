@@ -22,6 +22,57 @@ export interface CloudSnapshot { member: Member; records: CloudRecord[]; }
 export interface Change { kind: Entity; id: string; expected: number; data: Record<string, unknown> | null; }
 export const emptyWorkspace = (): Workspace => ({ banco_horas: [], employees: [], clients: [], events: [], pontos: [], deliverables: [], reels: [], mentions: [], despesas: [], transacoes: [], salarios: [] });
 export const isManager = (role: TeamRole | undefined) => role === 'dono' || role === 'gerente';
+export const isSelfOnlyRole = (role: TeamRole | undefined) =>
+  role === 'filmmaker' || role === 'modelo' || role === 'criadora';
+
+export function isEventAssignedToMember(
+  data: Record<string, unknown> | undefined | null,
+  employeeId: string
+): boolean {
+  if (!data || !employeeId) return false;
+  const assigned = Array.isArray(data.assigned_employee_ids) ? data.assigned_employee_ids : [];
+  if (assigned.includes(employeeId)) return true;
+  if (data.modelo_editora_id === employeeId) return true;
+  const edicaoVideos = Array.isArray(data.briefing_edicao_videos)
+    ? (data.briefing_edicao_videos as Array<Record<string, unknown>>)
+    : [];
+  return edicaoVideos.some((v) => Boolean(v && v.modeloEditoraId === employeeId));
+}
+
+/**
+ * Restringe o snapshot da base central quando o membro é filmmaker, modelo ou criadora:
+ * remove cadastros de terceiros e compromissos/registros que não pertencem ao próprio membro.
+ */
+export function scopeSnapshotForMember(snapshot: CloudSnapshot): CloudSnapshot {
+  if (!isSelfOnlyRole(snapshot.member.role)) return snapshot;
+  const selfId = snapshot.member.employee_id;
+  const isModelRole = snapshot.member.role === 'modelo' || snapshot.member.role === 'criadora';
+
+  const records = snapshot.records.flatMap((record): CloudRecord[] => {
+    if (record.kind === 'employees') {
+      return record.id === selfId ? [record] : [];
+    }
+    if (record.kind === 'events') {
+      if (!isEventAssignedToMember(record.data, selfId)) return [];
+      if (isModelRole && 'relatorio_filmmaker' in record.data) {
+        const sanitized = { ...record.data };
+        delete sanitized.relatorio_filmmaker;
+        return [{ ...record, data: sanitized }];
+      }
+      return [record];
+    }
+    if (record.kind === 'pontos' || record.kind === 'banco_horas' || record.kind === 'despesas') {
+      const ownerId = record.data.employee_id;
+      if (typeof ownerId === 'string' && ownerId !== selfId) return [];
+    }
+    return [record];
+  });
+
+  return {
+    member: snapshot.member,
+    records,
+  };
+}
 const modules: Record<TeamRole, readonly string[]> = {
   dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
   gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],

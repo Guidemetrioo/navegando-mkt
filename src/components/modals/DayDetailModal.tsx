@@ -71,39 +71,41 @@ export function DayDetailModal() {
            data-text-action="true"><span className="text-action-label">{"Fechar"}</span></button>
         </div>
 
-        {/* Seção: Equipe Livre Neste Dia */}
-        <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)]">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-2">
-            <UserCheck className="w-4 h-4 text-emerald-400" />
-            <span>Disponíveis neste dia ({freeEmployees.length}):</span>
-          </div>
-          {freeEmployees.length === 0 ? (
-            <p className="text-xs text-zinc-500 italic">Toda a equipe está escalada neste dia.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {freeEmployees.some((e) => e.funcao === 'filmmaker') && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-[#38bdf8] uppercase">Filmmakers:</span>
-                  {freeEmployees
-                    .filter((e) => e.funcao === 'filmmaker')
-                    .map((emp) => (
-                      <EmployeeBadge key={emp.id} employee={emp} size="sm" />
-                    ))}
-                </div>
-              )}
-              {freeEmployees.some((e) => e.funcao === 'modelo' || e.funcao === 'criadora') && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-[#f472b6] uppercase">Modelos:</span>
-                  {freeEmployees
-                    .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
-                    .map((emp) => (
-                      <EmployeeBadge key={emp.id} employee={emp} size="sm" />
-                    ))}
-                </div>
-              )}
+        {/* Seção: Equipe Livre Neste Dia (apenas para gestores) */}
+        {userRole === 'admin' && (
+          <div className="p-3.5 rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)]">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 mb-2">
+              <UserCheck className="w-4 h-4 text-emerald-400" />
+              <span>Disponíveis neste dia ({freeEmployees.length}):</span>
             </div>
-          )}
-        </div>
+            {freeEmployees.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic">Toda a equipe está escalada neste dia.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {freeEmployees.some((e) => e.funcao === 'filmmaker') && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-[#38bdf8] uppercase">Filmmakers:</span>
+                    {freeEmployees
+                      .filter((e) => e.funcao === 'filmmaker')
+                      .map((emp) => (
+                        <EmployeeBadge key={emp.id} employee={emp} size="sm" />
+                      ))}
+                  </div>
+                )}
+                {freeEmployees.some((e) => e.funcao === 'modelo' || e.funcao === 'criadora') && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-[#f472b6] uppercase">Modelos:</span>
+                    {freeEmployees
+                      .filter((e) => e.funcao === 'modelo' || e.funcao === 'criadora')
+                      .map((emp) => (
+                        <EmployeeBadge key={emp.id} employee={emp} size="sm" />
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Lista de Eventos do Dia */}
         <div className="flex flex-col gap-2.5">

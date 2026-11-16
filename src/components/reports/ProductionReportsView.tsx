@@ -5,6 +5,11 @@ import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventItem } from '@/types/database';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
+import {
+  ScheduleStatusCalendar,
+  ViewStyleToggle,
+} from '@/components/agenda/ScheduleStatusCalendar';
+import { parseDateIso } from '@/lib/date-utils';
 import { NavegandoLogo } from '@/components/brand/NavegandoLogo';
 import { FileText, Search, Filter, Calendar, Building, CheckCircle2, Clock, ExternalLink, FolderOpen, AlertTriangle, Camera, Star, Plus, RefreshCw, Download } from 'lucide-react';
 
@@ -27,6 +32,8 @@ export function ProductionReportsView() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'preenchido' | 'pendente'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [newReportOpen, setNewReportOpen] = useState(false);
+  const [viewStyle, setViewStyle] = useState<'cards' | 'agenda'>('cards');
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
 
   // Filtrar apenas eventos relevantes para produção de vídeo (gravação / foto)
   const productionEvents = useMemo(() => {
@@ -35,14 +42,10 @@ export function ProductionReportsView() {
       .sort((a, b) => b.data.localeCompare(a.data) || b.hora_inicio.localeCompare(a.hora_inicio));
   }, [events]);
 
-  const filteredEvents = useMemo(() => {
+  const filteredEventsWithoutDate = useMemo(() => {
     return productionEvents.filter((ev) => {
       // Filtro por Cliente
       if (selectedClientId !== 'all' && ev.client_id !== selectedClientId) {
-        return false;
-      }
-      // Filtro por Data / Dia
-      if (selectedDate && ev.data !== selectedDate) {
         return false;
       }
       // Filtro por Filmmaker
@@ -78,7 +81,12 @@ export function ProductionReportsView() {
 
       return true;
     });
-  }, [productionEvents, selectedClientId, selectedDate, selectedFilmmakerId, statusFilter, searchTerm]);
+  }, [productionEvents, selectedClientId, selectedFilmmakerId, statusFilter, searchTerm]);
+
+  const filteredEvents = useMemo(() => {
+    if (!selectedDate) return filteredEventsWithoutDate;
+    return filteredEventsWithoutDate.filter((ev) => ev.data === selectedDate);
+  }, [filteredEventsWithoutDate, selectedDate]);
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -263,7 +271,7 @@ export function ProductionReportsView() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${canManage ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-2.5`}>
           {/* Busca por Texto */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-3 pointer-events-none" />
@@ -297,29 +305,38 @@ export function ProductionReportsView() {
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                const nextDate = e.target.value;
+                setSelectedDate(nextDate);
+                if (nextDate && /^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+                  const d = parseDateIso(nextDate);
+                  setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1, 12, 0, 0));
+                }
+              }}
               className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
               title="Filtrar por dia específico"
             />
           </div>
 
-          {/* Filtro por Filmmaker */}
-          <div>
-            <select
-              value={selectedFilmmakerId}
-              onChange={(e) => setSelectedFilmmakerId(e.target.value)}
-              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
-            >
-              <option value="all">Todos os Filmmakers</option>
-              {employees
-                .filter((e) => isFilmmaker(e))
-                .map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nome}
-                  </option>
-                ))}
-            </select>
-          </div>
+          {/* Filtro por Filmmaker (apenas para gestores) */}
+          {canManage && (
+            <div>
+              <select
+                value={selectedFilmmakerId}
+                onChange={(e) => setSelectedFilmmakerId(e.target.value)}
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)] cursor-pointer"
+              >
+                <option value="all">Todos os Filmmakers</option>
+                {employees
+                  .filter((e) => isFilmmaker(e))
+                  .map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.nome}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
 
           {/* Filtro por Status do Relatório */}
           <div>
@@ -336,15 +353,36 @@ export function ProductionReportsView() {
         </div>
       </div>
 
-      {/* 4. LISTA DE CARDS DE RELATÓRIO */}
+      {/* 4. LISTA DE CARDS OU AGENDA DE RELATÓRIOS POR DIA */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400 px-1">
           <span>
             Exibindo <strong>{filteredEvents.length}</strong> relatórios de gravação
+            {selectedDate ? ` no dia ${selectedDate.split('-').reverse().join('/')}` : ''}
           </span>
+          <ViewStyleToggle value={viewStyle} onChange={setViewStyle} />
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {viewStyle === 'agenda' ? (
+          <ScheduleStatusCalendar
+            events={filteredEventsWithoutDate}
+            clients={clients}
+            currentMonth={calendarMonth}
+            onChangeMonth={setCalendarMonth}
+            selectedDayIso={selectedDate || undefined}
+            onSelectDay={(dayIso) => setSelectedDate((prev) => (prev === dayIso ? '' : dayIso))}
+            legend={[
+              { tone: 'red', label: 'Relatório pendente' },
+              { tone: 'green', label: 'Relatório preenchido' },
+            ]}
+            getEventTone={(ev) =>
+              ev.relatorio_filmmaker?.preenchido
+                ? { tone: 'green', badgeText: 'Relatório preenchido' }
+                : { tone: 'red', badgeText: 'Relatório pendente' }
+            }
+            onSelectEvent={(ev) => openEditEventModal(ev)}
+          />
+        ) : filteredEvents.length === 0 ? (
           <div className="p-12 text-center rounded-2xl bg-[var(--ui-surface)] border border-[var(--ui-border)] flex flex-col items-center gap-3">
             <FileText className="w-10 h-10 text-zinc-600" />
             <h3 className="text-base font-bold text-foreground">Nenhum relatório encontrado</h3>

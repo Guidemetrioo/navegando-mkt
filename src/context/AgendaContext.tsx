@@ -36,7 +36,7 @@ import { IS_DEMO } from '@/lib/app-mode';
 import { buildDefaultSalario } from '@/lib/financial-insights';
 import { enumerateIsoDates } from '@/lib/date-utils';
 import { useCentralWorkspace, SyncStatus } from '@/hooks/useCentralWorkspace';
-import { isManager, Workspace, Member } from '@/lib/workspace';
+import { isManager, isSelfOnlyRole, isEventAssignedToMember, Workspace, Member } from '@/lib/workspace';
 import { formatDateIso, parseDateIso, todayInSaoPaulo } from '@/lib/date-utils';
 import {
   STORAGE_KEYS,
@@ -338,6 +338,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const cloud=useCentralWorkspace(localWorkspace,applyCloud);
   const memberRole=IS_DEMO ? employees.find(e=>e.id===loggedEmployeeId)?.funcao : cloudMemberRole;
   const canManage=isManager(memberRole);
+  const restrictToSelf=isSelfOnlyRole(memberRole);
   const userRole:UserRole=canManage ? 'admin' : 'funcionario';
   const writable=IS_DEMO || !['conflict','recovery','loading','signed-out','setup'].includes(cloud.status);
   const allowed=(condition:boolean)=>{
@@ -887,11 +888,21 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [selectedEmployeeIds]
   );
 
-  // Eventos enriquecidos e filtrados
+  const visibleEmployees = useMemo(
+    () => (restrictToSelf ? employees.filter((e) => e.id === loggedEmployeeId) : employees),
+    [restrictToSelf, employees, loggedEmployeeId]
+  );
+
+  // Eventos enriquecidos e filtrados (restringidos ao próprio funcionário para filmmaker/modelo/criadora)
   const enrichedEvents = useMemo(() => {
-    return events.map((ev) => {
+    const sourceEvents = restrictToSelf
+      ? events.filter((ev) =>
+          isEventAssignedToMember(ev as unknown as Record<string, unknown>, loggedEmployeeId)
+        )
+      : events;
+    return sourceEvents.map((ev) => {
       const client = clients.find((c) => c.id === ev.client_id);
-      const assigned = employees.filter((emp) =>
+      const assigned = visibleEmployees.filter((emp) =>
         (ev.assigned_employee_ids || []).includes(emp.id)
       );
       return {
@@ -900,14 +911,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         employees: assigned,
       };
     });
-  }, [events, clients, employees]);
+  }, [restrictToSelf, events, clients, visibleEmployees, loggedEmployeeId]);
 
   const filteredEvents = useMemo(() => {
-    if (selectedEmployeeIds.length === 0) return enrichedEvents;
+    if (restrictToSelf || selectedEmployeeIds.length === 0) return enrichedEvents;
     return enrichedEvents.filter((ev) =>
       (ev.assigned_employee_ids || []).some((id) => selectedEmployeeIds.includes(id))
     );
-  }, [enrichedEvents, selectedEmployeeIds]);
+  }, [restrictToSelf, enrichedEvents, selectedEmployeeIds]);
 
   // Reels e Menções enriquecidos com dados dos clientes
   const enrichedReels = useMemo(() => {
@@ -1671,10 +1682,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       ...d,
       client: clients.find((c) => c.id === d.client_id),
       event: events.find((e) => e.id === d.event_id),
-      filmmaker: employees.find((emp) => emp.id === d.filmmaker_id),
-      criadora: employees.find((emp) => emp.id === d.criadora_id),
+      filmmaker: visibleEmployees.find((emp) => emp.id === d.filmmaker_id),
+      criadora: visibleEmployees.find((emp) => emp.id === d.criadora_id),
     }));
-  }, [deliverables, clients, events, employees]);
+  }, [deliverables, clients, events, visibleEmployees]);
 
   const guarded = <A extends unknown[], R,>(condition: boolean, fn: (...args: A) => R) => (...args: A): R => {
     if (!allowed(condition)) throw new Error('Operação não permitida para este perfil ou estado de sincronização.');
@@ -1683,12 +1694,12 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   return (
     <AgendaContext.Provider
       value={{
-        employees,
+        employees: visibleEmployees,
         clients,
         events: enrichedEvents,
         filteredEvents,
-        selectedEmployeeIds,
-        setSelectedEmployeeIds,
+        selectedEmployeeIds: restrictToSelf ? [] : selectedEmployeeIds,
+        setSelectedEmployeeIds: restrictToSelf ? () => {} : setSelectedEmployeeIds,
         // Central de Arquivos & Entregáveis (DAM)
         deliverables: enrichedDeliverables,
         addDeliverable: guarded(canUserAccessView(memberRole, 'arquivos'), addDeliverable),
@@ -1757,9 +1768,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         }),
         navigate,
         setDate: setCurrentDate,
-        toggleEmployeeFilter,
+        toggleEmployeeFilter: restrictToSelf ? () => {} : toggleEmployeeFilter,
         clearEmployeeFilter,
-        isEmployeeSelected,
+        isEmployeeSelected: restrictToSelf ? (id) => id === loggedEmployeeId : isEmployeeSelected,
         isEventModalOpen,
         editingEvent,
         dayDetailDate,
