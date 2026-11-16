@@ -14,6 +14,7 @@ import { LoginCheckInView } from '@/components/auth/LoginCheckInView';
 import { ProductionReportsView } from '@/components/reports/ProductionReportsView';
 import { BriefingView } from '@/components/briefing/BriefingView';
 import { ReembolsosView } from '@/components/reembolsos/ReembolsosView';
+import { FeedbackView } from '@/components/feedback/FeedbackView';
 import { ClientsView } from '@/components/clients/ClientsView';
 import { BackupSafetyView } from '@/components/backup/BackupSafetyView';
 import { MonthView } from '@/components/agenda/MonthView';
@@ -343,6 +344,7 @@ function AgendaMainContent() {
             {currentView === 'relatorios' && <ProductionReportsView />}
             {currentView === 'briefing' && <BriefingView />}
             {currentView === 'reembolsos' && <ReembolsosView />}
+            {currentView === 'feedback' && <FeedbackView />}
             {currentView === 'clientes' && <ClientsView />}
             {currentView === 'backups' && <BackupSafetyView />}
             {currentView === 'financeiro' && <FinancialControlView />}

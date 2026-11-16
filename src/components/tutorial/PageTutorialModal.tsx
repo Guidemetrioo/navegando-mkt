@@ -867,6 +867,48 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
     ],
   },
 
+  feedback: {
+    view: 'feedback',
+    title: 'Feedback',
+    subtitle: 'Espaço direto para envio de arquivos e observações livres',
+    category: 'Produção & Equipe',
+    purpose:
+      'Permite que qualquer membro da equipe envie sugestões, prints, documentos ou relatos rápidos utilizando apenas um campo de upload e um campo de texto livre.',
+    installedFunctions: [
+      'Campo único de upload para anexar imagem, PDF ou documento (opcional)',
+      'Campo de texto livre para escrever o que quiser',
+      'Histórico dos feedbacks enviados com download do anexo',
+    ],
+    agencyBenefits: [
+      'Centraliza sugestões e registros rápidos da equipe sem formulários complexos',
+      'Facilita o envio de prints e observações no dia a dia',
+    ],
+    howToFeedSteps: [
+      {
+        stepTitle: '1. Anexe um arquivo (opcional)',
+        description: 'Clique na área de upload para selecionar uma imagem, PDF ou documento.',
+      },
+      {
+        stepTitle: '2. Escreva o que quiser',
+        description: 'Digite livremente seu feedback, sugestão ou observação e clique em Enviar Feedback.',
+      },
+    ],
+    exampleTitle: 'Exemplo de Feedback Enviado',
+    exampleSubtitle: 'Como o registro fica salvo após o envio:',
+    exampleBadge: 'EXEMPLO DE PREENCHIMENTO',
+    exampleFields: [
+      {
+        label: 'Anexo',
+        value: 'print-sugestao.png (opcional)',
+      },
+      {
+        label: 'Mensagem',
+        value: 'Sugestão livre enviada pela equipe.',
+        highlight: true,
+      },
+    ],
+  },
+
   'mural-ugc': {
     view: 'mural-ugc',
     title: 'Mural de UGC & Marcações de Clientes',

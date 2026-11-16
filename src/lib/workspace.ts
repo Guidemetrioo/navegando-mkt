@@ -74,12 +74,12 @@ export function scopeSnapshotForMember(snapshot: CloudSnapshot): CloudSnapshot {
   };
 }
 const modules: Record<TeamRole, readonly string[]> = {
-  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
-  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','arquivos','metricas-reels'],
-  modelo: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos'],
-  criadora: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos'],
-  interno: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos','arquivos'],
+  dono: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','feedback','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  gerente: ['home','dashboard','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','feedback','arquivos','clientes','metricas-reels','mural-ugc','backups','financeiro','whatsapp'],
+  filmmaker: ['home','mes','semana','escala','minha-agenda','ponto','banco-horas','relatorios','briefing','reembolsos','feedback','arquivos','metricas-reels'],
+  modelo: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos','feedback'],
+  criadora: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos','feedback'],
+  interno: ['home','mes','semana','minha-agenda','ponto','banco-horas','briefing','reembolsos','feedback','arquivos'],
 };
 export function mayAccess(role: TeamRole | undefined, view: string): boolean {
   return role !== undefined && (modules[role]?.includes(view) ?? false);

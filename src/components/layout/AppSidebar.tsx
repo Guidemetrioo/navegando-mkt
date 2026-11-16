@@ -3,7 +3,7 @@ import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React, { useState } from 'react';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
-import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock, LogOut, MessageSquarePlus } from 'lucide-react';
 import { canUserAccessView } from '@/lib/auth-users';
 import { NavegandoLogo } from '../brand/NavegandoLogo';
 
@@ -122,6 +122,11 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
           icon: Receipt,
           badge: '3 Campos',
           badgeColor: 'bg-emerald-500/20 text-emerald-400',
+        },
+        {
+          id: 'feedback',
+          label: 'Feedback',
+          icon: MessageSquarePlus,
         },
       ],
     },
