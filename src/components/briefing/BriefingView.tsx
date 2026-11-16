@@ -15,6 +15,23 @@ import {
   buildWhatsAppBriefingShareUrl,
 } from '@/lib/briefing-whatsapp';
 import {
+  buildBriefingDocumentData,
+  exibirUrl,
+  fmtDate,
+  getBriefingPdfFileName,
+  loadEventBriefingDrafts,
+  normalizarUrl,
+  parseItems,
+  serializeDraftsToRaw,
+  type BriefingCategoryMode,
+  type EditableVideoDraft,
+} from '@/lib/briefing-document';
+import {
+  BriefingDocumentPages,
+  downloadBriefingBlob,
+  generateBriefingPdfBlob,
+} from './BriefingStandardDocument';
+import {
   Share2,
   Download,
   Sparkles,
@@ -39,37 +56,22 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-export interface BriefingRefItem {
-  rotulo: 'Referência' | 'Exemplo';
-  url: string;
-}
-
-export interface BriefingVideoItem {
-  n: number;
-  text: string;
-  refs: BriefingRefItem[];
-}
-
-export interface BriefingUrlPart {
-  type: 'text' | 'link';
-  value: string;
-  href?: string;
-  display?: string;
-}
-
-export interface EditableVideoDraft {
-  id: string;
-  titulo: string;
-  formato: string;
-  roteiro: string;
-  refRotulo: 'Referência' | 'Exemplo';
-  refUrl: string;
-  modeloEditoraId?: string;
-  aprovado?: boolean;
-  aprovadoPor?: string;
-  aprovadoEm?: string;
-  refsExtras?: BriefingRefItem[];
-}
+export type {
+  BriefingCategoryMode,
+  BriefingRefItem,
+  BriefingUrlPart,
+  BriefingVideoItem,
+  EditableVideoDraft,
+} from '@/lib/briefing-document';
+export {
+  draftsFromRaw,
+  exibirUrl,
+  fmtDate,
+  loadEventBriefingDrafts,
+  normalizarUrl,
+  parseItems,
+  serializeDraftsToRaw,
+} from '@/lib/briefing-document';
 
 export function isVictorCordoba(employee?: Employee | null, loggedId?: string | null): boolean {
   if (loggedId === 'usr-vitinho') return true;
@@ -92,270 +94,8 @@ export function isEventBriefingApproved(ev: Partial<EventItem>, mode: BriefingCa
   return filled.length > 0 && filled.every((v) => Boolean(v.aprovado));
 }
 
-export type BriefingCategoryMode = 'video' | 'edicao';
-
 export interface BriefingViewProps {
   initialMode?: BriefingCategoryMode;
-}
-
-const VIDEO_FORMATS = [
-  'Automático',
-  'POV',
-  'ASMR',
-  'Foodporn',
-  'Trend',
-  'Situação',
-  'Entrevista',
-  'Preparo',
-  'Tutorial',
-  'Falado',
-  'Conteúdo',
-] as const;
-
-const EDITING_FORMATS = [
-  'Automático',
-  'Cortes Rápidos / Dinâmico',
-  'ASMR',
-  'Trend / Áudio em Alta',
-  'Foodporn / Slow Motion',
-  'Storytelling',
-  'Legenda Dinâmica',
-  'POV',
-  'Narrado / Voiceover',
-  'Conteúdo',
-] as const;
-
-const RE_URL = /((?:https?:\/\/|www\.)[^\s<>"']+)/;
-const RE_ROTULADO =
-  /(refer[eê]ncias?|ref|exemplos?|ex)\s*:?\s*((?:https?:\/\/|www\.|(?:instagram\.com|tiktok\.com|vt\.tiktok\.com|youtube\.com|youtu\.be)\/)[^\s<>"']+)/gi;
-
-export function normalizarUrl(u: string): string {
-  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
-}
-
-export function exibirUrl(u: string): string {
-  return u.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-}
-
-export function fmtDate(v: string): string {
-  if (!v) return '';
-  const parts = v.split('-');
-  if (parts.length !== 3) return v;
-  const [y, m, d] = parts;
-  return `${d}/${m}/${y}`;
-}
-
-export function inferCategory(t: string): string {
-  const s = t.toLowerCase();
-  if (s.includes('asmr')) return 'ASMR';
-  if (s.includes('foodporn') || s.includes('food porn') || s.includes('slow motion')) return 'Foodporn';
-  if (s.includes('cortes rápidos') || s.includes('dinâmico') || s.includes('dinamico')) return 'Dinâmico';
-  if (s.includes('legenda')) return 'Legenda Dinâmica';
-  if (s.includes('storytelling') || s.includes('narrado') || s.includes('voiceover')) return 'Storytelling';
-  if (s.includes('entrevist') || s.includes('perguntar') || s.includes('ele responder')) return 'Entrevista';
-  if (s.includes('pov') || s.includes('óculos meta') || s.includes('oculos meta')) return 'POV';
-  if (
-    s.includes('cliente:') ||
-    s.includes('cliente "') ||
-    s.includes('cliente \u201c') ||
-    s.includes('comanda') ||
-    s.includes('pedir para') ||
-    s.includes('fingir') ||
-    s.includes('simular') ||
-    s.includes('situação') ||
-    s.includes('situacao')
-  )
-    return 'Situação';
-  if (s.includes('música em alta') || s.includes('musica em alta') || s.includes('trend')) return 'Trend';
-  if (
-    s.includes('passo a passo') ||
-    s.includes('como eu faço') ||
-    s.includes('como eu faco') ||
-    s.includes('tutorial')
-  )
-    return 'Tutorial';
-  if (s.includes('prepar')) return 'Preparo';
-  if (s.includes('apresentando') || s.includes('falando') || s.includes('mostrar todos')) return 'Falado';
-  return 'Conteúdo';
-}
-
-export function inferSub(t: string): string {
-  const s = t.toLowerCase();
-  if (s.includes('carro')) return 'No carro';
-  if (s.includes('oriental') || s.includes('sushi') || s.includes('japon')) return 'Linha oriental';
-  if (s.includes('pastel')) return 'Linha de pastel';
-  if (s.includes('hambúrg') || s.includes('hamburg')) return 'Hamburgueria';
-  if (s.includes('óculos meta') || s.includes('oculos meta')) return 'Institucional • Óculos Meta';
-  if (s.includes('fábrica') || s.includes('fabrica') || s.includes('24print')) return 'Institucional';
-  return 'Geral';
-}
-
-export function extrairRefs(texto: string): { texto: string; refs: BriefingRefItem[] } {
-  const refs: BriefingRefItem[] = [];
-  const limpo = texto.replace(RE_ROTULADO, (_m, rot: string, url: string) => {
-    refs.push({
-      rotulo: /^ref/i.test(rot) ? 'Referência' : 'Exemplo',
-      url: normalizarUrl(url),
-    });
-    return '';
-  });
-  return {
-    texto: limpo
-      .replace(/[ \t]+\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim(),
-    refs,
-  };
-}
-
-export function parseBodyWithLinks(texto: string): BriefingUrlPart[] {
-  const re = new RegExp(RE_URL.source, 'g');
-  const parts: BriefingUrlPart[] = [];
-  let ultimo = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(texto)) !== null) {
-    if (m.index > ultimo) {
-      parts.push({ type: 'text', value: texto.slice(ultimo, m.index) });
-    }
-    const rawUrl = m[1];
-    parts.push({
-      type: 'link',
-      value: rawUrl,
-      href: normalizarUrl(rawUrl),
-      display: exibirUrl(rawUrl),
-    });
-    ultimo = m.index + rawUrl.length;
-  }
-  if (ultimo < texto.length) {
-    parts.push({ type: 'text', value: texto.slice(ultimo) });
-  }
-  return parts;
-}
-
-const ALL_KNOWN_FORMATS = new Set<string>([...VIDEO_FORMATS, ...EDITING_FORMATS]);
-
-function stripLegacyFormatPrefix(text: string): string {
-  const m = text.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
-  if (m && ALL_KNOWN_FORMATS.has(m[1].trim())) {
-    return m[2].trim();
-  }
-  return text;
-}
-
-export function parseItems(raw: string): BriefingVideoItem[] {
-  const normalized = raw.replace(/\r/g, '').trim();
-  if (!normalized) return [];
-
-  const starts = [...normalized.matchAll(/(?:^|\n)\s*(\d+)\s*[-.)]\s*/g)];
-  const montar = (bruto: string, n: number): BriefingVideoItem => {
-    const { texto, refs } = extrairRefs(bruto.trim());
-    return { n, text: stripLegacyFormatPrefix(texto), refs };
-  };
-
-  if (!starts.length) {
-    const rawBlocks = normalized.split(/\n\s*\n+/).filter(Boolean);
-    const merged: BriefingVideoItem[] = [];
-    for (const block of rawBlocks) {
-      const parsed = extrairRefs(block.trim());
-      const cleanText = stripLegacyFormatPrefix(parsed.texto);
-      if (!cleanText && parsed.refs.length > 0 && merged.length > 0) {
-        merged[merged.length - 1].refs.push(...parsed.refs);
-      } else {
-        merged.push({
-          n: merged.length + 1,
-          text: cleanText,
-          refs: parsed.refs,
-        });
-      }
-    }
-    return merged;
-  }
-
-  return starts.map((m, i) => {
-    const start = (m.index ?? 0) + m[0].length;
-    const end = i + 1 < starts.length ? (starts[i + 1].index ?? normalized.length) : normalized.length;
-    return montar(normalized.slice(start, end), Number(m[1]));
-  });
-}
-
-export function draftsFromRaw(raw?: string | null): EditableVideoDraft[] {
-  if (!raw || !raw.trim()) {
-    return [
-      {
-        id: 'video-1',
-        titulo: '',
-        formato: 'Automático',
-        roteiro: '',
-        refRotulo: 'Referência',
-        refUrl: '',
-      },
-    ];
-  }
-  const parsed = parseItems(raw);
-  if (parsed.length === 0) {
-    return [
-      {
-        id: 'video-1',
-        titulo: '',
-        formato: 'Automático',
-        roteiro: '',
-        refRotulo: 'Referência',
-        refUrl: '',
-      },
-    ];
-  }
-  return parsed.map((item, idx) => {
-    let text = stripLegacyFormatPrefix(item.text);
-    const formato = 'Automático';
-    let titulo = '';
-
-    // Extrai prefixo opcional "Título: " na primeira linha se curto
-    const titleMatch = text.match(/^([^\n:]{1,60}):\s*([\s\S]+)$/);
-    if (titleMatch && !/^https?$/i.test(titleMatch[1].trim())) {
-      titulo = titleMatch[1].trim();
-      text = titleMatch[2].trim();
-    }
-
-    return {
-      id: `video-${idx + 1}-${Date.now()}`,
-      titulo,
-      formato,
-      roteiro: text,
-      refRotulo: item.refs[0]?.rotulo || 'Referência',
-      refUrl: item.refs[0]?.url || '',
-      refsExtras: item.refs.slice(1),
-    };
-  });
-}
-
-export function loadEventBriefingDrafts(ev: Partial<EventItem>, mode: BriefingCategoryMode): EditableVideoDraft[] {
-  const sourceVideos = mode === 'edicao' ? ev.briefing_edicao_videos : ev.briefing_videos;
-  const sourceRaw = mode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
-
-  if (sourceVideos && sourceVideos.length > 0) {
-    return sourceVideos.map((video, index) => ({
-      ...video,
-      formato: 'Automático',
-      roteiro: stripLegacyFormatPrefix(video.roteiro || ''),
-      id: `video-${index + 1}-${crypto.randomUUID()}`,
-    }));
-  }
-  return draftsFromRaw(sourceRaw);
-}
-
-export function serializeDraftsToRaw(drafts: EditableVideoDraft[]): string {
-  const valid = drafts.filter((d) => d.roteiro.trim() || d.titulo.trim() || d.refUrl.trim());
-  if (valid.length === 0) return '';
-
-  return valid
-    .map((d, idx) => {
-      const num = idx + 1;
-      const prefixTitle = d.titulo.trim() ? `${d.titulo.trim()}: ` : '';
-      const mainBody = `${num} - ${prefixTitle}${d.roteiro.trim()}`.trim();
-      const refLine = d.refUrl.trim() ? `\n${d.refRotulo}: ${normalizarUrl(d.refUrl.trim())}` : '';
-      return `${mainBody}${refLine}${(d.refsExtras || []).map((ref) => `\n${ref.rotulo}: ${ref.url}`).join('')}`;
-    })
-    .join('\n\n');
 }
 
 function hasVideoBriefingDone(event: EventItem): boolean {
@@ -376,30 +116,6 @@ function countEditingBriefingVideos(event: EventItem): number {
   if (event.briefing_edicao_videos?.length) return event.briefing_edicao_videos.length;
   if (!event.briefing_edicao || !event.briefing_edicao.trim()) return 0;
   return parseItems(event.briefing_edicao).filter((i) => i.text.trim().length > 0).length;
-}
-
-function NavegandoBrandLogo() {
-  return (
-    <svg
-      style={{ height: 48, width: 'auto', display: 'block' }}
-      viewBox="0 0 1084 613"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Navegando MKT"
-    >
-      <path
-        d="M11.1492 564.243V449.566H30.5806L83.7782 530.397V449.566H103.21V564.243H83.7782L30.5806 483.411V564.243H11.1492ZM136.78 566.632C130.569 566.632 125.313 565.464 121.012 563.128C116.712 560.739 113.447 557.58 111.217 553.651C109.04 549.723 107.952 545.396 107.952 540.671C107.952 536.529 108.642 532.813 110.022 529.521C111.403 526.177 113.526 523.31 116.393 520.921C119.26 518.478 122.977 516.487 127.543 514.948C130.994 513.833 135.028 512.824 139.647 511.922C144.319 511.019 149.363 510.196 154.778 509.453C160.247 508.656 165.954 507.807 171.9 506.904L165.052 510.807C165.105 504.86 163.777 500.48 161.07 497.667C158.362 494.853 153.796 493.446 147.372 493.446C143.497 493.446 139.754 494.348 136.143 496.153C132.533 497.959 130.011 501.064 128.578 505.471L111.058 499.976C113.181 492.702 117.216 486.862 123.163 482.456C129.162 478.049 137.232 475.846 147.372 475.846C155.017 475.846 161.733 477.094 167.52 479.589C173.36 482.084 177.687 486.172 180.501 491.853C182.041 494.879 182.97 497.985 183.289 501.171C183.607 504.303 183.766 507.727 183.766 511.444V564.243H166.963V545.608L169.75 548.634C165.875 554.846 161.335 559.412 156.132 562.332C150.982 565.199 144.532 566.632 136.78 566.632ZM140.603 551.342C144.957 551.342 148.673 550.572 151.752 549.032C154.832 547.493 157.274 545.608 159.079 543.378C160.937 541.148 162.185 539.051 162.822 537.087C163.831 534.645 164.388 531.857 164.494 528.725C164.653 525.54 164.733 522.965 164.733 521L170.626 522.752C164.839 523.655 159.875 524.451 155.734 525.141C151.593 525.832 148.036 526.495 145.063 527.132C142.09 527.716 139.462 528.38 137.179 529.123C134.949 529.92 133.064 530.849 131.524 531.91C129.985 532.972 128.79 534.193 127.941 535.574C127.144 536.954 126.746 538.573 126.746 540.432C126.746 542.555 127.277 544.44 128.339 546.086C129.401 547.679 130.94 548.953 132.958 549.908C135.028 550.864 137.577 551.342 140.603 551.342ZM211.901 564.243L180.683 478.235H199.875L221.537 540.591L243.118 478.235H262.391L231.173 564.243H211.901ZM299.932 566.632C291.225 566.632 283.58 564.748 276.997 560.978C270.413 557.209 265.263 551.979 261.547 545.29C257.884 538.6 256.052 530.902 256.052 522.195C256.052 512.798 257.857 504.648 261.467 497.746C265.078 490.791 270.095 485.402 276.519 481.58C282.943 477.757 290.376 475.846 298.817 475.846C307.737 475.846 315.302 477.943 321.514 482.137C327.779 486.278 332.424 492.145 335.45 499.737C338.476 507.329 339.618 516.275 338.875 526.575H319.841V519.567C319.788 510.223 318.142 503.4 314.904 499.1C311.665 494.8 306.569 492.649 299.614 492.649C291.756 492.649 285.916 495.092 282.093 499.976C278.271 504.807 276.359 511.895 276.359 521.239C276.359 529.946 278.271 536.689 282.093 541.467C285.916 546.245 291.491 548.634 298.817 548.634C303.542 548.634 307.604 547.599 311.002 545.528C314.453 543.405 317.107 540.352 318.965 536.37L337.919 542.104C334.627 549.855 329.531 555.881 322.629 560.182C315.78 564.482 308.214 566.632 299.932 566.632ZM270.307 526.575V512.081H329.477V526.575H270.307ZM380.057 604.858C375.279 604.858 370.686 604.115 366.28 602.628C361.926 601.142 357.998 598.992 354.493 596.178C350.989 593.417 348.123 590.072 345.893 586.143L363.572 577.383C365.218 580.516 367.527 582.825 370.501 584.312C373.527 585.851 376.739 586.621 380.137 586.621C384.118 586.621 387.676 585.904 390.808 584.471C393.94 583.091 396.356 581.02 398.055 578.259C399.807 575.552 400.63 572.154 400.524 568.066V543.617H402.913V478.235H419.716V568.384C419.716 570.561 419.61 572.632 419.398 574.596C419.238 576.613 418.946 578.578 418.522 580.489C417.248 586.064 414.805 590.63 411.195 594.187C407.585 597.797 403.099 600.478 397.736 602.23C392.427 603.982 386.534 604.858 380.057 604.858ZM378.385 566.632C370.474 566.632 363.572 564.641 357.679 560.659C351.786 556.678 347.22 551.262 343.981 544.414C340.743 537.565 339.124 529.84 339.124 521.239C339.124 512.532 340.743 504.781 343.981 497.985C347.273 491.136 351.919 485.747 357.918 481.819C363.917 477.837 370.978 475.846 379.101 475.846C387.277 475.846 394.126 477.837 399.648 481.819C655.214 485.747 659.435 491.136 662.302 497.985C665.169 504.834 666.603 512.585 666.603 521.239C666.603 529.787 665.169 537.512 662.302 544.414C659.435 551.262 655.161 556.678 649.481 560.659C643.8 564.641 636.765 566.632 628.377 566.632ZM784.314 564.243V449.566H801.595L841.254 530.796L880.914 449.566H898.195V564.243H880.276V490.738L845.077 564.243H837.432L802.312 490.738V564.243H784.314ZM907.826 564.243V449.566H927.018V502.763L972.81 449.566H996.382L947.087 505.79L999.727 564.243H975.358L927.018 510.727V564.243H907.826ZM1025.76 564.243V467.564H988.651V449.566H1082.07V467.564H1044.95V564.243H1025.76Z"
-        fill="#FE731B"
-      />
-      <path
-        d="M365.667 356.453C420.323 318.867 498.567 365.986 530.858 394.243C515.358 267.595 533.917 78.6444 545.133 0C377.903 29.415 355.81 249.892 365.667 356.453Z"
-        fill="#FE731B"
-      />
-      <path
-        d="M556.35 394.243C643.364 375.859 766.203 284.345 561.448 65.3667C590.679 132.436 630.583 292.108 556.35 394.243Z"
-        fill="#FE731B"
-      />
-    </svg>
-  );
 }
 
 export function BriefingView({ initialMode }: BriefingViewProps = {}) {
@@ -810,21 +526,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     });
   };
 
-  // Texto bruto consolidado para o evento e para o PDF A4
+  // Documento A4 consolidado do evento ativo (mesmo layout de BriefingStandardDocument)
   const serializedRawText = useMemo(() => serializeDraftsToRaw(videoDrafts), [videoDrafts]);
   const parsedPreviewItems = useMemo(() => parseItems(serializedRawText), [serializedRawText]);
-  const formatsCount = useMemo(
-    () => new Set(parsedPreviewItems.map((i) => inferCategory(i.text))).size,
-    [parsedPreviewItems]
-  );
-  const pages = useMemo(() => {
-    const list: BriefingVideoItem[][] = [];
-    for (let i = 0; i < parsedPreviewItems.length; i += 4) {
-      list.push(parsedPreviewItems.slice(i, i + 4));
-    }
-    if (list.length === 0) list.push([]);
-    return list;
-  }, [parsedPreviewItems]);
 
   const handleSaveBriefing = () => {
     if (!activeEvent || isReadOnly) return;
@@ -1193,68 +897,10 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
   // Geração de PDF A4 para o compromisso aberto
   const gerarPdfBlob = useCallback(async (): Promise<Blob> => {
-    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
     const container = previewContainerRef.current;
     if (!container) throw new Error('Ative a visualização A4 para gerar o PDF.');
-    const paginas = Array.from(container.querySelectorAll<HTMLElement>('.briefing-a4-page'));
-    if (!paginas.length) throw new Error('Nada para gerar.');
-
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-      import('html2canvas-pro'),
-      import('jspdf'),
-    ]);
-
-    const pdf = new jsPDF({
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-      compress: true,
-    });
-
-    for (let i = 0; i < paginas.length; i++) {
-      let links: Array<{ url: string; x: number; y: number; w: number; h: number }> = [];
-      const canvas = await html2canvas(paginas[i], {
-        scale: 2,
-        backgroundColor: '#0A0705',
-        useCORS: true,
-        logging: false,
-        onclone: (_doc, el) => {
-          el.style.transform = 'none';
-          const base = el.getBoundingClientRect();
-          links = Array.from(el.querySelectorAll<HTMLAnchorElement>('a[href^="http"]')).flatMap(
-            (a) =>
-              Array.from(a.getClientRects()).map((r) => ({
-                url: a.href,
-                x: (r.left - base.left) / base.width,
-                y: (r.top - base.top) / base.height,
-                w: r.width / base.width,
-                h: r.height / base.height,
-              }))
-          );
-        },
-      });
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-      links.forEach((l) => {
-        pdf.link(l.x * 210, l.y * 297, l.w * 210, l.h * 297, { url: l.url });
-      });
-    }
-
-    return pdf.output('blob');
+    return generateBriefingPdfBlob(container);
   }, []);
-
-  const baixarBlob = (blob: Blob, nome: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  };
 
   const handleDownloadOrSharePdf = async (mode: 'download' | 'share', forClientDoc = false) => {
     if (!showPdfPreview) {
@@ -1266,11 +912,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     setStatusMsg(forClientDoc ? 'Preparando Briefing PDF A4...' : 'Gerando Briefing PDF A4...');
     try {
       const blob = await gerarPdfBlob();
-      const cleanName = (activeClient?.nome || 'Restaurante').replace(/[\/\\:*?"<>|]/g, '-');
-      const fileName =
-        briefingMode === 'edicao'
-          ? `Briefing de Edicao - ${cleanName}.pdf`
-          : `Briefing - ${cleanName}.pdf`;
+      const fileName = getBriefingPdfFileName(activeClient?.nome, briefingMode);
 
       if (mode === 'share') {
         const file = new File([blob], fileName, { type: 'application/pdf' });
@@ -1280,7 +922,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           return;
         }
       }
-      baixarBlob(blob, fileName);
+      downloadBriefingBlob(blob, fileName);
       setStatusMsg(`Documento "${fileName}" gerado no formato oficial Navegando MKT!`);
     } catch (e) {
       setStatusMsg('Erro ao gerar PDF: ' + (e instanceof Error ? e.message : String(e)));
@@ -2665,7 +2307,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
         </div>
       )}
 
-      {/* Pré-visualização Folha A4 (Idêntico a "Briefing - Sampa Burguer.pdf") */}
+      {/* Pré-visualização Folha A4 (Idêntico ao documento padrão "Briefing - Flor do Paraíso.pdf") */}
       {showPdfPreview && (
         <div className="p-4 sm:p-8 rounded-3xl overflow-x-auto bg-[#15100d] border border-[rgba(255,116,31,0.25)] flex justify-center">
           <div
@@ -2673,337 +2315,13 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             className="flex flex-col gap-7 items-center"
             style={{ fontFamily: 'var(--font-body), "Instrument Sans", sans-serif' }}
           >
-            {pages.map((chunk, idx) => (
-              <section
-                key={idx}
-                className="briefing-a4-page relative overflow-hidden shrink-0"
-                style={{
-                  width: 794,
-                  height: 1123,
-                  background: '#0A0705',
-                  color: '#F6F0EA',
-                  padding: '40px 44px 36px',
-                  boxShadow: '0 20px 70px rgba(0,0,0,.4)',
-                }}
-              >
-                {/* Ambient Orange Glows (idêntico ao PDF de referência) */}
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                    background:
-                      idx % 2 === 0
-                        ? 'radial-gradient(circle at 82% 20%, rgba(255,116,31,0.16) 0%, rgba(255,116,31,0.05) 34%, transparent 65%), radial-gradient(circle at 18% 78%, rgba(255,116,31,0.08) 0%, transparent 55%)'
-                        : 'radial-gradient(circle at 16% 74%, rgba(255,116,31,0.16) 0%, rgba(255,116,31,0.05) 34%, transparent 65%), radial-gradient(circle at 82% 22%, rgba(255,116,31,0.07) 0%, transparent 55%)',
-                  }}
-                />
-
-                {/* Top Header */}
-                <div
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    height: 48,
-                  }}
-                >
-                  <NavegandoBrandLogo />
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      fontSize: '11.5px',
-                      letterSpacing: '0.24em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(246,240,234,0.72)',
-                      paddingTop: 7,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <span>Cliente · {displayClient}</span>
-                    <span
-                      style={{
-                        width: 1,
-                        height: 16,
-                        background: '#FF741F',
-                        opacity: 0.7,
-                      }}
-                    />
-                    <span>{displayDate}</span>
-                  </div>
-                </div>
-
-                {/* Hero na Página 1 / Barra Subheader na Página 2+ */}
-                {idx === 0 ? (
-                  <div
-                    style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-end',
-                      paddingTop: 14,
-                      paddingBottom: 14,
-                      borderBottom: '1px solid rgba(255,116,31,0.30)',
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11.5px',
-                          letterSpacing: '0.24em',
-                          textTransform: 'uppercase',
-                          color: '#FF741F',
-                          fontWeight: 600,
-                          marginBottom: 8,
-                        }}
-                      >
-                        Briefing Criativo
-                      </div>
-                      <h2
-                        style={{
-                          fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                          fontSize: 52,
-                          lineHeight: 0.92,
-                          letterSpacing: '-0.04em',
-                          fontWeight: 700,
-                          margin: 0,
-                          maxWidth: 540,
-                          color: '#F6F0EA',
-                        }}
-                      >
-                        Roteiro de vídeos
-                        <span style={{ color: '#FF741F', display: 'block' }}>{displayClient}.</span>
-                      </h2>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 34, paddingBottom: 4 }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                            color: '#FF741F',
-                            fontSize: 56,
-                            lineHeight: 0.9,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {parsedPreviewItems.length}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: 'rgba(246,240,234,0.76)',
-                            marginTop: 8,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.14em',
-                          }}
-                        >
-                          vídeos
-                        </div>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                            color: '#FF741F',
-                            fontSize: 56,
-                            lineHeight: 0.9,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {formatsCount}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: 'rgba(246,240,234,0.76)',
-                            marginTop: 8,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.14em',
-                          }}
-                        >
-                          formatos
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      position: 'relative',
-                      zIndex: 1,
-                      paddingTop: 18,
-                      paddingBottom: 12,
-                      borderBottom: '1px solid rgba(255,116,31,0.30)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '11.5px',
-                        letterSpacing: '0.24em',
-                        textTransform: 'uppercase',
-                        color: '#FF741F',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Briefing Criativo · {displayClient}
-                    </div>
-                  </div>
-                )}
-
-                {/* Grade 2x2 de Cards da Página */}
-                <div
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gridTemplateRows: '1fr 1fr',
-                    gap: 14,
-                    marginTop: 16,
-                    height: idx === 0 ? 790 : 905,
-                  }}
-                >
-                  {chunk.map((item) => {
-                    const cat = inferCategory(item.text);
-                    const sub = inferSub(item.text);
-                    const bodyParts = parseBodyWithLinks(item.text);
-
-                    return (
-                      <article
-                        key={item.n}
-                        style={{
-                          border: '1px solid rgba(255,116,31,0.38)',
-                          background: 'rgba(255,116,31,0.035)',
-                          borderRadius: 16,
-                          padding: '22px 22px',
-                          minHeight: 0,
-                          overflow: 'hidden',
-                          display: 'flex',
-                          flexDirection: 'column',
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-title), "Bricolage Grotesque", sans-serif',
-                              fontSize: 48,
-                              lineHeight: 0.88,
-                              color: '#FF741F',
-                              fontWeight: 700,
-                            }}
-                          >
-                            {String(item.n).padStart(2, '0')}
-                          </div>
-                          <div>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                border: '1px solid rgba(255,116,31,0.45)',
-                                borderRadius: 999,
-                                padding: '3px 12px',
-                                fontSize: 12,
-                                color: '#F6F0EA',
-                              }}
-                            >
-                              {cat}
-                            </span>
-                            <div
-                              style={{
-                                fontSize: 12.5,
-                                color: 'rgba(246,240,234,0.58)',
-                                marginTop: 5,
-                              }}
-                            >
-                              {sub}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: '16px',
-                            lineHeight: 1.45,
-                            color: '#F6F0EA',
-                            marginTop: 14,
-                            whiteSpace: 'pre-line',
-                          }}
-                        >
-                          {bodyParts.map((part, pIdx) =>
-                            part.type === 'link' ? (
-                              <a
-                                key={pIdx}
-                                href={part.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: '#FF741F', fontSize: 13.5 }}
-                              >
-                                {part.display}
-                              </a>
-                            ) : (
-                              <React.Fragment key={pIdx}>{part.value}</React.Fragment>
-                            )
-                          )}
-                        </div>
-
-                        {item.refs.map((r, rIdx) => (
-                          <div key={rIdx} style={{ marginTop: 14 }}>
-                            <div
-                              style={{
-                                fontSize: '10.5px',
-                                letterSpacing: '0.2em',
-                                textTransform: 'uppercase',
-                                color: 'rgba(246,240,234,0.52)',
-                                marginBottom: 4,
-                              }}
-                            >
-                              {r.rotulo}
-                            </div>
-                            <a
-                              href={r.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: '#FF741F', fontSize: 13.5, lineHeight: 1.35, wordBreak: 'break-all' }}
-                            >
-                              {exibirUrl(r.url)}
-                            </a>
-                          </div>
-                        ))}
-                      </article>
-                    );
-                  })}
-                </div>
-
-                {/* Rodapé da Folha A4 (Idêntico ao PDF) */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 44,
-                    right: 44,
-                    bottom: 20,
-                    zIndex: 1,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontSize: '11.5px',
-                    color: 'rgba(246,240,234,0.48)',
-                  }}
-                >
-                  <span>Navegando MKT · Briefing criativo {displayClient}</span>
-                  <span>
-                    {idx + 1} / {pages.length}
-                  </span>
-                </div>
-              </section>
-            ))}
+            <BriefingDocumentPages
+              doc={buildBriefingDocumentData(activeEvent, {
+                clientName: displayClient,
+                mode: briefingMode,
+                drafts: videoDrafts,
+              })}
+            />
           </div>
         </div>
       )}

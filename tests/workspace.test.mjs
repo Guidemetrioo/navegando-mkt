@@ -4,6 +4,7 @@ const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,merge
 const {saveToStorage,loadFromStorage,validateBackup}=require('../src/lib/storage-backup.ts');
 const {todayInSaoPaulo}=require('../src/lib/date-utils.ts');
 const {formatWhatsAppBriefingDocument,buildWhatsAppBriefingShareUrl}=require('../src/lib/briefing-whatsapp.ts');
+const {buildBriefingDocumentData,getBriefingPdfFileName}=require('../src/lib/briefing-document.ts');
 const base={member:{employee_id:'usr-felipe',user_id:'test',role:'dono'},records:[{kind:'clients',id:'c1',revision:2,data:{id:'c1',nome:'Original'}}]};
 test('unknown roles and modules fail closed',()=>{assert.equal(mayAccess(undefined,'home'),false);assert.equal(mayAccess('dono','unknown'),false);});
 test('hierarchy follows the supplied matrix',()=>{for(const role of ['dono','gerente']) for(const view of ['dashboard','clientes','backups','relatorios','arquivos','metricas-reels','mural-ugc']) assert(mayAccess(role,view));for(const role of ['modelo','interno']) for(const view of ['dashboard','clientes','backups','relatorios','metricas-reels','mural-ugc','escala']) assert(!mayAccess(role,view));assert(mayAccess('interno','arquivos'));assert(mayAccess('filmmaker','relatorios'));assert(!mayAccess('modelo','arquivos'));});
@@ -103,4 +104,32 @@ test('WhatsApp briefing document formats header, videos, references and phone UR
  assert.match(doc,/🎥 \*VÍDEO 02\* — \*Prato Chefe\*/);
  assert.equal(buildWhatsAppBriefingShareUrl('oi','(11) 99999-8888').startsWith('https://wa.me/5511999998888?text='),true);
  assert.equal(buildWhatsAppBriefingShareUrl('oi','').startsWith('https://wa.me/?text='),true);
+});
+
+test('standard briefing PDF document data builds Flor do Paraiso style metadata, 4-card pages and counts',()=>{
+ assert.equal(getBriefingPdfFileName('Flor do Paraíso','video'),'Briefing - Flor do Paraíso.pdf');
+ const doc=buildBriefingDocumentData(
+  {
+   data:'2026-11-17',
+   briefing_gravacao:'1 - aaaaaa: aaa\n\n2 - aaa',
+   briefing_videos:[
+    {id:'v1',titulo:'aaaaaa',formato:'Automático',roteiro:'aaa',refRotulo:'Referência',refUrl:''},
+    {id:'v2',titulo:'',formato:'Automático',roteiro:'aaa',refRotulo:'Referência',refUrl:''},
+   ],
+   client:{id:'c1',nome:'Flor do Paraíso',cor:'#fff'},
+  },
+  {mode:'video'}
+ );
+ assert.equal(doc.fileName,'Briefing - Flor do Paraíso.pdf');
+ assert.equal(doc.displayClient,'Flor do Paraíso');
+ assert.equal(doc.displayDate,'17/11/2026');
+ assert.equal(doc.items.length,2);
+ assert.equal(doc.formatsCount,1);
+ assert.equal(doc.pages.length,1);
+
+ const fiveVideos=Array.from({length:5},(_,i)=>({id:`v${i}`,titulo:'',formato:'Automático',roteiro:`Roteiro ${i+1}`,refRotulo:'Referência',refUrl:''}));
+ const paged=buildBriefingDocumentData({data:'2026-11-17',briefing_videos:fiveVideos,client:{id:'c1',nome:'Teste',cor:'#fff'}});
+ assert.equal(paged.pages.length,2);
+ assert.equal(paged.pages[0].length,4);
+ assert.equal(paged.pages[1].length,1);
 });
