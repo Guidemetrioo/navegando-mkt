@@ -34,6 +34,7 @@ import { findEventConflicts } from '@/lib/conflicts';
 import { createClient } from '@/lib/supabase/client';
 import { IS_DEMO } from '@/lib/app-mode';
 import { buildDefaultSalario } from '@/lib/financial-insights';
+import { enumerateIsoDates } from '@/lib/date-utils';
 import { useCentralWorkspace, SyncStatus } from '@/hooks/useCentralWorkspace';
 import { isManager, Workspace, Member } from '@/lib/workspace';
 import { formatDateIso, parseDateIso, todayInSaoPaulo } from '@/lib/date-utils';
@@ -61,7 +62,6 @@ export type AgendaView =
   | 'arquivos'
   | 'clientes'
   | 'briefing'
-  | 'briefing-edicao'
   | 'reembolsos'
   | 'metricas-reels'
   | 'mural-ugc'
@@ -161,7 +161,7 @@ interface AgendaContextType {
   closeDayDetailModal: () => void;
 
   // Ações CRUD Evento & Relatório do Filmmaker
-  saveEvent: (eventData: Omit<EventItem, 'id'> & { id?: string }, allowConflictOverride?: boolean) => { success: boolean; conflicts?: ConflictRecord[] };
+  saveEvent: (eventData: Omit<EventItem, 'id'> & { id?: string; endDate?: string }, allowConflictOverride?: boolean) => { success: boolean; conflicts?: ConflictRecord[] };
   deleteEvent: (id: string) => void;
   saveEventReport: (eventId: string, report: RelatorioFilmmaker) => void;
   autoGenerateMonthlyRoster: (year: number, month: number, mode: 'only_incomplete' | 'rebalance_all') => { assignedCount: number; summaryMessage: string };
@@ -1088,41 +1088,57 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   // CRUD
   const saveEvent = useCallback(
     (
-      eventData: Omit<EventItem, 'id'> & { id?: string },
+      eventData: Omit<EventItem, 'id'> & { id?: string; endDate?: string },
       allowConflictOverride = false
     ): { success: boolean; conflicts?: ConflictRecord[] } => {
-      const conflicts = findEventConflicts({
-        date: eventData.data,
-        startTime: eventData.hora_inicio,
-        endTime: eventData.hora_fim,
-        employeeIds: eventData.assigned_employee_ids || [],
-        excludeEventId: eventData.id,
-        allEvents: events,
-        allEmployees: employees,
-        allClients: clients,
-      });
+      const { endDate, ...baseEvent } = eventData;
+      const dates = enumerateIsoDates(baseEvent.data, endDate);
+      const targetDates = dates.length > 0 ? dates : [baseEvent.data];
+
+      const conflicts = targetDates.flatMap((dayIso, idx) =>
+        findEventConflicts({
+          date: dayIso,
+          startTime: baseEvent.hora_inicio,
+          endTime: baseEvent.hora_fim,
+          employeeIds: baseEvent.assigned_employee_ids || [],
+          excludeEventId: idx === 0 ? baseEvent.id : undefined,
+          allEvents: events,
+          allEmployees: employees,
+          allClients: clients,
+        }).map((conflict) => ({ ...conflict, data: dayIso }))
+      );
 
       if (conflicts.length > 0 && !allowConflictOverride) {
         return { success: false, conflicts };
       }
 
-      if (eventData.id) {
-        setEvents((prev) =>
-          prev.map((e) => (e.id === eventData.id ? ({ ...e, ...eventData } as EventItem) : e))
-        );
+      if (baseEvent.id) {
+        const extraEvents: EventItem[] = targetDates.slice(1).map((dayIso) => ({
+          ...baseEvent,
+          id: `evt-${crypto.randomUUID()}`,
+          data: dayIso,
+        }));
+        setEvents((prev) => [
+          ...prev.map((e) => (e.id === baseEvent.id ? ({ ...e, ...baseEvent } as EventItem) : e)),
+          ...extraEvents,
+        ]);
       } else {
-        const newId = `evt-${crypto.randomUUID()}`;
-        const newEvent: EventItem = {
-          ...eventData,
-          id: newId,
-        };
-        setEvents((prev) => [...prev, newEvent]);
+        const createdEvents: EventItem[] = targetDates.map((dayIso) => ({
+          ...baseEvent,
+          id: `evt-${crypto.randomUUID()}`,
+          data: dayIso,
+        }));
+        setEvents((prev) => [...prev, ...createdEvents]);
       }
 
       toast(
-        eventData.id
-          ? 'Gravação atualizada com sucesso!'
-          : 'Gravação adicionada à agenda com sucesso!',
+        baseEvent.id
+          ? targetDates.length > 1
+            ? `Gravação atualizada e estendida para ${targetDates.length} dias!`
+            : 'Gravação atualizada com sucesso!'
+          : targetDates.length > 1
+            ? `Viagem/gravação de ${targetDates.length} dias adicionada à agenda com sucesso!`
+            : 'Gravação adicionada à agenda com sucesso!',
         'success'
       );
       closeEventModal();

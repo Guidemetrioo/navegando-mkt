@@ -3,6 +3,7 @@ import './globals.css';
 import './design-system.css';
 import './control-center.css';
 import { DesignAppearance } from '@/components/design/DesignSelector';
+import { DevAreaAnnotator } from '@/components/dev/DevAreaAnnotator';
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-[var(--ui-page)] text-[var(--ui-text)] font-sans antialiased selection:bg-[var(--ui-accent)]/30 selection:text-foreground">
         <DesignAppearance />
         {children}
+        {process.env.NODE_ENV === 'development' && <DevAreaAnnotator />}
       </body>
     </html>
   );

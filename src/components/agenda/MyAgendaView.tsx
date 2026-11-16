@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -39,7 +40,7 @@ export function MyAgendaView() {
           {currentEmployee && <EmployeeBadge employee={currentEmployee} size="lg" showRole />}
           <div>
             <div className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-500 font-medium">
-              {currentEmployee?.funcao === 'filmmaker' ? 'Filmmaker (Câmera & Vídeo)' : 'Apresentadora / Modelo'}
+              {isFilmmaker(currentEmployee) ? 'Filmmaker (Câmera & Vídeo)' : 'Apresentadora / Modelo'}
             </div>
             <div className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900">
               {myEvents.length} {myEvents.length === 1 ? 'gravação agendada' : 'gravações agendadas'}

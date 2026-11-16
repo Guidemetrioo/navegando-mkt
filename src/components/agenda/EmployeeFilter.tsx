@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -16,7 +17,7 @@ export function EmployeeFilter() {
 
   const isAnyFiltered = selectedEmployeeIds.length > 0;
 
-  const filmmakers = employees.filter((e) => e.funcao === 'filmmaker');
+  const filmmakers = employees.filter((e) => isFilmmaker(e));
   const criadoras = employees.filter((e) => e.funcao === 'criadora' || e.funcao === 'modelo');
 
   const filmmakerIds = filmmakers.map((e) => e.id);

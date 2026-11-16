@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React from 'react';
 import { Employee } from '@/types/database';
@@ -29,8 +30,8 @@ export function EmployeeBadge({
   // Iniciais do membro (ex: Vitinho -> "VI", Giovana -> "GI")
   const initials = employee.nome.slice(0, 2).toUpperCase();
 
-  const isFilmmaker = employee.funcao === 'filmmaker';
-  const roleLabel = isFilmmaker ? 'Filmmaker' : employee.funcao === 'criadora' ? 'Criadora' : '';
+  const filmmaker = isFilmmaker(employee);
+  const roleLabel = filmmaker ? 'Filmmaker' : employee.funcao === 'criadora' ? 'Criadora' : '';
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5 gap-1.5',
@@ -72,7 +73,7 @@ export function EmployeeBadge({
       } ${className}`}
     >
       <span className="flex items-center justify-center w-4 h-4 bg-black/30 text-white font-bold rounded-full text-[9px] leading-none shrink-0">
-        {isFilmmaker ? (
+        {filmmaker ? (
           <Video className="w-2.5 h-2.5" />
         ) : employee.funcao === 'criadora' ? (
           <Sparkles className="w-2.5 h-2.5" />

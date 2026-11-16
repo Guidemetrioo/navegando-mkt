@@ -12,6 +12,7 @@ export interface Employee {
   regime?: WorkRegime; // 'interno' (segunda a sexta, 3 batidas CLT) ou 'externo' (campo nos restaurantes)
   cargo_detalhado?: string;
   username?: string;
+  funcoes_producao?: ('filmmaker' | 'apresentacao')[];
   ativo: boolean;
   created_at?: string;
 }
@@ -151,6 +152,7 @@ export interface ConflictRecord {
   hora_inicio: string;
   hora_fim: string;
   local?: string | null;
+  data?: string;
 }
 
 // ==========================================

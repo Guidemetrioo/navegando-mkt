@@ -1,20 +1,13 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { EventTipo, EventStatus, ConflictRecord, Client } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
-import {
-  EditableVideoDraft,
-  BriefingCategoryMode,
-  loadEventBriefingDrafts,
-  serializeDraftsToRaw,
-  normalizarUrl,
-  exibirUrl,
-  isVictorCordoba,
-  isEventBriefingApproved,
-} from '../briefing/BriefingView';
-import { AlertTriangle, Trash2, Clock, MapPin, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus, Scissors, Save, Lock, ShieldCheck } from 'lucide-react';
+import { enumerateIsoDates } from '@/lib/date-utils';
+import { EventBriefingReadOnly } from '../briefing/EventBriefingReadOnly';
+import { AlertTriangle, Trash2, Clock, FileText, Search, PlusCircle, Video, Sparkles, ExternalLink, FolderOpen, CheckCircle2, Building, Receipt, Check, Plus } from 'lucide-react';
 
 export function EventModal() {
   const {
@@ -58,14 +51,12 @@ export function EventModal() {
   const [newClientAddress, setNewClientAddress] = useState('');
 
   const [date, setDate] = useState('');
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [endDate, setEndDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('12:00');
   const [tipo, setTipo] = useState<EventTipo>('gravacao');
-  const [local, setLocal] = useState('');
   const [observacoes, setObservacoes] = useState('');
-  const [modalBriefingMode, setModalBriefingMode] = useState<BriefingCategoryMode>('video');
-  const [videoDrafts, setVideoDrafts] = useState<EditableVideoDraft[]>([]);
-  const [edicaoDrafts, setEdicaoDrafts] = useState<EditableVideoDraft[]>([]);
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
   const [status, setStatus] = useState<EventStatus>('agendado');
   const [tempoAntecedenciaSelect, setTempoAntecedenciaSelect] = useState<string>('-1');
@@ -107,14 +98,12 @@ export function EventModal() {
     const existingClient = clientsRef.current.find((c) => c.id === editingEvent.client_id);
     setClientSearch(existingClient ? existingClient.nome : '');
     setDate(editingEvent.data || '');
+    setIsMultiDay(false);
+    setEndDate(editingEvent.data || '');
     setStartTime(editingEvent.hora_inicio ? editingEvent.hora_inicio.slice(0, 5) : '09:00');
     setEndTime(editingEvent.hora_fim ? editingEvent.hora_fim.slice(0, 5) : '12:00');
     setTipo(editingEvent.tipo === 'foto' ? 'gravacao' : editingEvent.tipo || 'gravacao');
-    setLocal(editingEvent.local || '');
     setObservacoes(editingEvent.observacoes || '');
-    setModalBriefingMode('video');
-    setVideoDrafts(loadEventBriefingDrafts(editingEvent, 'video'));
-    setEdicaoDrafts(loadEventBriefingDrafts(editingEvent, 'edicao'));
     setSelectedEmpIds(editingEvent.assigned_employee_ids || []);
     setStatus(editingEvent.status || 'agendado');
     const savedMin =
@@ -170,9 +159,6 @@ export function EventModal() {
   const handleSelectClient = (c: Client) => {
     setClientId(c.id);
     setClientSearch(c.nome);
-    if (!local && c.endereco) {
-      setLocal(c.endereco);
-    }
     setIsClientDropdownOpen(false);
   };
 
@@ -186,9 +172,6 @@ export function EventModal() {
       });
       setClientId(created.id);
       setClientSearch(created.nome);
-      if (created.endereco) {
-        setLocal(created.endereco);
-      }
       setShowNewClientForm(false);
       setIsClientDropdownOpen(false);
     } catch {
@@ -215,6 +198,17 @@ export function EventModal() {
       setErrorMessage('Por favor, selecione a data da gravação.');
       return;
     }
+    if (isMultiDay) {
+      if (!endDate || endDate < date) {
+        setErrorMessage('Informe uma data de término igual ou posterior à data de início.');
+        return;
+      }
+      const span = enumerateIsoDates(date, endDate, 32);
+      if (span.length > 31 || span[span.length - 1] !== endDate) {
+        setErrorMessage('O período contínuo de uma viagem deve ter no máximo 31 dias.');
+        return;
+      }
+    }
     // 3. Fim depois do início
     if (endTime <= startTime) {
       setErrorMessage('O horário de término deve ser posterior ao horário de início.');
@@ -231,63 +225,16 @@ export function EventModal() {
         ? Math.max(1, Number(customTempoValor) || 1) * (customTempoUnidade === 'horas' ? 60 : 1)
         : Number(tempoAntecedenciaSelect);
 
-    const rawVideoBriefing = serializeDraftsToRaw(videoDrafts);
-    const rawEdicaoBriefing = serializeDraftsToRaw(edicaoDrafts);
-
-    const mappedVideoBriefings = videoDrafts
-      .filter((v) => v.roteiro.trim() || v.titulo.trim() || v.refUrl.trim())
-      .map((v) => ({
-        titulo: v.titulo,
-        formato: v.formato || 'Automático',
-        roteiro: v.roteiro,
-        refRotulo: v.refRotulo,
-        refUrl: v.refUrl,
-        aprovado: v.aprovado,
-        aprovadoPor: v.aprovadoPor,
-        aprovadoEm: v.aprovadoEm,
-        refsExtras: v.refsExtras,
-      }));
-
-    const mappedEdicaoBriefings = edicaoDrafts
-      .filter((v) => v.roteiro.trim() || v.titulo.trim() || v.refUrl.trim())
-      .map((v) => ({
-        titulo: v.titulo,
-        formato: v.formato || 'Automático',
-        roteiro: v.roteiro,
-        refRotulo: v.refRotulo,
-        refUrl: v.refUrl,
-        modeloEditoraId: v.modeloEditoraId || editingEvent.modelo_editora_id || undefined,
-        aprovado: v.aprovado,
-        aprovadoPor: v.aprovadoPor,
-        aprovadoEm: v.aprovadoEm,
-        refsExtras: v.refsExtras,
-      }));
-
-    const allVideoApproved =
-      mappedVideoBriefings.length > 0 && mappedVideoBriefings.every((v) => Boolean(v.aprovado));
-    const allEdicaoApproved =
-      mappedEdicaoBriefings.length > 0 && mappedEdicaoBriefings.every((v) => Boolean(v.aprovado));
-
     const payload = {
       id: editingEvent.id || undefined,
       client_id: clientId,
       tipo,
       data: date,
+      ...(isMultiDay && endDate && endDate > date ? { endDate } : {}),
       hora_inicio: startTime,
       hora_fim: endTime,
-      local: local || undefined,
+      local: editingEvent.local || undefined,
       observacoes: observacoes || undefined,
-      briefing_videos: mappedVideoBriefings.length > 0 ? mappedVideoBriefings : undefined,
-      briefing_gravacao: rawVideoBriefing.trim() || undefined,
-      briefing_aprovado: allVideoApproved || Boolean(editingEvent.briefing_aprovado) || undefined,
-      briefing_aprovado_por:
-        allVideoApproved || editingEvent.briefing_aprovado
-          ? editingEvent.briefing_aprovado_por || 'Victor Cordoba'
-          : undefined,
-      briefing_edicao_videos: mappedEdicaoBriefings.length > 0 ? mappedEdicaoBriefings : undefined,
-      briefing_edicao: rawEdicaoBriefing.trim() || undefined,
-      briefing_edicao_aprovado: allEdicaoApproved || Boolean(editingEvent.briefing_edicao_aprovado) || undefined,
-      modelo_editora_id: editingEvent.modelo_editora_id || undefined,
       tempo_antecedencia_minutos: resolvedMinutos,
       status,
       assigned_employee_ids: selectedEmpIds,
@@ -318,10 +265,7 @@ export function EventModal() {
         setEndTime(nextEndStr);
         setClientId('');
         setClientSearch('');
-        setLocal('');
         setObservacoes('');
-        setVideoDrafts(loadEventBriefingDrafts({}, 'video'));
-        setEdicaoDrafts(loadEventBriefingDrafts({}, 'edicao'));
         setSelectedEmpIds([]);
       }, 30);
     }
@@ -584,6 +528,7 @@ export function EventModal() {
             <ul className="text-xs text-amber-100/80 space-y-1 pl-4 list-disc">
               {conflicts.map((c, i) => (
                 <li key={i}>
+                  {c.data ? <span className="font-semibold">({c.data.split('-').reverse().join('/')}) </span> : null}
                   <strong>{c.employee_name}</strong> já está em <em>{c.client_name}</em> das{' '}
                   {c.hora_inicio.slice(0, 5)} às {c.hora_fim.slice(0, 5)}
                   {c.local ? ` (${c.local})` : ''}
@@ -729,18 +674,63 @@ export function EventModal() {
 
           {/* Data e Horários */}
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isMultiDay}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsMultiDay(checked);
+                    if (checked && (!endDate || endDate < date)) {
+                      setEndDate(date);
+                    }
+                  }}
+                  className="rounded border-[var(--ui-border)] bg-[var(--ui-raised)] text-[var(--ui-accent)] focus:ring-[var(--ui-accent)]"
+                />
+                <span>Mais de um dia (ex: viagem)</span>
+              </label>
+              {isMultiDay && date && endDate >= date && (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/30">
+                  {enumerateIsoDates(date, endDate, 32).length}{' '}
+                  {enumerateIsoDates(date, endDate, 32).length === 1 ? 'dia' : 'dias seguidos'}
+                </span>
+              )}
+            </div>
+
+            <div className={`grid grid-cols-1 ${isMultiDay ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-                  Data *
+                  {isMultiDay ? 'Data de início *' : 'Data *'}
                 </label>
                 <input
                   type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => {
+                    const nextDate = e.target.value;
+                    setDate(nextDate);
+                    if (isMultiDay && (!endDate || endDate < nextDate)) {
+                      setEndDate(nextDate);
+                    }
+                  }}
                   className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
                 />
               </div>
+
+              {isMultiDay && (
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
+                    Data de término *
+                  </label>
+                  <input
+                    type="date"
+                    min={date || undefined}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
@@ -848,23 +838,6 @@ export function EventModal() {
             </div>
           </div>
 
-          {/* Local / Bairro */}
-          <div>
-            <label className="block text-xs font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-700 mb-1">
-              Local / Bairro
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ex: Mooca, Jardins, etc."
-                value={local}
-                onChange={(e) => setLocal(e.target.value)}
-                className="w-full bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-300 rounded-xl px-3 py-1.5 text-xs text-foreground dark:text-foreground text-zinc-900 focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
-              />
-              <MapPin className="w-4 h-4 text-zinc-400 absolute right-3 top-2 pointer-events-none" />
-            </div>
-          </div>
-
           {/* Seleção de Equipe (Filmmakers & Meninas dos Vídeos) */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -885,7 +858,7 @@ export function EventModal() {
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {employees
-                    .filter((emp) => emp.funcao === 'filmmaker')
+                    .filter((emp) => emp.ativo !== false && isFilmmaker(emp))
                     .map((emp) => {
                       const isSelected = selectedEmpIds.includes(emp.id);
                       return (
@@ -912,7 +885,7 @@ export function EventModal() {
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {employees
-                    .filter((emp) => emp.funcao === 'criadora')
+                    .filter((emp) => emp.ativo !== false && (emp.funcao === 'modelo' || emp.funcao === 'criadora'))
                     .map((emp) => {
                       const isSelected = selectedEmpIds.includes(emp.id);
                       return (
@@ -1046,344 +1019,8 @@ export function EventModal() {
         {/* ==========================================
             ABA BRIEFING: SEPARADO POR CARDS IGUAL À CATEGORIA DE BRIEFING
             ========================================== */}
-        {activeTab === 'briefing' && (() => {
-          const currentMember = employees.find((e) => e.id === loggedEmployeeId);
-          const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
-          const isBriefingReadOnly = modalBriefingMode === 'video' ? isModelMember : false;
-          const canApproveBriefing = isVictorCordoba(currentMember, loggedEmployeeId);
-          const isEventApproved = isEventBriefingApproved(editingEvent, modalBriefingMode);
-          const activeDrafts = modalBriefingMode === 'edicao' ? edicaoDrafts : videoDrafts;
-          const setActiveDrafts = modalBriefingMode === 'edicao' ? setEdicaoDrafts : setVideoDrafts;
+        {activeTab === 'briefing' && <EventBriefingReadOnly event={editingEvent} />}
 
-          const updateDraft = (id: string, patch: Partial<EditableVideoDraft>) => {
-            if (isBriefingReadOnly) return;
-            setActiveDrafts((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
-          };
-
-          const toggleApproveCard = (id: string) => {
-            if (!canApproveBriefing) return;
-            const nowIso = new Date().toISOString();
-            setActiveDrafts((prev) =>
-              prev.map((v) => {
-                const currentApproved = Boolean(v.aprovado || isEventApproved);
-                if (v.id !== id) {
-                  return {
-                    ...v,
-                    aprovado: currentApproved,
-                    aprovadoPor: currentApproved ? v.aprovadoPor || 'Victor Cordoba' : undefined,
-                    aprovadoEm: currentApproved ? v.aprovadoEm || nowIso : undefined,
-                  };
-                }
-                const nextApproved = !currentApproved;
-                return {
-                  ...v,
-                  aprovado: nextApproved,
-                  aprovadoPor: nextApproved ? 'Victor Cordoba' : undefined,
-                  aprovadoEm: nextApproved ? nowIso : undefined,
-                };
-              })
-            );
-          };
-
-          const addAnotherDraft = () => {
-            if (isBriefingReadOnly) return;
-            setActiveDrafts((prev) => [
-              ...prev,
-              {
-                id: `video-${prev.length + 1}-${Date.now()}`,
-                titulo: '',
-                formato: 'Automático',
-                roteiro: '',
-                refRotulo: 'Referência',
-                refUrl: '',
-              },
-            ]);
-          };
-
-          const removeDraft = (id: string) => {
-            if (isBriefingReadOnly) return;
-            setActiveDrafts((prev) => {
-              if (prev.length <= 1) {
-                return [
-                  {
-                    id: `video-1-${Date.now()}`,
-                    titulo: '',
-                    formato: 'Automático',
-                    roteiro: '',
-                    refRotulo: 'Referência',
-                    refUrl: '',
-                  },
-                ];
-              }
-              return prev.filter((v) => v.id !== id);
-            });
-          };
-
-          return (
-            <div className="flex flex-col gap-4 animate-in fade-in">
-              {/* Diretriz fixa do restaurante */}
-              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Briefing Fixo do Restaurante ({currentClient?.nome || 'Cliente'})
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-line">
-                  {currentClient?.briefing ||
-                    'Nenhuma diretriz fixa cadastrada na ficha deste restaurante ainda. Você pode cadastrar na aba "Briefing & Roteiros" do menu lateral.'}
-                </p>
-                {currentClient?.briefing_pratos_foco && (
-                  <div className="pt-2 border-t border-purple-500/20 text-xs text-zinc-300">
-                    <strong className="text-purple-300">Pratos / Produtos Foco:</strong> {currentClient.briefing_pratos_foco}
-                  </div>
-                )}
-                {currentClient?.briefing_restricoes && (
-                  <div className="text-xs text-rose-300">
-                    <strong>Restrições / O que evitar:</strong> {currentClient.briefing_restricoes}
-                  </div>
-                )}
-              </div>
-
-              {/* Seletor entre Briefing do Vídeo e Briefing de Edição */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="inline-flex rounded-xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-1.5 gap-2">
-                  <button
-                    type="button"
-                    data-tab-kind="agenda"
-                    data-tab-active={modalBriefingMode === 'video' ? 'true' : 'false'}
-                    onClick={() => setModalBriefingMode('video')}
-                    className={`event-modal-tab flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
-                      modalBriefingMode === 'video'
-                        ? 'bg-[#55c4d5] text-[#0b1621] font-black border-[#a5eef9]/85'
-                        : 'border-transparent text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>Briefing do Vídeo (Gravação)</span>
-                  </button>
-                  <button
-                    type="button"
-                    data-tab-kind="briefing"
-                    data-tab-active={modalBriefingMode === 'edicao' ? 'true' : 'false'}
-                    onClick={() => setModalBriefingMode('edicao')}
-                    className={`event-modal-tab flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
-                      modalBriefingMode === 'edicao'
-                        ? 'bg-purple-500 text-white font-black border-purple-300/80'
-                        : 'border-transparent text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <Scissors className="w-3.5 h-3.5" />
-                    <span>Briefing de Edição (Modelos)</span>
-                  </button>
-                </div>
-
-                {isBriefingReadOnly && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                    <Lock className="w-3 h-3" />
-                    <span>Modo Visualização (Modelos editam apenas o Briefing de Edição)</span>
-                  </span>
-                )}
-              </div>
-
-              {/* Grid de Cards Separados por Vídeo (idêntico à aba de Briefing) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                {activeDrafts.map((video, index) => {
-                  const isCardApproved = Boolean(video.aprovado || isEventApproved);
-
-                  return (
-                    <article
-                      key={video.id}
-                      aria-label={
-                        modalBriefingMode === 'edicao'
-                          ? `Briefing de Edição do Vídeo ${index + 1}`
-                          : `Briefing do Vídeo ${index + 1}`
-                      }
-                      className={`min-w-0 rounded-2xl bg-[var(--ui-raised)] p-4 flex flex-col gap-3 transition-all ${
-                        isCardApproved
-                          ? 'border-2 border-[#38bdf8] ring-2 ring-[#38bdf8]/30 bg-[#38bdf8]/[0.04] shadow-[0_0_22px_rgba(56,189,248,0.16)]'
-                          : modalBriefingMode === 'edicao'
-                            ? 'border border-purple-500/30'
-                            : 'border border-[var(--ui-border)]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 border-b border-[var(--ui-border)] pb-2.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4
-                            className={`text-base sm:text-lg font-bold ${
-                              isCardApproved
-                                ? 'text-[#38bdf8]'
-                                : modalBriefingMode === 'edicao'
-                                  ? 'text-purple-300'
-                                  : 'text-[var(--ui-accent)]'
-                            }`}
-                          >
-                            {modalBriefingMode === 'edicao'
-                              ? `Edição do Vídeo ${String(index + 1).padStart(2, '0')}`
-                              : `Vídeo ${String(index + 1).padStart(2, '0')}`}
-                          </h4>
-
-                          {isCardApproved && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50">
-                              <ShieldCheck className="w-3 h-3" />
-                              <span>Validado</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {canApproveBriefing && (
-                            <button
-                              type="button"
-                              onClick={() => toggleApproveCard(video.id)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all ${
-                                isCardApproved
-                                  ? 'bg-[#38bdf8] text-black shadow-sm hover:bg-sky-300'
-                                  : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
-                              }`}
-                              title="Exclusivo Victor Cordoba: Aprovar este card de briefing (muda a borda para azul)"
-                            >
-                              <ShieldCheck className="w-3 h-3" />
-                              <span>{isCardApproved ? 'Aprovado ✓' : 'Aprovar'}</span>
-                            </button>
-                          )}
-
-                          {!isBriefingReadOnly && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (
-                                  (video.titulo.trim() || video.roteiro.trim() || video.refUrl.trim()) &&
-                                  !window.confirm('Remover este vídeo e seu briefing?')
-                                )
-                                  return;
-                                removeDraft(video.id);
-                              }}
-                              className="text-xs text-zinc-400 hover:text-rose-400 py-1 cursor-pointer"
-                            >
-                              Remover
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                    <label className="text-xs font-semibold flex flex-col gap-1.5">
-                      Título do vídeo (opcional)
-                      <input
-                        readOnly={isBriefingReadOnly}
-                        disabled={isBriefingReadOnly}
-                        value={video.titulo}
-                        onChange={(e) => updateDraft(video.id, { titulo: e.target.value })}
-                        placeholder={
-                          modalBriefingMode === 'edicao'
-                            ? `Ex: Reel ${index + 1} - Cortes dinâmicos do prato`
-                            : `Ideia do vídeo ${index + 1}`
-                        }
-                        className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2 text-sm text-foreground read-only:opacity-80"
-                      />
-                    </label>
-
-                    <label className="text-xs font-semibold flex flex-col gap-1.5 flex-1">
-                      {modalBriefingMode === 'edicao'
-                        ? 'Briefing de Edição (Cortes, Gancho, Áudio/Trilha, Legenda e CTA)'
-                        : 'Briefing de Gravação'}
-                      <textarea
-                        readOnly={isBriefingReadOnly}
-                        disabled={isBriefingReadOnly}
-                        rows={6}
-                        value={video.roteiro}
-                        onChange={(e) => updateDraft(video.id, { roteiro: e.target.value })}
-                        placeholder={
-                          modalBriefingMode === 'edicao'
-                            ? 'Descreva como a modelo deve editar este vídeo: gancho nos 3 primeiros segundos, ritmo dos cortes, música/áudio em alta…'
-                            : 'O que gravar, cenas e falas…'
-                        }
-                        className="w-full min-w-0 flex-1 resize-y rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2.5 text-sm text-foreground leading-relaxed read-only:opacity-85"
-                      />
-                    </label>
-
-                    <label className="text-xs font-semibold flex flex-col gap-1.5">
-                      {modalBriefingMode === 'edicao'
-                        ? 'Link de referência ou pasta de brutos'
-                        : 'Link de referência'}
-                      <input
-                        readOnly={isBriefingReadOnly}
-                        disabled={isBriefingReadOnly}
-                        type="url"
-                        value={video.refUrl}
-                        onChange={(e) => updateDraft(video.id, { refUrl: e.target.value })}
-                        placeholder="https://…"
-                        className="w-full min-w-0 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2 text-sm text-foreground read-only:opacity-80"
-                      />
-                    </label>
-
-                    {video.refUrl.trim() && (
-                      <a
-                        href={normalizarUrl(video.refUrl.trim())}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-[var(--ui-accent)] hover:underline break-all"
-                      >
-                        Abrir link: {exibirUrl(video.refUrl.trim())}
-                      </a>
-                    )}
-
-                    {(video.refsExtras || []).map((ref, i) => (
-                      <a
-                        key={i}
-                        href={normalizarUrl(ref.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-[var(--ui-accent)] break-all"
-                      >
-                        {ref.rotulo}: {exibirUrl(ref.url)}
-                      </a>
-                    ))}
-                  </article>
-                  );
-                })}
-              </div>
-
-              {!isBriefingReadOnly && (
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={addAnotherDraft}
-                    className={`flex-1 min-w-[220px] rounded-xl border border-dashed px-4 py-3 text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
-                      modalBriefingMode === 'edicao'
-                        ? 'border-purple-500/40 text-purple-300 hover:bg-purple-500/10'
-                        : 'border-[var(--ui-border)] text-[var(--ui-accent)] hover:bg-[var(--ui-raised)]'
-                    }`}
-                  >
-                    {modalBriefingMode === 'edicao'
-                      ? `+ Fazer Briefing de Edição do Vídeo ${activeDrafts.length + 1}`
-                      : `+ Fazer Briefing do Vídeo ${activeDrafts.length + 1}`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSubmit(false, false)}
-                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-bold cursor-pointer transition-all ${
-                      modalBriefingMode === 'edicao'
-                        ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                        : 'bg-[#d9ff3f] text-[#05080d] hover:brightness-95'
-                    }`}
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>
-                      {modalBriefingMode === 'edicao'
-                        ? 'Salvar briefings de edição'
-                        : 'Salvar todos os briefings'}
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ==========================================
-            ABA 3: CUSTOS & DESPESAS DA GRAVAÇÃO
-            ========================================== */}
         {activeTab === 'despesas' && (
           <div className="flex flex-col gap-4 animate-in fade-in">
             {/* Header com resumo */}
@@ -1571,7 +1208,7 @@ export function EventModal() {
               Cancelar
             </button>
 
-            {activeTab === 'relatorio' ? (
+            {activeTab === 'briefing' ? null : activeTab === 'relatorio' ? (
               <button
                 type="button"
                 onClick={handleSaveFilmmakerReport}

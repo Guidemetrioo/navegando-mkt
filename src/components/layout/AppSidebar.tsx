@@ -3,7 +3,7 @@ import { todayInSaoPaulo } from '@/lib/date-utils';
 
 import React, { useState } from 'react';
 import { useAgenda, AgendaView } from '@/context/AgendaContext';
-import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, Sparkles, Camera, Home, FileText, ClipboardList, Scissors, Receipt, DollarSign, Smartphone, Clock, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, UserCheck, MapPin, Building, ShieldCheck, Plus, Sparkles, Camera, Home, FileText, ClipboardList, Receipt, DollarSign, Smartphone, Clock, LogOut } from 'lucide-react';
 import { canUserAccessView } from '@/lib/auth-users';
 import { NavegandoLogo } from '../brand/NavegandoLogo';
 
@@ -111,15 +111,10 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
         },
         {
           id: 'briefing',
-          label: 'Briefing & Roteiros',
+          label: 'Briefing',
           icon: ClipboardList,
           badge: 'Diretrizes',
           badgeColor: 'bg-[var(--ui-accent)]/20 text-[var(--ui-accent)]',
-        },
-        {
-          id: 'briefing-edicao',
-          label: 'Briefing de Edição',
-          icon: Scissors,
         },
         {
           id: 'reembolsos',
@@ -178,7 +173,7 @@ export function AppSidebar({ isMobileOpen = false, onCloseMobile }: AppSidebarPr
 
   const orderedGroups: { groupTitle: string; ids: AgendaView[] }[] = [
     { groupTitle: 'Visão geral', ids: ['home', 'dashboard'] },
-    { groupTitle: 'Produção', ids: ['mes', 'escala', 'minha-agenda', 'ponto', 'banco-horas', 'relatorios', 'briefing', 'briefing-edicao'] },
+    { groupTitle: 'Produção', ids: ['mes', 'escala', 'minha-agenda', 'ponto', 'banco-horas', 'relatorios', 'briefing'] },
     { groupTitle: 'Gestão', ids: ['reembolsos', 'financeiro', 'clientes', 'whatsapp'] },
     { groupTitle: 'Sistema', ids: ['backups'] },
   ];

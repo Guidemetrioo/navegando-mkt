@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -68,7 +69,7 @@ export function Header() {
           >
             <optgroup label="Filmmakers" className="bg-[var(--ui-surface)] text-[#38bdf8] font-bold">
               {employees
-                .filter((e) => e.funcao === 'filmmaker')
+                .filter((e) => isFilmmaker(e))
                 .map((emp) => (
                   <option key={emp.id} value={emp.id} className="bg-[var(--ui-surface)] text-foreground font-normal">
                     {emp.nome} (Filmmaker)

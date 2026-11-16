@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);require('./load-ts.cjs');
-const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges,validateCloudSnapshot}=require('../src/lib/workspace.ts');
+const {mayAccess,canonical,same,emptyWorkspace,workspaceFrom,diffWorkspace,mergeWorkspace,validateChanges,validateCloudSnapshot,cloudSnapshotChanged}=require('../src/lib/workspace.ts');
 const {saveToStorage,loadFromStorage,validateBackup}=require('../src/lib/storage-backup.ts');
 const {todayInSaoPaulo}=require('../src/lib/date-utils.ts');
 const base={member:{employee_id:'usr-felipe',user_id:'test',role:'dono'},records:[{kind:'clients',id:'c1',revision:2,data:{id:'c1',nome:'Original'}}]};
@@ -30,4 +30,17 @@ test('partial or duplicate cloud responses cannot become a baseline',()=>{
 test('bank of hours is part of the versioned shared workspace',()=>{
  const w=workspaceFrom(base);w.banco_horas.push({id:'hours-1',employee_id:'usr',minutos:30});
  assert.equal(diffWorkspace(base,w).find(row=>row.kind==='banco_horas').id,'hours-1');
+});
+
+test('server membership updates refresh the interface without creating member writes',()=>{
+ const before={member:{user_id:'u',employee_id:'manager',role:'gerente'},records:[{kind:'employees',id:'manager',revision:1,data:{id:'manager',nome:'Manager',funcao:'gerente'}}]};
+ const after=structuredClone(before);after.records.push({kind:'employees',id:'new-camera',revision:1,data:{id:'new-camera',nome:'New camera',funcao:'filmmaker'}});
+ assert.equal(cloudSnapshotChanged(before,after),true);
+ assert.deepEqual(diffWorkspace(before,workspaceFrom(after)),[]);
+ const updated=structuredClone(before);updated.records[0].data.funcoes_producao=['filmmaker'];assert.equal(cloudSnapshotChanged(before,updated),true);
+ const role=structuredClone(before);role.member.role='interno';assert.equal(cloudSnapshotChanged(before,role),true);
+});
+test('snapshot change detection ignores order and temporary photo links',()=>{
+ const before={member:{user_id:'u',employee_id:'manager',role:'gerente'},records:[{kind:'pontos',id:'p1',revision:1,data:{id:'p1',photo_storage_path:'u/p.jpg',foto_url:'https://temporary/1'}}]};
+ const after=structuredClone(before);after.records[0].data.foto_url='https://temporary/2';assert.equal(cloudSnapshotChanged(before,after),false);
 });

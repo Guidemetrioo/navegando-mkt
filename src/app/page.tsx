@@ -153,8 +153,7 @@ function AgendaMainContent() {
               {currentView === 'ponto' && 'Ponto & GPS'}
               {currentView === 'banco-horas' && 'Banco de Horas'}
               {currentView === 'relatorios' && 'Relatórios de Produção'}
-              {currentView === 'briefing' && 'Briefing & Roteiros'}
-              {currentView === 'briefing-edicao' && 'Briefing de Edição'}
+              {currentView === 'briefing' && 'Briefing'}
               {currentView === 'reembolsos' && 'Reembolsos'}
               {currentView === 'clientes' && 'Restaurantes'}
               {currentView === 'financeiro' && 'Controle Financeiro'}
@@ -342,8 +341,7 @@ function AgendaMainContent() {
             {currentView === 'ponto' && <PontoView />}
             {currentView === 'banco-horas' && <BancoDeHorasView />}
             {currentView === 'relatorios' && <ProductionReportsView />}
-            {currentView === 'briefing' && <BriefingView initialMode="video" />}
-            {currentView === 'briefing-edicao' && <BriefingView initialMode="edicao" />}
+            {currentView === 'briefing' && <BriefingView />}
             {currentView === 'reembolsos' && <ReembolsosView />}
             {currentView === 'clientes' && <ClientsView />}
             {currentView === 'backups' && <BackupSafetyView />}

@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -404,22 +405,18 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     toast,
     loggedEmployeeId,
     canManage,
-    currentView,
-    setCurrentView,
   } = useAgenda();
 
   // Categoria ativa dentro de Briefing: 'video' (Briefing do Vídeo) ou 'edicao' (Briefing de Edição - Modelos)
   const [briefingMode, setBriefingMode] = useState<BriefingCategoryMode>(
-    initialMode || (currentView === 'briefing-edicao' ? 'edicao' : 'video')
+    initialMode || 'video'
   );
 
-  // Reset only when navigation changes, before rendering children with the old category.
-  const [previousNavigation, setPreviousNavigation] = useState({ initialMode, currentView });
-  if (previousNavigation.initialMode !== initialMode || previousNavigation.currentView !== currentView) {
-    setPreviousNavigation({ initialMode, currentView });
+  // Sincroniza caso um initialMode específico seja passado
+  const [previousInitialMode, setPreviousInitialMode] = useState(initialMode);
+  if (previousInitialMode !== initialMode) {
+    setPreviousInitialMode(initialMode);
     if (initialMode) setBriefingMode(initialMode);
-    else if (currentView === 'briefing-edicao') setBriefingMode('edicao');
-    else if (currentView === 'briefing') setBriefingMode('video');
   }
 
   // Regras de permissão:
@@ -467,6 +464,13 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   // Filtro de busca e status na tela de cards de compromissos
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendentes' | 'feitos'>('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [createComposerOpen, setCreateComposerOpen] = useState(false);
+  const [composerEventId, setComposerEventId] = useState('');
+  const [composerTitle, setComposerTitle] = useState('');
+  const [composerScript, setComposerScript] = useState('');
+  const [composerRefUrl, setComposerRefUrl] = useState('');
+  const [composerModelId, setComposerModelId] = useState('');
+  const [composerError, setComposerError] = useState('');
 
   // Compromisso selecionado ao clicar no card do restaurante
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
@@ -578,7 +582,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
     // Performance por membro da equipe (Modelos e Filmmakers)
     const teamPerformance = employees
-      .filter((emp) => emp.funcao === 'modelo' || emp.funcao === 'criadora' || emp.funcao === 'filmmaker')
+      .filter((emp) => emp.funcao === 'modelo' || emp.funcao === 'criadora' || isFilmmaker(emp))
       .map((emp) => {
         const memberEvents = recordingEvents.filter(
           (ev) =>
@@ -690,11 +694,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       return;
     }
     setBriefingMode(nextMode);
-    if (currentView === 'briefing' && nextMode === 'edicao') {
-      setCurrentView('briefing-edicao');
-    } else if (currentView === 'briefing-edicao' && nextMode === 'video') {
-      setCurrentView('briefing');
-    }
     if (activeEvent) {
       loadDraftsForEventAndMode(activeEvent, nextMode);
     }
@@ -867,6 +866,99 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       toast('Cards salvos. Preencha os briefings para concluir.', 'info');
       setStatusMsg(`${qtd} cards salvos. Briefings ainda pendentes.`);
     }
+  };
+
+  const openCreateBriefingComposer = (preferredEventId?: string) => {
+    const defaultEv =
+      (preferredEventId && recordingEvents.find((ev) => ev.id === preferredEventId)) ||
+      recordingEvents.find((ev) => !isEventDoneForMode(ev)) ||
+      recordingEvents[0];
+    setComposerEventId(defaultEv?.id || '');
+    setComposerTitle('');
+    setComposerScript('');
+    setComposerRefUrl('');
+    setComposerModelId(defaultEv ? resolveEventEditorModel(defaultEv)?.id || '' : '');
+    setComposerError('');
+    setCreateComposerOpen(true);
+  };
+
+  const handleSaveComposedBriefing = (e: React.FormEvent) => {
+    e.preventDefault();
+    setComposerError('');
+    const targetEvent = recordingEvents.find((ev) => ev.id === composerEventId);
+    if (!targetEvent) {
+      setComposerError('Selecione uma gravação agendada para linkar este briefing.');
+      return;
+    }
+    if (!composerScript.trim() && !composerTitle.trim()) {
+      setComposerError('Escreva o conteúdo ou título do briefing antes de salvar.');
+      return;
+    }
+
+    const existingDrafts = loadEventBriefingDrafts(targetEvent, briefingMode).filter(
+      (v) => v.titulo.trim() || v.roteiro.trim() || v.refUrl.trim() || (v.refsExtras && v.refsExtras.length > 0)
+    );
+    const chosenModelId =
+      briefingMode === 'edicao'
+        ? composerModelId || targetEvent.modelo_editora_id || undefined
+        : undefined;
+    const newDraft: EditableVideoDraft = {
+      id: crypto.randomUUID(),
+      titulo: composerTitle.trim(),
+      formato: 'Automático',
+      roteiro: composerScript.trim(),
+      refRotulo: 'Referência',
+      refUrl: composerRefUrl.trim(),
+      modeloEditoraId: chosenModelId,
+    };
+    const combined = [...existingDrafts, newDraft];
+    const mappedVideos = combined.map((video) => ({
+      titulo: video.titulo,
+      formato: video.formato,
+      roteiro: video.roteiro,
+      refRotulo: video.refRotulo,
+      refUrl: video.refUrl,
+      modeloEditoraId: chosenModelId || video.modeloEditoraId,
+      aprovado: video.aprovado,
+      aprovadoPor: video.aprovadoPor,
+      aprovadoEm: video.aprovadoEm,
+      refsExtras: video.refsExtras,
+    }));
+    const raw = serializeDraftsToRaw(combined);
+    const updatedEvent: EventItem =
+      briefingMode === 'edicao'
+        ? {
+            ...targetEvent,
+            briefing_edicao_videos: mappedVideos,
+            briefing_edicao: raw || null,
+            modelo_editora_id: chosenModelId || targetEvent.modelo_editora_id || null,
+          }
+        : {
+            ...targetEvent,
+            briefing_videos: mappedVideos,
+            briefing_gravacao: raw || null,
+          };
+
+    const result = saveEvent(updatedEvent, true);
+    if (!result?.success) {
+      setComposerError('Não foi possível salvar o briefing na agenda selecionada.');
+      return;
+    }
+
+    const targetClient = clients.find((c) => c.id === targetEvent.client_id);
+    if (canManage && briefingMode === 'video' && targetClient && raw) {
+      updateClient(targetClient.id, { briefing_roteiros_modelos: raw });
+    }
+
+    setActiveEventId(targetEvent.id);
+    setVideoDrafts(combined);
+    setSavedDrafts(JSON.stringify(combined));
+    setVideoQuantity(String(combined.length));
+    if (chosenModelId) setSelectedEditorModelId(chosenModelId);
+    setCreateComposerOpen(false);
+
+    const labelTipo = briefingMode === 'edicao' ? 'Briefing de Edição' : 'Briefing de Vídeo';
+    toast(`${labelTipo} criado e linkado a ${targetClient?.nome || 'Restaurante'}!`, 'success');
   };
 
   // Função exclusiva para Victor Cordoba: Aprovar / Validar Briefing (muda a borda do card para azul)
@@ -1275,6 +1367,200 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     );
   };
 
+  const linkedComposerEvent = recordingEvents.find((ev) => ev.id === composerEventId) || null;
+  const linkedComposerClient = linkedComposerEvent
+    ? clients.find((c) => c.id === linkedComposerEvent.client_id) || linkedComposerEvent.client || null
+    : null;
+
+  const createBriefingModal = createComposerOpen ? (
+    <div
+      className="fixed inset-0 z-50 bg-black/75 p-4 flex items-center justify-center"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') setCreateComposerOpen(false);
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={briefingMode === 'edicao' ? 'Criar Briefing de Edição' : 'Criar Briefing de Vídeo'}
+        className="w-full max-w-xl max-h-[88dvh] overflow-y-auto rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-5 sm:p-6 space-y-4 shadow-2xl"
+      >
+        <div className="flex justify-between items-start gap-3">
+          <div>
+            <span
+              className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md mb-1 ${
+                briefingMode === 'edicao'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                  : 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)]'
+              }`}
+            >
+              {briefingMode === 'edicao' ? 'Edição (Modelos)' : 'Gravação / Vídeo'}
+            </span>
+            <h2 className="font-bold text-lg text-foreground">
+              {briefingMode === 'edicao' ? 'Criar Briefing de Edição' : 'Criar Briefing de Vídeo'}
+            </h2>
+            <p className="text-xs text-zinc-400">
+              {briefingMode === 'edicao'
+                ? 'Escreva o novo briefing de edição e vincule ao restaurante/gravação da Agenda.'
+                : 'Escreva o novo briefing de vídeo e vincule ao restaurante/gravação da Agenda.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCreateComposerOpen(false)}
+            className="px-3 py-1.5 rounded-lg bg-[var(--ui-raised)] text-xs font-semibold text-zinc-300 hover:text-foreground cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+
+        {composerError && (
+          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 font-medium">
+            {composerError}
+          </div>
+        )}
+
+        <form onSubmit={handleSaveComposedBriefing} className="space-y-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-zinc-200">
+                Linkar local / gravação da Agenda *
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateComposerOpen(false);
+                  openNewEventModal();
+                }}
+                className="text-[11px] font-semibold text-[var(--ui-accent)] hover:underline cursor-pointer"
+              >
+                + Agendar nova gravação
+              </button>
+            </div>
+
+            {recordingEvents.length === 0 ? (
+              <div className="p-4 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs text-zinc-300">
+                Nenhuma gravação agendada na Agenda ainda. Clique em <strong>+ Agendar nova gravação</strong> para criar uma antes de linkar.
+              </div>
+            ) : (
+              <select
+                aria-label="Linkar local conforme a agenda feita"
+                value={composerEventId}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setComposerEventId(nextId);
+                  const found = recordingEvents.find((ev) => ev.id === nextId);
+                  if (found) setComposerModelId(resolveEventEditorModel(found)?.id || '');
+                }}
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)]"
+              >
+                {recordingEvents.map((ev) => {
+                  const clientName =
+                    ev.client?.nome || clients.find((c) => c.id === ev.client_id)?.nome || 'Restaurante';
+                  const addr =
+                    ev.local || clients.find((c) => c.id === ev.client_id)?.endereco || '';
+                  return (
+                    <option key={ev.id} value={ev.id}>
+                      {clientName} • {fmtDate(ev.data)} ({ev.hora_inicio.slice(0, 5)}–{ev.hora_fim.slice(0, 5)})
+                      {addr ? ` — ${addr}` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+
+            {linkedComposerEvent && (
+              <p className="text-[11px] text-zinc-400">
+                Vinculado a: <strong className="text-zinc-200">{linkedComposerClient?.nome || 'Restaurante'}</strong>
+                {linkedComposerClient?.endereco ? ` (${linkedComposerClient.endereco})` : ''} • {fmtDate(linkedComposerEvent.data)}
+              </p>
+            )}
+          </div>
+
+          {briefingMode === 'edicao' && modelEmployees.length > 0 && (
+            <label className="block space-y-1.5">
+              <span className="text-xs font-bold text-zinc-200">Modelo Responsável pela Edição (opcional)</span>
+              <select
+                value={composerModelId}
+                onChange={(e) => setComposerModelId(e.target.value)}
+                className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+              >
+                <option value="">Usar modelo escalada na gravação</option>
+                {modelEmployees.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-bold text-zinc-200">Título do vídeo (opcional)</span>
+            <input
+              type="text"
+              value={composerTitle}
+              onChange={(e) => setComposerTitle(e.target.value)}
+              placeholder={
+                briefingMode === 'edicao'
+                  ? 'Ex: Reel 01 — Cortes dinâmicos + legenda'
+                  : 'Ex: Vídeo 01 — Preparo na cozinha + degustação'
+              }
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+            />
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-bold text-zinc-200">
+              {briefingMode === 'edicao' ? 'Escrever Briefing de Edição *' : 'Escrever Briefing de Vídeo *'}
+            </span>
+            <textarea
+              autoFocus
+              rows={6}
+              value={composerScript}
+              onChange={(e) => setComposerScript(e.target.value)}
+              placeholder={
+                briefingMode === 'edicao'
+                  ? 'Descreva cortes, gancho nos 3 primeiros segundos, trilha, legenda e chamada final...'
+                  : 'Escreva o roteiro do vídeo: cenas, falas, ângulos e observações para gravação...'
+              }
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-sm text-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)]"
+            />
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-bold text-zinc-200">Link de referência (opcional)</span>
+            <input
+              type="url"
+              value={composerRefUrl}
+              onChange={(e) => setComposerRefUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
+            />
+          </label>
+
+          <div className="pt-2 border-t border-[var(--ui-border)] flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setCreateComposerOpen(false)}
+              className="px-4 py-2 rounded-xl bg-[var(--ui-raised)] text-xs font-semibold text-zinc-300 hover:text-foreground cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={recordingEvents.length === 0}
+              className="px-5 py-2 rounded-xl gradient-cta text-foreground text-xs font-extrabold flex items-center gap-1.5 shadow-lg cursor-pointer disabled:opacity-40"
+            >
+              <Save className="w-4 h-4" />
+              <span>Salvar Briefing Linkado</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  ) : null;
+
   // ============================================================================
   // VISÃO 1: GRADE DE CARDS DOS COMPROMISSOS DOS RESTAURANTES (PENDENTE / FEITO)
   // ============================================================================
@@ -1343,11 +1629,11 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             {!isReadOnly && (
               <button
                 type="button"
-                onClick={() => openNewEventModal()}
+                onClick={() => openCreateBriefingComposer()}
                 className="px-3.5 py-2.5 rounded-xl gradient-cta text-foreground font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Nova Gravação</span>
+                <span>{briefingMode === 'edicao' ? 'Criar Briefing de Edição' : 'Criar Briefing de Vídeo'}</span>
               </button>
             )}
           </div>
@@ -1741,6 +2027,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             })}
           </div>
         )}
+        {createBriefingModal}
       </div>
     );
   }
@@ -1872,19 +2159,32 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           </button>
 
           {!isReadOnly && (
-            <button
-              type="button"
-              onClick={handleSaveBriefing}
-              aria-label="Salvar briefings"
-              className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>
-                {briefingMode === 'edicao'
-                  ? `Salvar Briefing de Edição (${videoDrafts.length} ${videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`
-                  : `Salvar Briefing (${videoDrafts.length} ${videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`}
-              </span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleSaveBriefing}
+                aria-label="Salvar briefings"
+                className="px-3.5 py-2.5 rounded-xl bg-[var(--ui-page)] hover:bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs font-bold text-zinc-200 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-4 h-4 text-[var(--ui-accent)]" />
+                <span>
+                  {`Salvar (${videoDrafts.length} ${videoDrafts.length === 1 ? 'Vídeo' : 'Vídeos'})`}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openCreateBriefingComposer(activeEvent.id)}
+                className="px-5 py-2.5 rounded-xl gradient-cta text-white font-extrabold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>
+                  {briefingMode === 'edicao'
+                    ? 'Criar Briefing de Edição'
+                    : 'Criar Briefing de Vídeo'}
+                </span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -2605,6 +2905,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           </div>
         </div>
       )}
+      {createBriefingModal}
     </div>
   );
 }

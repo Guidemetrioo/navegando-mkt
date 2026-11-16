@@ -1,3 +1,4 @@
+import { isFilmmaker } from '@/lib/team-functions';
 import { Employee, EventItem, PontoRegistro, Client } from '@/types/database';
 
 /**
@@ -223,7 +224,7 @@ export function calculateDailyEmployeeBreakdown(params: {
   const { employee, dateIso, allEvents, allPontos, allClients, manualAdjustments = [] } = params;
   const isExternal =
     employee.regime === 'externo' ||
-    employee.funcao === 'filmmaker' ||
+    isFilmmaker(employee) ||
     employee.funcao === 'modelo' ||
     employee.funcao === 'criadora';
 
@@ -569,7 +570,7 @@ export function auditMonthlyScheduleCompliance(params: {
     (e) => e.data.startsWith(monthPrefix) && e.status !== 'cancelado'
   );
 
-  const filmmakers = employees.filter((e) => e.ativo && e.funcao === 'filmmaker');
+  const filmmakers = employees.filter((e) => e.ativo && isFilmmaker(e));
   const modelos = employees.filter(
     (e) => e.ativo && (e.funcao === 'modelo' || e.funcao === 'criadora')
   );
@@ -581,7 +582,7 @@ export function auditMonthlyScheduleCompliance(params: {
     const assignedIds = ev.assigned_employee_ids || [];
     const hasFilmmaker = assignedIds.some((id) => {
       const emp = employees.find((e) => e.id === id);
-      return emp?.funcao === 'filmmaker' || emp?.funcao === 'gerente' || emp?.funcao === 'dono';
+      return isFilmmaker(emp) || emp?.funcao === 'gerente' || emp?.funcao === 'dono';
     });
     const hasModelo = assignedIds.some((id) => {
       const emp = employees.find((e) => e.id === id);
@@ -790,7 +791,7 @@ export function generateBalancedMonthlyRoster(params: {
   const { year, month, events, employees, mode } = params;
   const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-  const filmmakers = employees.filter((e) => e.ativo && e.funcao === 'filmmaker');
+  const filmmakers = employees.filter((e) => e.ativo && isFilmmaker(e));
   const modelos = employees.filter(
     (e) => e.ativo && (e.funcao === 'modelo' || e.funcao === 'criadora')
   );
@@ -812,7 +813,7 @@ export function generateBalancedMonthlyRoster(params: {
       // Mantém eventuais internos/gerentes se estivessem escalados extras, mas limpa filmmaker/modelo para redistribuir igualitariamente
       const keptOthers = (ev.assigned_employee_ids || []).filter((id) => {
         const emp = employees.find((e) => e.id === id);
-        return emp && emp.funcao !== 'filmmaker' && emp.funcao !== 'modelo' && emp.funcao !== 'criadora';
+        return emp && !isFilmmaker(emp) && emp.funcao !== 'modelo' && emp.funcao !== 'criadora';
       });
       return {
         ...ev,
@@ -944,7 +945,7 @@ export function generateBalancedMonthlyRoster(params: {
 
     const hasFilmmaker = Array.from(currentIds).some((id) => {
       const emp = employees.find((e) => e.id === id);
-      return emp?.funcao === 'filmmaker';
+      return isFilmmaker(emp);
     });
 
     const hasModelo = Array.from(currentIds).some((id) => {

@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -66,7 +67,7 @@ export function RosterView() {
 
   // Equipe de campo (Filmmakers e Modelos) que entra na distribuição igualitária da escala
   const filmmakers = useMemo(
-    () => employees.filter((e) => e.ativo && e.funcao === 'filmmaker'),
+    () => employees.filter((e) => e.ativo && isFilmmaker(e)),
     [employees]
   );
   const modelos = useMemo(
@@ -154,7 +155,7 @@ export function RosterView() {
 
   // Médias de gravações para detectar quem está com mais ou menos
   const avgFilmmakerCount = useMemo(() => {
-    const fmStats = teamLoadStats.filter((s) => s.employee.funcao === 'filmmaker');
+    const fmStats = teamLoadStats.filter((s) => isFilmmaker(s.employee));
     if (fmStats.length === 0) return 0;
     return fmStats.reduce((acc, s) => acc + s.recordingsCount, 0) / fmStats.length;
   }, [teamLoadStats]);
@@ -196,7 +197,7 @@ export function RosterView() {
       const emp = employees.find((e) => e.id === id);
       if (!emp) return false;
       if (roleType === 'filmmaker') {
-        return emp.funcao !== 'filmmaker';
+        return !isFilmmaker(emp);
       } else {
         return emp.funcao !== 'modelo' && emp.funcao !== 'criadora';
       }
@@ -527,7 +528,7 @@ export function RosterView() {
                         {dayEvents.slice(0, 3).map((ev) => {
                           const assignedIds = ev.assigned_employee_ids || [];
                           const fm = employees.find(
-                            (e) => assignedIds.includes(e.id) && e.funcao === 'filmmaker'
+                            (e) => assignedIds.includes(e.id) && isFilmmaker(e)
                           );
                           const mod = employees.find(
                             (e) =>
@@ -729,7 +730,7 @@ export function RosterView() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {teamLoadStats
-              .filter((s) => s.employee.funcao === 'filmmaker')
+              .filter((s) => isFilmmaker(s.employee))
               .map((stat) => {
                 const diff = stat.recordingsCount - avgFilmmakerCount;
                 const isUnbalanced = Math.abs(diff) >= 1.5;
@@ -921,7 +922,7 @@ export function RosterView() {
                         const selectedFilmmakerId =
                           assignedIds.find((id) => {
                             const emp = employees.find((e) => e.id === id);
-                            return emp?.funcao === 'filmmaker';
+                            return isFilmmaker(emp);
                           }) || '';
                         const selectedModeloId =
                           assignedIds.find((id) => {
@@ -1121,7 +1122,7 @@ export function RosterView() {
               <tbody className="divide-y divide-[var(--ui-border)] text-xs">
                 {teamLoadStats
                   .filter((st) => {
-                    if (roleFilter === 'filmmaker') return st.employee.funcao === 'filmmaker';
+                    if (roleFilter === 'filmmaker') return isFilmmaker(st.employee);
                     if (roleFilter === 'modelo')
                       return st.employee.funcao === 'modelo' || st.employee.funcao === 'criadora';
                     return true;

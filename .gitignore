@@ -46,6 +46,7 @@ next-env.d.ts
 # Identity mappings and encrypted recovery copies
 config/team-emails.csv
 backup-output/
+.dev-annotations/
 *.backup
 
 !.env.admin.example

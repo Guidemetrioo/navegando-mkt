@@ -261,7 +261,9 @@ export function findUserByLogin(loginInput: string): UserAccount | undefined {
 export function getDemoPassword(user: UserAccount): string { return IS_DEMO ? `${user.username}123` : ''; }
 export function verifyCredentials(loginInput: string,passwordInput: string): {valid:boolean;user?:UserAccount;error?:string} {
   if (!IS_DEMO) return {valid:false,error:'Use sua conta individual de produção.'};
-  const user=findUserByLogin(loginInput);
+  const normalized = loginInput.trim().toLowerCase();
+  const demoLogin = normalized.endsWith('@navegando.com') ? normalized.slice(0, -'@navegando.com'.length) : normalized;
+  const user=findUserByLogin(demoLogin);
   if (!user || passwordInput !== getDemoPassword(user)) return {valid:false,error:'Credenciais de acesso inválidas. Verifique seu login e senha.'};
   return {valid:true,user};
 }

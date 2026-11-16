@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
@@ -13,7 +14,9 @@ export function ProductionReportsView() {
     clients,
     employees,
     openEditEventModal,
-    openNewEventModal,
+    setCurrentView,
+    canManage,
+    loggedEmployeeId,
     toast,
   } = useAgenda();
 
@@ -23,6 +26,7 @@ export function ProductionReportsView() {
   const [selectedFilmmakerId, setSelectedFilmmakerId] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'preenchido' | 'pendente'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [newReportOpen, setNewReportOpen] = useState(false);
 
   // Filtrar apenas eventos relevantes para produção de vídeo (gravação / foto)
   const productionEvents = useMemo(() => {
@@ -91,6 +95,7 @@ export function ProductionReportsView() {
 
     return {
       totalSessoes,
+      restaurantesAtendidos: new Set(productionEvents.filter(e => e.relatorio_filmmaker?.preenchido).map(e => e.client_id)).size,
       relatoriosPreenchidos,
       taxaPreenchimento: totalSessoes > 0 ? Math.round((relatoriosPreenchidos / totalSessoes) * 100) : 0,
       totalTakes,
@@ -156,11 +161,11 @@ export function ProductionReportsView() {
           </button>
           <button
             type="button"
-            onClick={() => openNewEventModal()}
+            onClick={() => setNewReportOpen(true)}
             className="gradient-cta flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-foreground font-bold text-xs shadow-lg transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Gravação</span>
+            <span>Novo relatório</span>
           </button>
         </div>
       </div>
@@ -228,12 +233,12 @@ export function ProductionReportsView() {
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl sm:text-3xl font-black text-foreground font-heading">
-              {clients.length}
+              {stats.restaurantesAtendidos}
             </span>
-            <span className="text-xs text-zinc-500">parceiros ativos</span>
+            <span className="text-xs text-zinc-500">com relatórios registrados</span>
           </div>
           <span className="text-[10px] text-zinc-400 mt-3">
-            Mooca, Tatuapé, Pinheiros e Vila Madalena
+            Restaurantes cadastrados na base central
           </span>
         </div>
       </div>
@@ -307,7 +312,7 @@ export function ProductionReportsView() {
             >
               <option value="all">Todos os Filmmakers</option>
               {employees
-                .filter((e) => e.funcao === 'filmmaker')
+                .filter((e) => isFilmmaker(e))
                 .map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {emp.nome}
@@ -547,6 +552,25 @@ export function ProductionReportsView() {
           </div>
         )}
       </div>
+      {newReportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" onKeyDown={event => { if (event.key === 'Escape') setNewReportOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-label="Novo relatório" className="w-full max-w-lg max-h-[80dvh] overflow-y-auto rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] p-5 space-y-4">
+            <div className="flex justify-between items-center gap-3">
+              <h2 className="font-bold text-lg">Novo relatório</h2>
+              <button type="button" autoFocus onClick={() => setNewReportOpen(false)} className="min-h-11 px-3 text-sm">Fechar</button>
+            </div>
+            <p className="text-sm text-[var(--ui-muted)]">Selecione a gravação para preencher seu relatório.</p>
+            {productionEvents.filter(event => canManage || event.assigned_employee_ids?.includes(loggedEmployeeId)).map(event => (
+              <button key={event.id} type="button" onClick={() => { setNewReportOpen(false); openEditEventModal(event); }} className="w-full text-left rounded-xl border border-[var(--ui-border)] p-3 space-y-1 hover:bg-[var(--ui-raised)]">
+                <strong className="block text-sm">{event.client?.nome || clients.find(client => client.id === event.client_id)?.nome || 'Restaurante'}</strong>
+                <span className="block text-xs text-[var(--ui-muted)]">{event.data.split('-').reverse().join('/')} · {event.hora_inicio.slice(0, 5)} · {event.relatorio_filmmaker?.preenchido ? 'Relatório preenchido' : 'Relatório pendente'}</span>
+              </button>
+            ))}
+            {!productionEvents.some(event => canManage || event.assigned_employee_ids?.includes(loggedEmployeeId)) && <p className="rounded-xl bg-[var(--ui-raised)] p-4 text-sm">Nenhuma gravação disponível. Cadastre a gravação na Agenda Geral antes de preencher o relatório.</p>}
+            <button type="button" onClick={() => { setNewReportOpen(false); setCurrentView('mes'); }} className="gradient-cta rounded-xl px-4 py-3 text-sm font-bold">Abrir Agenda Geral</button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

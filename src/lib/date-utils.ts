@@ -151,3 +151,19 @@ export function todayInSaoPaulo(now=new Date()): string {
   const part=(type:string)=>parts.find(p=>p.type===type)!.value;
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
+
+/** Enumerates consecutive YYYY-MM-DD dates from startIso through endIso (inclusive). */
+export function enumerateIsoDates(startIso: string, endIso?: string, maxDays = 31): string[] {
+  if (!startIso || !/^\d{4}-\d{2}-\d{2}$/.test(startIso)) return [];
+  if (!endIso || !/^\d{4}-\d{2}-\d{2}$/.test(endIso) || endIso <= startIso) return [startIso];
+
+  const dates: string[] = [];
+  const cursor = parseDateIso(startIso);
+  for (let i = 0; i < maxDays; i++) {
+    const iso = formatDateIso(cursor);
+    dates.push(iso);
+    if (iso >= endIso) break;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}

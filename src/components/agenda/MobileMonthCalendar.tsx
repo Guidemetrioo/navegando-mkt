@@ -1,4 +1,5 @@
 'use client';
+import { isFilmmaker } from '@/lib/team-functions';
 import { useState } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { MONTH_NAMES, formatTimeClean, todayInSaoPaulo } from '@/lib/date-utils';
@@ -129,7 +130,7 @@ export function MobileMonthCalendar() {
           ) : (
             <div className="flex flex-wrap gap-1">
               {freeEmployees
-                .filter((e) => e.funcao === 'filmmaker' || e.funcao === 'modelo' || e.funcao === 'criadora')
+                .filter((e) => isFilmmaker(e) || e.funcao === 'modelo' || e.funcao === 'criadora')
                 .map((emp) => (
                   <EmployeeBadge key={emp.id} employee={emp} size="sm" />
                 ))}

@@ -290,7 +290,7 @@ export function LoginCheckInView() {
                   Acesse seu espaço de trabalho.
                 </h2>
                 <p className="text-xs text-zinc-400 max-w-md">
-                  Digite seu usuário e senha cadastrados. O ponto eletrônico será solicitado imediatamente para liberar seu painel diário de prioridades.
+                  Prévia de demonstração: use o usuário ou e-mail da equipe e a senha demonstrativa. Este ambiente usa dados locais e não autentica no Supabase.
                 </p>
               </div>
 
@@ -304,7 +304,7 @@ export function LoginCheckInView() {
               <form onSubmit={handleProceedToPonto} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    Usuário (Seu Nome)
+                    Usuário ou e-mail da equipe
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3 pointer-events-none" />
@@ -313,7 +313,7 @@ export function LoginCheckInView() {
                       placeholder="Ex: felipe, alexandre, vitinho, isa, carol..."
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"
+                      className="w-full pl-3 pr-3 py-2.5 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-xl text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)] transition-all"
                       required
                     />
                   </div>
@@ -344,7 +344,7 @@ export function LoginCheckInView() {
                      data-text-action="true"><span className="text-action-label">{showPassword ? 'Ocultar' : 'Mostrar'}</span></button>
                   </div>
                   <span className="text-[10px] text-zinc-400 mt-1 block">
-                    Regra oficial: <strong>nome123</strong> (Ex: <em>felipe123</em>, <em>vitinho123</em>, <em>isa123</em>)
+                    Senha da demonstração: <strong>nome123</strong> (Ex: <em>felipe123</em>, <em>vitinho123</em>, <em>isa123</em>)
                   </span>
                 </div>
 

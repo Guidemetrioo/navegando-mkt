@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IS_DEMO, HAS_CLOUD_CONFIG } from '@/lib/app-mode';
 import { createClient } from '@/lib/supabase/client';
-import { validateCloudSnapshot, diffWorkspace, emptyWorkspace, mergeWorkspace, workspaceFrom } from '@/lib/workspace';
+import { validateCloudSnapshot, cloudSnapshotChanged, diffWorkspace, emptyWorkspace, mergeWorkspace, workspaceFrom } from '@/lib/workspace';
 import { readPendingDrafts, archivePendingDrafts, makePendingDraft } from '@/lib/pending-drafts';
 import type { Change, CloudSnapshot, Member, Workspace } from '@/lib/workspace';
 
@@ -60,7 +60,7 @@ export function useCentralWorkspace(data: Workspace, apply: (data: Workspace, me
       const remote=workspaceFrom(snapshot);
       const sameUser=previous?.member.user_id===snapshot.member.user_id;
       if(previous && !sameUser) {saveDraft();pending.current=null;recovery.current=null;}
-      const remoteChanged=!previous || !sameUser || diffWorkspace(previous,remote).length>0;
+      const remoteChanged=cloudSnapshotChanged(previous,snapshot);
       base.current=snapshot;
       const next=sameUser ? mergeWorkspace(observed,latest.current,remote) : remote;
       const pendingChanges=diffWorkspace(snapshot,next).length;
