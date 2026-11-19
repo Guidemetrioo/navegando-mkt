@@ -26,9 +26,13 @@ export function EventModal() {
     employees,
     addClient,
     userRole,
+    canManage,
     addDespesaGravacao,
     currentView,
   } = useAgenda();
+
+  const loggedMember = employees.find((e) => e.id === loggedEmployeeId);
+  const isModelRole = loggedMember?.funcao === 'modelo' || loggedMember?.funcao === 'criadora';
 
   const isFromReportsView = currentView === 'relatorios';
 
@@ -587,7 +591,12 @@ export function EventModal() {
             ABA 1: AGENDA & ESCALA DA GRAVAÇÃO
             ========================================== */}
         {activeTab === 'agenda' && (
-          <div className="flex flex-col gap-3.5">
+          <fieldset disabled={!canManage} className="flex flex-col gap-3.5 min-w-0">
+          {!canManage && (
+            <p className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2">
+              Modo consulta: apenas gestores podem alterar informações da agenda. Para editar o briefing de edição, acesse a aba <strong>Briefing</strong>.
+            </p>
+          )}
           {/* Cliente com Autocomplete */}
           <div className="relative">
             <label className="block text-xs font-semibold text-zinc-300 mb-1">
@@ -607,14 +616,14 @@ export function EventModal() {
                     setClientId('');
                   }
                 }}
-                onFocus={() => setIsClientDropdownOpen(true)}
+                onFocus={() => { if (canManage) setIsClientDropdownOpen(true); }}
                 className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
               />
               <Search className="w-4 h-4 text-zinc-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
 
             {/* Dropdown de Autocomplete */}
-            {isClientDropdownOpen && (
+            {canManage && isClientDropdownOpen && (
               <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl shadow-xl divide-y divide-[var(--ui-border)]">
                 {filteredClients.map((c) => (
                   <button
@@ -862,7 +871,8 @@ export function EventModal() {
             </div>
           </div>
 
-          {/* Seleção de Equipe (Filmmakers & Meninas dos Vídeos) */}
+          {/* Seleção de Equipe (oculta para modelos/criadoras) */}
+          {!isModelRole && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-zinc-300">
@@ -891,7 +901,7 @@ export function EventModal() {
                           employee={emp}
                           size="sm"
                           isSelected={isSelected}
-                          onClick={() => toggleEmployee(emp.id)}
+                          onClick={() => { if (canManage) toggleEmployee(emp.id); }}
                         />
                       );
                     })}
@@ -918,7 +928,7 @@ export function EventModal() {
                           employee={emp}
                           size="sm"
                           isSelected={isSelected}
-                          onClick={() => toggleEmployee(emp.id)}
+                          onClick={() => { if (canManage) toggleEmployee(emp.id); }}
                         />
                       );
                     })}
@@ -938,7 +948,7 @@ export function EventModal() {
                           employee={emp}
                           size="sm"
                           isSelected={isSelected}
-                          onClick={() => toggleEmployee(emp.id)}
+                          onClick={() => { if (canManage) toggleEmployee(emp.id); }}
                         />
                       );
                     })}
@@ -946,6 +956,7 @@ export function EventModal() {
               )}
             </div>
           </div>
+          )}
 
           {/* Status do Evento & Confirmação WhatsApp */}
           <div className="grid grid-cols-1 gap-3 p-3 rounded-2xl bg-[var(--ui-raised)] border border-[var(--ui-border)]">
@@ -981,7 +992,7 @@ export function EventModal() {
               className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--ui-accent)]"
             />
           </div>
-        </div>
+        </fieldset>
         )}
 
         {/* ==========================================
@@ -1250,7 +1261,7 @@ export function EventModal() {
                 <Check className="w-4 h-4" />
                 <span>Concluir Despesas</span>
               </button>
-            ) : (
+            ) : canManage ? (
               <div className="flex items-center gap-2">
                 {!isEditing && (
                   <button
@@ -1271,7 +1282,7 @@ export function EventModal() {
                   {isEditing ? 'Salvar alterações' : 'Criar gravação'}
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

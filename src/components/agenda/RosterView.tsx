@@ -43,6 +43,7 @@ export function RosterView() {
     clients,
     bancoHorasLancamentos,
     canManage,
+    loggedEmployeeId,
     autoGenerateMonthlyRoster,
     updateEventTeamAssignment,
     openEditEventModal,
@@ -114,7 +115,9 @@ export function RosterView() {
 
   // Resumo mensal de carga por funcionário (gravações no mês + horas semanais)
   const teamLoadStats = useMemo(() => {
-    const allTargets = [...filmmakers, ...modelos];
+    const allTargets = canManage
+      ? [...filmmakers, ...modelos]
+      : [...filmmakers, ...modelos].filter((emp) => emp.id === loggedEmployeeId);
     return allTargets.map((emp) => {
       const empMonthEvents = monthEvents.filter((ev) =>
         (ev.assigned_employee_ids || []).includes(emp.id)

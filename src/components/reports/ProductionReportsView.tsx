@@ -35,12 +35,16 @@ export function ProductionReportsView() {
   const [viewStyle, setViewStyle] = useState<'cards' | 'agenda'>('cards');
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
 
-  // Filtrar apenas eventos relevantes para produção de vídeo (gravação / foto)
+  // Filtrar apenas eventos relevantes para produção de vídeo (restrito ao próprio filmmaker se não for gestor)
   const productionEvents = useMemo(() => {
     return events
-      .filter((e) => e.status !== 'cancelado')
+      .filter(
+        (e) =>
+          e.status !== 'cancelado' &&
+          (canManage || (e.assigned_employee_ids || []).includes(loggedEmployeeId))
+      )
       .sort((a, b) => b.data.localeCompare(a.data) || b.hora_inicio.localeCompare(a.hora_inicio));
-  }, [events]);
+  }, [events, canManage, loggedEmployeeId]);
 
   const filteredEventsWithoutDate = useMemo(() => {
     return productionEvents.filter((ev) => {

@@ -78,7 +78,12 @@ export function isVictorCordoba(employee?: Employee | null, loggedId?: string | 
   if (!employee) return false;
   const nome = (employee.nome || '').toLowerCase();
   const user = (employee.username || '').toLowerCase();
-  return employee.id === 'usr-vitinho' || user === 'vitinho' || nome.includes('victor cordoba');
+  return (
+    employee.id === 'usr-vitinho' ||
+    user === 'vitinho' ||
+    nome.includes('vitor cordoba') ||
+    nome.includes('victor cordoba')
+  );
 }
 
 export function isEventBriefingApproved(ev: Partial<EventItem>, mode: BriefingCategoryMode): boolean {
@@ -721,7 +726,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     );
   };
 
-  // Função exclusiva para Victor Cordoba: Aprovar / Validar Briefing (muda a borda do card para azul)
+  // Função exclusiva para Vitor Cordoba: Aprovar / Validar Briefing (muda a borda do card para azul)
   const handleToggleApproveEvent = (ev: EventItem, targetMode: BriefingCategoryMode = briefingMode) => {
     if (!canApproveBriefing) return;
     const currentlyApproved = isEventBriefingApproved(ev, targetMode);
@@ -736,7 +741,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     const updatedDrafts = baseDrafts.map((v) => ({
       ...v,
       aprovado: nextApproved,
-      aprovadoPor: nextApproved ? 'Victor Cordoba' : undefined,
+      aprovadoPor: nextApproved ? 'Vitor Cordoba' : undefined,
       aprovadoEm: nextApproved ? nowIso : undefined,
     }));
 
@@ -767,7 +772,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             briefing_videos: mappedVideos,
             briefing_gravacao: raw || ev.briefing_gravacao || null,
             briefing_aprovado: nextApproved,
-            briefing_aprovado_por: nextApproved ? 'Victor Cordoba' : null,
+            briefing_aprovado_por: nextApproved ? 'Vitor Cordoba' : null,
             briefing_aprovado_em: nextApproved ? nowIso : null,
           };
 
@@ -780,18 +785,18 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       const clientName = (ev.client || clients.find((c) => c.id === ev.client_id))?.nome || 'Restaurante';
       toast(
         nextApproved
-          ? `Briefing de ${clientName} APROVADO e VALIDADO por Victor Cordoba!`
+          ? `Briefing de ${clientName} APROVADO e VALIDADO por Vitor Cordoba!`
           : `Aprovação removida do briefing de ${clientName}.`
       );
       setStatusMsg(
         nextApproved
-          ? 'Briefing validado por Victor Cordoba! Card destacado com borda azul para toda a equipe.'
+          ? 'Briefing validado por Vitor Cordoba! Card destacado com borda azul para toda a equipe.'
           : 'Validação removida.'
       );
     }
   };
 
-  // Função exclusiva para Victor Cordoba: Aprovar um card de vídeo individualmente
+  // Função exclusiva para Vitor Cordoba: Aprovar um card de vídeo individualmente
   const handleToggleApproveVideoCard = (videoId: string) => {
     if (!canApproveBriefing || !activeEvent) return;
     const nowIso = new Date().toISOString();
@@ -804,7 +809,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
         return {
           ...v,
           aprovado: currentCardApproved,
-          aprovadoPor: currentCardApproved ? v.aprovadoPor || 'Victor Cordoba' : undefined,
+          aprovadoPor: currentCardApproved ? v.aprovadoPor || 'Vitor Cordoba' : undefined,
           aprovadoEm: currentCardApproved ? v.aprovadoEm || nowIso : undefined,
         };
       }
@@ -812,7 +817,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       return {
         ...v,
         aprovado: nextCardApproved,
-        aprovadoPor: nextCardApproved ? 'Victor Cordoba' : undefined,
+        aprovadoPor: nextCardApproved ? 'Vitor Cordoba' : undefined,
         aprovadoEm: nextCardApproved ? nowIso : undefined,
       };
     });
@@ -853,7 +858,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             briefing_videos: mappedVideos,
             briefing_gravacao: raw || activeEvent.briefing_gravacao || null,
             briefing_aprovado: allCardsApproved,
-            briefing_aprovado_por: allCardsApproved ? 'Victor Cordoba' : null,
+            briefing_aprovado_por: allCardsApproved ? 'Vitor Cordoba' : null,
             briefing_aprovado_em: allCardsApproved ? nowIso : null,
           };
 
@@ -861,7 +866,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     const targetCard = updatedDrafts.find((v) => v.id === videoId);
     toast(
       targetCard?.aprovado
-        ? 'Card do vídeo aprovado por Victor Cordoba (borda azul validada)!'
+        ? 'Card do vídeo aprovado por Vitor Cordoba (borda azul validada)!'
         : 'Aprovação do card removida.'
     );
   };
@@ -1607,7 +1612,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                         {isApproved && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50 shadow-sm">
                             <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>Validado • Victor Cordoba</span>
+                            <span>Validado • Vitor Cordoba</span>
                           </span>
                         )}
                         {done ? (
@@ -1714,7 +1719,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
-                      {/* Botão exclusivo para Victor Cordoba: Aprovar Briefing */}
+                      {/* Botão exclusivo para Vitor Cordoba: Aprovar Briefing */}
                       {canApproveBriefing && (
                         <button
                           type="button"
@@ -1727,7 +1732,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                               ? 'bg-[#38bdf8] text-black shadow-md shadow-[#38bdf8]/25 hover:bg-sky-300'
                               : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
                           }`}
-                          title="Função exclusiva de Victor Cordoba: Aprovar e validar este briefing (muda a borda para azul)"
+                          title="Função exclusiva de Vitor Cordoba: Aprovar e validar este briefing (muda a borda para azul)"
                         >
                           <ShieldCheck className="w-3.5 h-3.5" />
                           <span>{isApproved ? 'Aprovado ✓' : 'Aprovar'}</span>
@@ -1829,7 +1834,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               {isCurrentlyApproved && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50">
                   <ShieldCheck className="w-3 h-3" />
-                  Validado • Victor Cordoba
+                  Validado • Vitor Cordoba
                 </span>
               )}
               {isCurrentlyDone ? (
@@ -1866,7 +1871,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                   ? 'bg-[#38bdf8] text-black shadow-lg shadow-[#38bdf8]/30 hover:bg-sky-300'
                   : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/50'
               }`}
-              title="Exclusivo Victor Cordoba: Aprovar e validar todos os cards deste briefing (borda azul)"
+              title="Exclusivo Vitor Cordoba: Aprovar e validar todos os cards deste briefing (borda azul)"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>{isCurrentlyApproved ? 'Briefing Aprovado ✓' : 'Aprovar Briefing'}</span>
@@ -2146,7 +2151,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Botão exclusivo para Victor Cordoba: Aprovar este card de vídeo */}
+                  {/* Botão exclusivo para Vitor Cordoba: Aprovar este card de vídeo */}
                   {canApproveBriefing && (
                     <button
                       type="button"
@@ -2156,7 +2161,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                           ? 'bg-[#38bdf8] text-black shadow-sm hover:bg-sky-300'
                           : 'bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40'
                       }`}
-                      title="Exclusivo Victor Cordoba: Aprovar e validar este card de vídeo (borda azul)"
+                      title="Exclusivo Vitor Cordoba: Aprovar e validar este card de vídeo (borda azul)"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>{isCardApproved ? 'Aprovado ✓' : 'Aprovar'}</span>

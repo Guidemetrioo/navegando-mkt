@@ -53,6 +53,8 @@ test('GET /api/workspace scopes filmmakers and models to their own employee and 
   const r=await workspace.GET();
   assert.equal(r.status,200);
   const body=await r.json();
-  assert.deepEqual(body.records.filter(x=>x.kind==='employees').map(x=>x.id),['emp-model']);
-  assert.deepEqual(body.records.filter(x=>x.kind==='events').map(x=>x.id),['ev-own']);
+  const evOwn=body.records.find(x=>x.kind==='events'&&x.id==='ev-own');
+  const evOther=body.records.find(x=>x.kind==='events'&&x.id==='ev-other');
+  assert.deepEqual(evOwn.data.assigned_employee_ids,['emp-model','emp-other']);
+  assert.deepEqual(evOther.data.assigned_employee_ids,[]);
 });

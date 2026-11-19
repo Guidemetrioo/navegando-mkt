@@ -70,16 +70,16 @@ test('filmmakers, models and creators only receive their own records without cow
  assert.equal(isEventAssignedToMember(records[6].data,'emp-model'),false);
 
  const filmmakerSnap=scopeSnapshotForMember({member:{user_id:'u1',employee_id:'emp-film',role:'filmmaker'},records});
- assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='employees').map(r=>r.id),['emp-film']);
- assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine']);
+ assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine','ev-edit-model','ev-third-party']);
  assert.deepEqual(filmmakerSnap.records.filter(r=>r.kind==='pontos').map(r=>r.id),['pt-mine']);
  assert.equal(filmmakerSnap.records.some(r=>r.id==='bh-other'||r.id==='dx-other'),false);
  assert.doesNotThrow(()=>validateCloudSnapshot(filmmakerSnap));
  assert.deepEqual(diffWorkspace(filmmakerSnap,workspaceFrom(filmmakerSnap)),[]);
 
  const modelSnap=scopeSnapshotForMember({member:{user_id:'u2',employee_id:'emp-model',role:'modelo'},records});
- assert.deepEqual(modelSnap.records.filter(r=>r.kind==='employees').map(r=>r.id),['emp-model']);
- assert.deepEqual(modelSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine','ev-edit-model']);
+ assert.deepEqual(modelSnap.records.filter(r=>r.kind==='events').map(r=>r.id),['ev-mine','ev-edit-model','ev-third-party']);
+ assert.deepEqual(modelSnap.records.find(r=>r.id==='ev-mine').data.assigned_employee_ids,['emp-film','emp-model']);
+ assert.deepEqual(modelSnap.records.find(r=>r.id==='ev-third-party').data.assigned_employee_ids,[]);
  assert.equal('relatorio_filmmaker' in modelSnap.records.find(r=>r.id==='ev-mine').data,false);
  assert.deepEqual(diffWorkspace(modelSnap,workspaceFrom(modelSnap)),[]);
 

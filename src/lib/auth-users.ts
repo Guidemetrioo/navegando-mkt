@@ -17,7 +17,7 @@ export interface UserAccount {
  * Banco Central de Usuários, Credenciais e Hierarquia da Agência Navegando MKT
  * Estruturado estritamente conforme a hierarquia solicitada:
  * - Donos: Felipe Assis e Gabriela Lorente (Acesso Total)
- * - Gerentes: Alexandre, Victor Cordoba (Vitinho), Matheus e Larissa (Acesso Total + Ponto + Métricas)
+ * - Gerentes: Alexandre, Vitor Cordoba (Vitinho), Matheus e Larissa (Acesso Total + Ponto + Métricas)
  * - Filmmakers: Victor, Matheus Gimenez, Henry (Agenda + DAM + Relatórios + Métricas Insta)
  * - Modelos: Isa, Gi, Mi, Ju (Apenas Agenda + Ponto)
  * - Interno: Carol, Bruna, Lucas Verraz, Evelin, Julia Int, Augusto (Regime CLT 2026/2027 - 3 batidas)
@@ -62,9 +62,9 @@ export const USERS_DATABASE: UserAccount[] = [
   },
   {
     employeeId: 'usr-vitinho',
-    nome: 'Victor Cordoba',
+    nome: 'Vitor Cordoba',
     username: 'vitinho',
-    aliases: ['victorcordoba', 'vitinho', 'cordoba'],
+    aliases: ['vitorcordoba', 'victorcordoba', 'vitinho', 'cordoba'],
     funcao: 'gerente',
     regime: 'externo',
     cargo: 'Gerente de Produção & Filmmaker Líder',
@@ -124,6 +124,16 @@ export const USERS_DATABASE: UserAccount[] = [
     regime: 'externo',
     cargo: 'Filmmaker Gastronômico',
     cor: 238,
+  },
+  {
+    employeeId: 'usr-gustavo-correia',
+    nome: 'Gustavo Correia',
+    username: 'gustavo',
+    aliases: ['gustavocorreia', 'gustavo'],
+    funcao: 'filmmaker',
+    regime: 'externo',
+    cargo: 'Filmmaker Gastronômico',
+    cor: 195,
   },
 
   // ==========================================

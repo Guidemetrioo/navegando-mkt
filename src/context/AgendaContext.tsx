@@ -340,6 +340,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const memberRole=IS_DEMO ? employees.find(e=>e.id===loggedEmployeeId)?.funcao : cloudMemberRole;
   const canManage=isManager(memberRole);
   const restrictToSelf=isSelfOnlyRole(memberRole);
+  const isModelMember=memberRole === 'modelo' || memberRole === 'criadora';
   const userRole:UserRole=canManage ? 'admin' : 'funcionario';
   const writable=IS_DEMO || !['conflict','recovery','loading','signed-out','setup'].includes(cloud.status);
   const allowed=(condition:boolean)=>{
@@ -889,21 +890,25 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     [selectedEmployeeIds]
   );
 
-  const visibleEmployees = useMemo(
-    () => (restrictToSelf ? employees.filter((e) => e.id === loggedEmployeeId) : employees),
-    [restrictToSelf, employees, loggedEmployeeId]
-  );
-
-  // Eventos enriquecidos e filtrados (restringidos ao próprio funcionário para filmmaker/modelo/criadora)
+  // Eventos enriquecidos e filtrados:
+  // - Todos os funcionários enxergam todas as gravações na agenda;
+  // - Modelos/criadoras não enxergam quem está escalado nas gravações em que não participam.
   const enrichedEvents = useMemo(() => {
-    const sourceEvents = restrictToSelf
-      ? events.filter((ev) =>
-          isEventAssignedToMember(ev as unknown as Record<string, unknown>, loggedEmployeeId)
-        )
-      : events;
-    return sourceEvents.map((ev) => {
+    return events.map((ev) => {
       const client = clients.find((c) => c.id === ev.client_id);
-      const assigned = visibleEmployees.filter((emp) =>
+      const isAssignedToSelf = isEventAssignedToMember(
+        ev as unknown as Record<string, unknown>,
+        loggedEmployeeId
+      );
+      if (isModelMember && !isAssignedToSelf) {
+        return {
+          ...ev,
+          assigned_employee_ids: [],
+          client,
+          employees: [],
+        };
+      }
+      const assigned = employees.filter((emp) =>
         (ev.assigned_employee_ids || []).includes(emp.id)
       );
       return {
@@ -912,7 +917,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         employees: assigned,
       };
     });
-  }, [restrictToSelf, events, clients, visibleEmployees, loggedEmployeeId]);
+  }, [events, clients, employees, isModelMember, loggedEmployeeId]);
 
   const filteredEvents = useMemo(() => {
     if (restrictToSelf || selectedEmployeeIds.length === 0) return enrichedEvents;
@@ -1683,10 +1688,10 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
       ...d,
       client: clients.find((c) => c.id === d.client_id),
       event: events.find((e) => e.id === d.event_id),
-      filmmaker: visibleEmployees.find((emp) => emp.id === d.filmmaker_id),
-      criadora: visibleEmployees.find((emp) => emp.id === d.criadora_id),
+      filmmaker: employees.find((emp) => emp.id === d.filmmaker_id),
+      criadora: employees.find((emp) => emp.id === d.criadora_id),
     }));
-  }, [deliverables, clients, events, visibleEmployees]);
+  }, [deliverables, clients, events, employees]);
 
   const guarded = <A extends unknown[], R,>(condition: boolean, fn: (...args: A) => R) => (...args: A): R => {
     if (!allowed(condition)) throw new Error('Operação não permitida para este perfil ou estado de sincronização.');
@@ -1695,7 +1700,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   return (
     <AgendaContext.Provider
       value={{
-        employees: visibleEmployees,
+        employees,
         clients,
         events: enrichedEvents,
         filteredEvents,
@@ -1780,10 +1785,31 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         closeEventModal,
         openDayDetailModal,
         closeDayDetailModal,
-        saveEvent: (eventData, allowConflictOverride) => guarded(
-          canManage || Boolean(eventData.id && events.some(e => e.id === eventData.id) && canUserAccessView(memberRole, 'briefing')),
-          saveEvent
-        )(eventData, allowConflictOverride),
+        saveEvent: (eventData, allowConflictOverride) => {
+          if (canManage) {
+            return guarded(true, saveEvent)(eventData, allowConflictOverride);
+          }
+          const existing = eventData.id ? events.find((e) => e.id === eventData.id) : undefined;
+          const canEditBriefing = Boolean(
+            existing &&
+              canUserAccessView(memberRole, 'briefing') &&
+              (!isModelMember ||
+                isEventAssignedToMember(existing as unknown as Record<string, unknown>, loggedEmployeeId))
+          );
+          if (!canEditBriefing || !existing) {
+            return guarded(false, saveEvent)(eventData, allowConflictOverride);
+          }
+          // Não-gestores (como modelos) não alteram campos da agenda, apenas briefing.
+          const safePatch: EventItem = {
+            ...existing,
+            briefing_gravacao: isModelMember ? existing.briefing_gravacao : eventData.briefing_gravacao,
+            briefing_videos: isModelMember ? existing.briefing_videos : eventData.briefing_videos,
+            briefing_edicao: eventData.briefing_edicao,
+            briefing_edicao_videos: eventData.briefing_edicao_videos,
+            modelo_editora_id: eventData.modelo_editora_id ?? existing.modelo_editora_id,
+          };
+          return guarded(true, saveEvent)(safePatch, true);
+        },
         deleteEvent: guarded(canManage, deleteEvent),
         saveEventReport: (id, report) => guarded(canManage || memberRole === 'filmmaker' && Boolean(events.find(e => e.id === id)?.assigned_employee_ids?.includes(loggedEmployeeId)), saveEventReport)(id, report),
         autoGenerateMonthlyRoster: guarded(canManage, autoGenerateMonthlyRoster),

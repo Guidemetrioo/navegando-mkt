@@ -163,7 +163,7 @@ export function MyAgendaView() {
                         {/* Equipe escalada neste job */}
                         <div className="flex items-center justify-between pt-2 border-t border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] text-zinc-400 mr-0.5">Dupla no restaurante:</span>
+                            <span className="text-[11px] text-zinc-400 mr-0.5">Integrantes da gravação:</span>
                             {(ev.employees || []).map((emp) => (
                               <EmployeeBadge key={emp.id} employee={emp} size="sm" showRole />
                             ))}

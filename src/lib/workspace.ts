@@ -41,7 +41,10 @@ export function isEventAssignedToMember(
 
 /**
  * Restringe o snapshot da base central quando o membro é filmmaker, modelo ou criadora:
- * remove cadastros de terceiros e compromissos/registros que não pertencem ao próprio membro.
+ * - Todos os funcionários visualizam todos os compromissos da agenda;
+ * - Modelos e criadoras não veem quem está escalado nos compromissos em que não participam,
+ *   mas veem todos os integrantes das gravações em que estão escaladas;
+ * - Pontos, banco de horas e despesas continuam restritos ao próprio membro.
  */
 export function scopeSnapshotForMember(snapshot: CloudSnapshot): CloudSnapshot {
   if (!isSelfOnlyRole(snapshot.member.role)) return snapshot;
@@ -49,17 +52,15 @@ export function scopeSnapshotForMember(snapshot: CloudSnapshot): CloudSnapshot {
   const isModelRole = snapshot.member.role === 'modelo' || snapshot.member.role === 'criadora';
 
   const records = snapshot.records.flatMap((record): CloudRecord[] => {
-    if (record.kind === 'employees') {
-      return record.id === selfId ? [record] : [];
-    }
     if (record.kind === 'events') {
-      if (!isEventAssignedToMember(record.data, selfId)) return [];
-      if (isModelRole && 'relatorio_filmmaker' in record.data) {
-        const sanitized = { ...record.data };
-        delete sanitized.relatorio_filmmaker;
-        return [{ ...record, data: sanitized }];
+      if (!isModelRole) return [record];
+      const sanitized = { ...record.data };
+      delete sanitized.relatorio_filmmaker;
+      if (!isEventAssignedToMember(record.data, selfId)) {
+        sanitized.assigned_employee_ids = [];
+        delete sanitized.modelo_editora_id;
       }
-      return [record];
+      return [{ ...record, data: sanitized }];
     }
     if (record.kind === 'pontos' || record.kind === 'banco_horas' || record.kind === 'despesas') {
       const ownerId = record.data.employee_id;

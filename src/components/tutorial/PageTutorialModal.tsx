@@ -108,7 +108,7 @@ export const PAGE_TUTORIALS: Record<AgendaView, PageTutorialData> = {
     exampleFields: [
       {
         label: 'Colaborador Logado',
-        value: 'Victor Cordoba — Gerente de Produção & Filmmaker Líder',
+        value: 'Vitor Cordoba — Gerente de Produção & Filmmaker Líder',
         highlight: true,
       },
       {
