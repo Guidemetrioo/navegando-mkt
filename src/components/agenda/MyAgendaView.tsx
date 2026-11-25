@@ -3,18 +3,19 @@ import { isFilmmaker } from '@/lib/team-functions';
 
 import React from 'react';
 import { useAgenda } from '@/context/AgendaContext';
-import { formatTimeClean, WEEKDAYS_SHORT, MONTH_NAMES_SHORT, parseDateIso } from '@/lib/date-utils';
+import { formatTimeClean, WEEKDAYS_SHORT, MONTH_NAMES_SHORT, parseDateIso, todayInSaoPaulo } from '@/lib/date-utils';
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/types/database';
 import { EmployeeBadge } from './EmployeeBadge';
 import { MapPin, Calendar, Clock, Navigation, CheckCircle2, Camera } from 'lucide-react';
 
 export function MyAgendaView() {
-  const { events, loggedEmployeeId, employees, openEditEventModal, openPontoModal, userRole } = useAgenda();
+  const { filteredEvents, loggedEmployeeId, employees, openEditEventModal, openPontoModal, userRole } = useAgenda();
+  const todayIso = todayInSaoPaulo();
 
   const currentEmployee = employees.find((e) => e.id === loggedEmployeeId);
 
   // Filtrar apenas eventos em que o funcionário está escalado
-  const myEvents = events
+  const myEvents = filteredEvents
     .filter((ev) => (ev.assigned_employee_ids || []).includes(loggedEmployeeId))
     .sort((a, b) => {
       if (a.data !== b.data) return a.data.localeCompare(b.data);
@@ -96,15 +97,31 @@ export function MyAgendaView() {
             const dayNum = dateObj.getDate();
             const monthStr = MONTH_NAMES_SHORT[dateObj.getMonth()];
             const dayEvents = eventsByDay[dateStr];
+            const isToday = dateStr === todayIso;
+            const isPast = dateStr < todayIso;
 
             return (
               <div key={dateStr} className="flex flex-col gap-2.5">
                 {/* Divisor do Dia */}
                 <div className="flex items-center gap-2 px-1">
-                  <span className="text-xs font-bold text-[var(--ui-accent)] uppercase tracking-wider">
+                  <span
+                    className={`text-xs font-bold uppercase tracking-wider ${
+                      isToday ? 'text-[var(--ui-accent)]' : isPast ? 'text-zinc-500' : 'text-[var(--ui-accent)]'
+                    }`}
+                  >
                     {dayName}, {dayNum} de {monthStr}
                   </span>
-                  <div className="h-px bg-[var(--ui-border)] dark:bg-[var(--ui-border)] bg-slate-200 flex-1" />
+                  {isToday && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[var(--ui-accent)] text-white">
+                      Hoje
+                    </span>
+                  )}
+                  {isPast && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-zinc-800 text-zinc-500">
+                      Passou
+                    </span>
+                  )}
+                  <div className="h-px bg-[var(--ui-border)] flex-1" />
                 </div>
 
                 {/* Cartões do Dia */}

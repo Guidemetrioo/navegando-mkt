@@ -71,11 +71,13 @@ export function MobileMonthCalendar() {
           if (!day) return <div className="mobile-calendar-blank" key={`blank-${index}`} aria-hidden="true" />;
           const iso = `${prefix}-${String(day).padStart(2, '0')}`,
             list = events.filter((event) => event.data === iso);
+          const isPastDay = iso < today;
           return (
             <button
               key={iso}
               className="mobile-calendar-day"
               data-today={iso === today}
+              data-past={isPastDay}
               data-selected={iso === chosen}
               data-weekend={index % 7 === 0 || index % 7 === 6}
               aria-label={`${day} de ${MONTH_NAMES[month]}, ${list.length} compromissos`}
@@ -153,6 +155,8 @@ export function MobileMonthCalendar() {
                 .filter((e): e is NonNullable<typeof e> => Boolean(e));
             const hasBriefing = Boolean(event.briefing_gravacao?.trim() || event.briefing_videos?.length);
             const isBriefingApproved = Boolean(event.briefing_aprovado);
+            const isPastEvent = event.data < today;
+            const isTodayEvent = event.data === today;
 
             return (
               <div
@@ -166,19 +170,32 @@ export function MobileMonthCalendar() {
                     openEditEventModal(event);
                   }
                 }}
-                className={`p-3.5 rounded-2xl bg-[var(--ui-surface)] border flex flex-col gap-2 cursor-pointer transition-all ${
-                  isBriefingApproved
-                    ? 'border-2 border-[#38bdf8] ring-1 ring-[#38bdf8]/30'
-                    : 'border-[var(--ui-border)] hover:border-[var(--ui-accent)]/50'
+                className={`p-3.5 rounded-2xl border flex flex-col gap-2 cursor-pointer transition-all ${
+                  isPastEvent
+                    ? 'bg-zinc-900/50 border-zinc-700/50 opacity-75'
+                    : isBriefingApproved
+                    ? 'bg-[var(--ui-surface)] border-2 border-[#38bdf8] ring-1 ring-[#38bdf8]/30'
+                    : isTodayEvent
+                    ? 'bg-[var(--ui-surface)] border-[var(--ui-accent)]/70 ring-1 ring-[var(--ui-accent)]/30 shadow-md shadow-[var(--ui-accent)]/10'
+                    : 'bg-[var(--ui-surface)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]/50'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${colorInfo.bg} ${colorInfo.text}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${colorInfo.dot}`} />
-                    {typeLabel}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        isPastEvent ? 'bg-zinc-800 text-zinc-400' : `${colorInfo.bg} ${colorInfo.text}`
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isPastEvent ? 'bg-zinc-500' : colorInfo.dot}`} />
+                      {typeLabel}
+                    </span>
+                    {isPastEvent && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-zinc-800 text-zinc-500">
+                        Passou
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1 text-xs font-semibold text-zinc-300">
                     <Clock className="w-3.5 h-3.5 text-[var(--ui-accent)]" />

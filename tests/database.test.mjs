@@ -18,8 +18,8 @@ test('database migrations, authorization and atomic commits',async(t)=>{
     grant usage on schema storage to authenticated;grant select,insert on storage.objects to authenticated;`);
   const dir=new URL('../supabase/migrations/',import.meta.url);
   for(const file of (await readdir(dir)).filter(f=>f.endsWith('.sql')).sort()) await db.exec(await readFile(new URL(file,dir),'utf8'));
-  const actors={owner:'00000000-0000-4000-8000-000000000001',manager:'00000000-0000-4000-8000-000000000002',film:'00000000-0000-4000-8000-000000000003',model:'00000000-0000-4000-8000-000000000004',internal:'00000000-0000-4000-8000-000000000005'};
-  const people={owner:'usr-felipe',manager:'usr-alexandre',film:'usr-victor',model:'usr-isa',internal:'usr-carol'};
+  const actors={owner:'00000000-0000-4000-8000-000000000001',manager:'00000000-0000-4000-8000-000000000002',film:'00000000-0000-4000-8000-000000000003',model:'00000000-0000-4000-8000-000000000004',internal:'00000000-0000-4000-8000-000000000005',model2:'00000000-0000-4000-8000-000000000006'};
+  const people={owner:'usr-felipe',manager:'usr-alexandre',film:'usr-victor',model:'usr-isa',internal:'usr-carol',model2:'usr-gi'};
   for(const [key,id] of Object.entries(actors)) {
     await db.query('insert into auth.users(id) values($1)',[id]);
     await db.query('update public.agency_members set user_id=$1 where employee_id=$2',[id,people[key]]);
@@ -40,6 +40,20 @@ test('database migrations, authorization and atomic commits',async(t)=>{
   await t.test('assigned filmmaker may submit only the recording report',async()=>{await as('film');const e=(await snapshot()).records.find(r=>r.id==='e-real');const s=await commit([change('events',e.id,{...e.data,relatorio_filmmaker:{preenchido:true,preenchido_por_id:'usr-felipe',takes_gravados_qtd:5}},e.revision)]);const r=s.records.find(r=>r.id===e.id);assert.equal(r.data.relatorio_filmmaker.preenchido_por_id,'usr-victor');});
   await t.test('filmmaker cannot change event schedule through a report',async()=>{await as('film');const e=(await snapshot()).records.find(r=>r.id==='e-real');await assert.rejects(commit([change('events',e.id,{...e.data,hora_inicio:'10:00'},e.revision)]),/permissão/);});
   await t.test('model cannot read technical recording reports',async()=>{await as('model');assert.equal((await snapshot()).records.find(r=>r.id==='e-real').data.relatorio_filmmaker,undefined);});
+  await t.test('every model scheduled on a multi-model shoot can edit briefing_edicao while schedule fields stay locked',async()=>{
+    await as('owner');
+    const multi=change('events','e-multi-model',{client_id:'c-real',tipo:'gravacao',status:'agendado',data:'2026-11-08',hora_inicio:'14:00',hora_fim:'17:00',assigned_employee_ids:['usr-victor','usr-ju','usr-gi'],modelo_editora_id:'usr-ju'});
+    await commit([multi]);
+    await as('model2');
+    const giSnap=(await snapshot()).records.find(r=>r.id==='e-multi-model');
+    const saved=await commit([change('events',giSnap.id,{...giSnap.data,briefing_edicao:'1 - Cortes dinamicos da Gi',briefing_edicao_videos:[{titulo:'Reel 1',formato:'Automático',roteiro:'Cortes dinamicos da Gi',refRotulo:'Referência',refUrl:''}]},giSnap.revision)]);
+    assert.equal(saved.records.find(r=>r.id==='e-multi-model').data.briefing_edicao,'1 - Cortes dinamicos da Gi');
+    const updatedSnap=(await snapshot()).records.find(r=>r.id==='e-multi-model');
+    await assert.rejects(commit([change('events',updatedSnap.id,{...updatedSnap.data,hora_inicio:'15:00'},updatedSnap.revision)]),/permissão/);
+    await as('model');
+    const unscheduled=(await snapshot()).records.find(r=>r.id==='e-multi-model');
+    await assert.rejects(commit([change('events',unscheduled.id,{...unscheduled.data,briefing_edicao:'Invasao'},unscheduled.revision)]),/permissão/);
+  });
   await t.test('database rejects overlapping employee assignments',async()=>{await as('owner');await assert.rejects(commit([change('events','overlap',{...event.data,hora_inicio:'11:00',hora_fim:'13:00'})]),/Conflito/);});
   await t.test('stale version cannot overwrite another person',async()=>{await as('owner');await assert.rejects(commit([change('clients','c-real',{...client.data,nome:'Sobrescrito'},0)]),/outra pessoa/);});
   await t.test('whole batch rolls back if a later mutation fails',async()=>{await as('owner');await assert.rejects(commit([change('clients','rollback',{nome:'Temporário'}),change('events','invalid',{...event.data,client_id:'missing',assigned_employee_ids:[]})]));assert(!(await snapshot()).records.some(r=>r.id==='rollback'));});

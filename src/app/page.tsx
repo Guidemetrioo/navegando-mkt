@@ -34,7 +34,7 @@ import { PontoModal } from '@/components/modals/PontoModal';
 import { DeliverableModal } from '@/components/modals/DeliverableModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { CommandPaletteModal } from '@/components/modals/CommandPaletteModal';
-import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Building, FolderOpen, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Calendar, Columns, Table2, UserCheck, Camera, Plus, Building, FolderOpen, ChevronDown, Search, X } from 'lucide-react';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { EmployeeBadge } from '@/components/agenda/EmployeeBadge';
 
@@ -52,6 +52,9 @@ function AgendaMainContent() {
     openPontoModal,
     openNewEventModal,
     openClientModal,
+    agendaSearch,
+    setAgendaSearch,
+    filteredEvents,
   } = useAgenda();
   const [showAgendaFilters, setShowAgendaFilters] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -323,9 +326,41 @@ function AgendaMainContent() {
                 <div className={currentView === 'mes' ? 'hidden sm:block' : ''}><DateNavigator /></div>
               </div>
 
-              {/* Filtro por Funcionário e Legenda */}
-              <div className="pt-2 border-t border-[var(--ui-border)]/60">
-                <button type="button" className="sm:hidden min-h-11 text-xs text-[var(--ui-accent)]" aria-expanded={showAgendaFilters} aria-controls="agenda-team-filters" onClick={() => setShowAgendaFilters(value => !value)}>{showAgendaFilters ? 'Ocultar filtros' : 'Filtrar equipe e tipos'}</button>
+              {/* Barra de Pesquisa + Filtro por Funcionário e Legenda */}
+              <div className="pt-2 border-t border-[var(--ui-border)]/60 flex flex-col gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="search"
+                      value={agendaSearch}
+                      onChange={(e) => setAgendaSearch(e.target.value)}
+                      placeholder={
+                        userRole === 'admin'
+                          ? 'Pesquisar restaurante, local ou equipe...'
+                          : 'Pesquisar restaurante ou local...'
+                      }
+                      aria-label="Pesquisar compromissos na agenda"
+                      className="w-full pl-8 pr-8 py-1.5 rounded-xl bg-[var(--ui-surface)] border border-[var(--ui-border)] focus:border-[var(--ui-accent)] focus:outline-none text-xs text-foreground placeholder:text-zinc-500 transition-colors"
+                    />
+                    {agendaSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setAgendaSearch('')}
+                        aria-label="Limpar pesquisa"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-foreground cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {agendaSearch.trim() && (
+                    <span className="text-[11px] text-zinc-400">
+                      {filteredEvents.length} {filteredEvents.length === 1 ? 'resultado' : 'resultados'}
+                    </span>
+                  )}
+                </div>
+                <button type="button" className="sm:hidden min-h-11 text-xs text-[var(--ui-accent)] text-left" aria-expanded={showAgendaFilters} aria-controls="agenda-team-filters" onClick={() => setShowAgendaFilters(value => !value)}>{showAgendaFilters ? 'Ocultar filtros' : 'Filtrar equipe e tipos'}</button>
                 <div id="agenda-team-filters" className={`${showAgendaFilters ? 'flex' : 'hidden'} sm:flex flex-col gap-2`}><EmployeeFilter /><TypeLegend /></div>
               </div>
             </div>

@@ -150,6 +150,8 @@ interface AgendaContextType {
   toggleEmployeeFilter: (id: string) => void;
   clearEmployeeFilter: () => void;
   isEmployeeSelected: (id: string) => boolean;
+  agendaSearch: string;
+  setAgendaSearch: (query: string) => void;
 
   // Modais de Agenda
   isEventModalOpen: boolean;
@@ -250,6 +252,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [agendaSearch, setAgendaSearch] = useState<string>('');
 
   // State Central de Arquivos & Entregáveis (DAM)
   const [deliverables, setDeliverables] = useState<MediaDeliverable[]>([]);
@@ -920,11 +923,31 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   }, [events, clients, employees, isModelMember, loggedEmployeeId]);
 
   const filteredEvents = useMemo(() => {
-    if (restrictToSelf || selectedEmployeeIds.length === 0) return enrichedEvents;
-    return enrichedEvents.filter((ev) =>
-      (ev.assigned_employee_ids || []).some((id) => selectedEmployeeIds.includes(id))
-    );
-  }, [restrictToSelf, enrichedEvents, selectedEmployeeIds]);
+    const byEmployee =
+      restrictToSelf || selectedEmployeeIds.length === 0
+        ? enrichedEvents
+        : enrichedEvents.filter((ev) =>
+            (ev.assigned_employee_ids || []).some((id) => selectedEmployeeIds.includes(id))
+          );
+
+    const query = agendaSearch.trim().toLowerCase();
+    if (!query) return byEmployee;
+
+    return byEmployee.filter((ev) => {
+      const clientName = (ev.client?.nome || '').toLowerCase();
+      const localName = (ev.local || '').toLowerCase();
+      const obs = (ev.observacoes || '').toLowerCase();
+      const tipo = (ev.tipo || '').toLowerCase();
+      const teamNames = (ev.employees || []).map((emp) => emp.nome.toLowerCase()).join(' ');
+      return (
+        clientName.includes(query) ||
+        localName.includes(query) ||
+        obs.includes(query) ||
+        tipo.includes(query) ||
+        teamNames.includes(query)
+      );
+    });
+  }, [restrictToSelf, enrichedEvents, selectedEmployeeIds, agendaSearch]);
 
   // Reels e Menções enriquecidos com dados dos clientes
   const enrichedReels = useMemo(() => {
@@ -1706,6 +1729,8 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         filteredEvents,
         selectedEmployeeIds: restrictToSelf ? [] : selectedEmployeeIds,
         setSelectedEmployeeIds: restrictToSelf ? () => {} : setSelectedEmployeeIds,
+        agendaSearch,
+        setAgendaSearch,
         // Central de Arquivos & Entregáveis (DAM)
         deliverables: enrichedDeliverables,
         addDeliverable: guarded(canUserAccessView(memberRole, 'arquivos'), addDeliverable),

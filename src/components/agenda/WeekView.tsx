@@ -30,28 +30,42 @@ export function WeekView() {
           const dayNumber = day.getDate();
           const monthShort = MONTH_NAMES_SHORT[day.getMonth()];
           const isToday = iso === todayIso;
+          const isPast = iso < todayIso;
 
           const dayEvents = filteredEvents.filter((ev) => ev.data === iso);
 
           return (
             <div
               key={iso}
-              className={`flex flex-col bg-[var(--ui-surface)] dark:bg-[var(--ui-surface)] bg-white rounded-2xl border transition-all p-3 min-h-[220px] ${
+              className={`flex flex-col rounded-2xl border transition-all p-3 min-h-[220px] ${
                 isToday
-                  ? 'border-[var(--ui-accent)]/70 shadow-md shadow-[var(--ui-accent)]/10'
-                  : 'border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200'
+                  ? 'border-2 border-[var(--ui-accent)] bg-[var(--ui-accent)]/[0.06] ring-1 ring-[var(--ui-accent)]/30 shadow-lg shadow-[var(--ui-accent)]/15'
+                  : isPast
+                  ? 'bg-[var(--ui-surface)]/55 border-[var(--ui-border)]/60 opacity-85'
+                  : 'bg-[var(--ui-surface)] border-[var(--ui-border)]'
               }`}
             >
               {/* Cabeçalho do Dia */}
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-100">
-                <span
-                  className={`text-sm font-bold font-heading ${
-                    isToday ? 'text-[var(--ui-accent)]' : 'text-zinc-100 dark:text-zinc-100 text-zinc-900'
-                  }`}
-                >
-                  {dayName}
-                </span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-400 text-zinc-500 font-medium">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--ui-border)]/80">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-sm font-bold font-heading ${
+                      isToday
+                        ? 'text-[var(--ui-accent)]'
+                        : isPast
+                        ? 'text-zinc-500'
+                        : 'text-zinc-100'
+                    }`}
+                  >
+                    {dayName}
+                  </span>
+                  {isToday && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-[var(--ui-accent)] text-white shadow-sm">
+                      Hoje
+                    </span>
+                  )}
+                </div>
+                <span className={`text-xs font-medium ${isToday ? 'text-[var(--ui-accent)] font-semibold' : isPast ? 'text-zinc-500' : 'text-zinc-400'}`}>
                   {dayNumber} {monthShort}
                 </span>
               </div>
@@ -59,24 +73,34 @@ export function WeekView() {
               {/* Lista de Cartões de Eventos */}
               <div className="flex flex-col gap-2.5 flex-1">
                 {dayEvents.length === 0 ? (
-                  <div className="flex items-center justify-center flex-1 py-6 text-xs text-zinc-500 dark:text-zinc-500 text-zinc-400 italic">
+                  <div className="flex items-center justify-center flex-1 py-6 text-xs text-zinc-500 italic">
                     Nenhuma gravação
                   </div>
                 ) : (
                   dayEvents.map((ev) => {
                     const colorInfo = EVENT_TYPE_COLORS[ev.tipo] || EVENT_TYPE_COLORS.gravacao;
                     const typeLabel = EVENT_TYPE_LABELS[ev.tipo] || 'Gravação';
+                    const isPastEvent = ev.data < todayIso;
+                    const isTodayEvent = ev.data === todayIso;
 
                     return (
                       <div
                         key={ev.id}
                         onClick={() => openEditEventModal(ev)}
-                        className={`group relative p-2.5 rounded-xl border bg-[var(--ui-raised)] dark:bg-[var(--ui-raised)] bg-slate-50 border-[var(--ui-border)] dark:border-[var(--ui-border)] border-slate-200 hover:border-[var(--ui-accent)]/50 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col gap-1.5`}
+                        className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                          isPastEvent
+                            ? 'bg-zinc-900/50 border-zinc-700/45 opacity-75 hover:opacity-100 hover:border-zinc-500/60'
+                            : isTodayEvent
+                            ? 'bg-[var(--ui-raised)] border-[var(--ui-accent)]/45 hover:border-[var(--ui-accent)] shadow-md shadow-[var(--ui-accent)]/10'
+                            : 'bg-[var(--ui-raised)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]/50 shadow-sm hover:shadow-md'
+                        }`}
                       >
                         {/* Linha vertical de destaque à esquerda */}
                         <div
                           className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${
-                            ev.tipo === 'gravacao'
+                            isPastEvent
+                              ? 'bg-zinc-600'
+                              : ev.tipo === 'gravacao'
                               ? 'bg-[var(--ui-accent)]'
                               : ev.tipo === 'foto'
                               ? 'bg-[#0ea5e9]'
@@ -87,17 +111,22 @@ export function WeekView() {
                         />
 
                         {/* Topo do cartão: Horário e Tipo */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-400 text-zinc-600 pl-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${colorInfo.dot}`} />
-                          <span className="font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-800">
+                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 pl-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPastEvent ? 'bg-zinc-500' : colorInfo.dot}`} />
+                          <span className={`font-semibold ${isPastEvent ? 'text-zinc-400' : 'text-zinc-200'}`}>
                             {formatTimeClean(ev.hora_inicio)}–{formatTimeClean(ev.hora_fim)}
                           </span>
                           <span>•</span>
                           <span className="truncate">{typeLabel}</span>
+                          {isPastEvent && (
+                            <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded shrink-0">
+                              Passou
+                            </span>
+                          )}
                         </div>
 
                         {/* Nome do Cliente */}
-                        <div className="text-sm font-bold text-foreground dark:text-foreground text-zinc-900 pl-1.5 leading-snug truncate">
+                        <div className={`text-sm font-bold pl-1.5 leading-snug truncate ${isPastEvent ? 'text-zinc-400' : 'text-foreground'}`}>
                           {ev.client?.nome || 'Cliente não definido'}
                         </div>
 

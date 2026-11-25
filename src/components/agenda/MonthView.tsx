@@ -51,6 +51,7 @@ export function MonthView() {
                 .filter((ev) => ev.data === cell.iso && ev.status !== 'cancelado')
                 .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
               const isToday = cell.iso === todayIso;
+              const isPast = cell.iso < todayIso;
               const hasEvents = dayEvents.length > 0;
               return (
                 <div
@@ -61,9 +62,13 @@ export function MonthView() {
                   aria-label={`Ver compromissos de ${cell.iso}`}
                   onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDayDetailModal(cell.iso); } }}
                   className={`relative min-h-[82px] sm:min-h-[120px] p-1.5 sm:p-2 transition-colors cursor-pointer group flex flex-col justify-between ${
-                    !cell.isCurrentMonth
-                      ? 'bg-[var(--ui-surface)]/60 dark:bg-[var(--ui-surface)]/60 bg-slate-100/40 text-zinc-600 dark:text-zinc-600'
-                      : 'hover:bg-[var(--ui-raised)] dark:hover:bg-[var(--ui-raised)] hover:bg-slate-50 text-zinc-200 dark:text-zinc-200 text-zinc-900'
+                    isToday
+                      ? 'bg-[var(--ui-accent)]/[0.09] ring-2 ring-inset ring-[var(--ui-accent)]/75 shadow-inner shadow-[var(--ui-accent)]/10 text-zinc-100'
+                      : !cell.isCurrentMonth
+                      ? 'bg-[var(--ui-surface)]/60 text-zinc-600'
+                      : isPast
+                      ? 'bg-[var(--ui-page)]/40 hover:bg-[var(--ui-raised)]/60 text-zinc-400'
+                      : 'hover:bg-[var(--ui-raised)] text-zinc-200'
                   }`}
                 >
                   {/* Topo da célula: Número do dia + contador + botão rápido de adicionar */}
@@ -72,17 +77,31 @@ export function MonthView() {
                       <span
                         className={`inline-flex items-center justify-center text-xs font-semibold rounded-full w-6 h-6 transition-transform group-hover:scale-105 ${
                           isToday
-                            ? 'brand-solid bg-[var(--ui-accent)] text-foreground font-bold shadow-md shadow-[var(--ui-accent)]/30'
+                            ? 'brand-solid bg-[var(--ui-accent)] text-white font-bold shadow-md shadow-[var(--ui-accent)]/30'
                             : !cell.isCurrentMonth
-                            ? 'text-zinc-600 dark:text-zinc-600 text-zinc-400'
-                            : 'text-zinc-300 dark:text-zinc-300 text-zinc-700'
+                            ? 'text-zinc-600'
+                            : isPast
+                            ? 'text-zinc-500'
+                            : 'text-zinc-200'
                         }`}
                       >
                         {cell.date.getDate()}
                       </span>
 
+                      {isToday && (
+                        <span className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-[var(--ui-accent)] text-white shadow-sm">
+                          Hoje
+                        </span>
+                      )}
+
                       {hasEvents && (
-                        <span className="hidden md:inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border border-[var(--ui-accent)]/25">
+                        <span
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold border ${
+                            isPast
+                              ? 'bg-zinc-800/70 text-zinc-400 border-zinc-700/60'
+                              : 'bg-[var(--ui-accent)]/15 text-[var(--ui-accent)] border-[var(--ui-accent)]/25'
+                          }`}
+                        >
                           {dayEvents.length}
                         </span>
                       )}
@@ -105,6 +124,8 @@ export function MonthView() {
                   <div className="hidden sm:flex flex-col gap-1 mt-1.5 flex-1">
                     {dayEvents.slice(0, 3).map((ev) => {
                       const colorInfo = EVENT_TYPE_COLORS[ev.tipo] || EVENT_TYPE_COLORS.gravacao;
+                      const isPastEvent = ev.data < todayIso;
+                      const isTodayEvent = ev.data === todayIso;
                       return (
                         <div
                           key={ev.id}
@@ -112,15 +133,21 @@ export function MonthView() {
                             e.stopPropagation();
                             openEditEventModal(ev);
                           }}
-                          className={`text-[11px] p-1 rounded-md border flex items-center justify-between gap-1 transition-all hover:brightness-110 truncate ${colorInfo.bg} ${colorInfo.border} border-opacity-40`}
-                          title={`${formatTimeClean(ev.hora_inicio)} - ${ev.client?.nome || 'Compromisso'}`}
+                          className={`text-[11px] p-1 rounded-md border flex items-center justify-between gap-1 transition-all truncate ${
+                            isPastEvent
+                              ? 'bg-zinc-800/50 border-zinc-700/45 text-zinc-400 opacity-75 hover:opacity-100'
+                              : isTodayEvent
+                              ? `${colorInfo.bg} ${colorInfo.border} ring-1 ring-[var(--ui-accent)]/50 shadow-sm hover:brightness-110`
+                              : `${colorInfo.bg} ${colorInfo.border} border-opacity-40 hover:brightness-110`
+                          }`}
+                          title={`${formatTimeClean(ev.hora_inicio)} - ${ev.client?.nome || 'Compromisso'}${isPastEvent ? ' (Já passou)' : ''}`}
                         >
                           <div className="flex items-center gap-1.5 truncate">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colorInfo.dot}`} />
-                            <span className="font-semibold text-zinc-300 dark:text-zinc-300 text-zinc-800 text-[10px]">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPastEvent ? 'bg-zinc-500' : colorInfo.dot}`} />
+                            <span className={`font-semibold text-[10px] ${isPastEvent ? 'text-zinc-400' : 'text-zinc-200'}`}>
                               {formatTimeClean(ev.hora_inicio)}
                             </span>
-                            <span className="truncate font-medium text-zinc-200 dark:text-zinc-200 text-zinc-900">
+                            <span className={`truncate font-medium ${isPastEvent ? 'text-zinc-400' : 'text-zinc-100'}`}>
                               {ev.client?.nome || 'Compromisso'}
                             </span>
                           </div>
@@ -159,7 +186,7 @@ export function MonthView() {
                       return (
                         <span
                           key={ev.id}
-                          className={`w-2 h-2 rounded-full shrink-0 ${colorInfo.dot}`}
+                          className={`w-2 h-2 rounded-full shrink-0 ${ev.data < todayIso ? 'bg-zinc-500 opacity-70' : colorInfo.dot}`}
                         />
                       );
                     })}

@@ -168,26 +168,38 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     [employees]
   );
 
-  const resolveEventEditorModel = useCallback(
-    (ev: EventItem): Employee | null => {
-      if (ev.modelo_editora_id) {
-        const explicit = employees.find((e) => e.id === ev.modelo_editora_id);
-        if (explicit) return explicit;
+  const resolveEventEditorModels = useCallback(
+    (ev: EventItem): Employee[] => {
+      const seen = new Set<string>();
+      const list: Employee[] = [];
+      const pushById = (id?: string | null) => {
+        if (!id || seen.has(id)) return;
+        const emp = modelEmployees.find((m) => m.id === id) || employees.find((e) => e.id === id);
+        if (emp && (emp.funcao === 'modelo' || emp.funcao === 'criadora')) {
+          seen.add(emp.id);
+          list.push(emp);
+        }
+      };
+
+      for (const id of ev.assigned_employee_ids || []) {
+        pushById(id);
       }
-      const fromVideo = ev.briefing_edicao_videos?.find((v) => v.modeloEditoraId)?.modeloEditoraId;
-      if (fromVideo) {
-        const found = employees.find((e) => e.id === fromVideo);
-        if (found) return found;
+      pushById(ev.modelo_editora_id);
+      for (const vid of ev.briefing_edicao_videos || []) {
+        pushById(vid.modeloEditoraId);
       }
-      const assignedModelId = (ev.assigned_employee_ids || []).find((id) =>
-        modelEmployees.some((m) => m.id === id)
-      );
-      if (assignedModelId) {
-        return modelEmployees.find((m) => m.id === assignedModelId) || null;
-      }
-      return modelEmployees[0] || null;
+      return list;
     },
     [employees, modelEmployees]
+  );
+
+  const resolveEventEditorModel = useCallback(
+    (ev: EventItem): Employee | null => {
+      const models = resolveEventEditorModels(ev);
+      if (models.length > 0) return models[0];
+      return modelEmployees[0] || null;
+    },
+    [resolveEventEditorModels, modelEmployees]
   );
 
   // Filtro de busca e status na tela de cards de compromissos
@@ -330,7 +342,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           (ev) =>
             (ev.assigned_employee_ids || []).includes(emp.id) ||
             ev.modelo_editora_id === emp.id ||
-            resolveEventEditorModel(ev)?.id === emp.id
+            resolveEventEditorModels(ev).some((m) => m.id === emp.id)
         );
         const videoDone = memberEvents.filter((ev) => hasVideoBriefingDone(ev)).length;
         const edicaoDone = memberEvents.filter((ev) => hasEditingBriefingDone(ev)).length;
@@ -362,7 +374,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
       totalVideosEdicao,
       teamPerformance,
     };
-  }, [recordingEvents, employees, resolveEventEditorModel]);
+  }, [recordingEvents, employees, resolveEventEditorModels]);
 
   const filteredEvents = useMemo(() => {
     return recordingEvents.filter((ev) => {
@@ -375,12 +387,15 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
         const clientName = (ev.client?.nome || clients.find((c) => c.id === ev.client_id)?.nome || '').toLowerCase();
         const local = (ev.local || '').toLowerCase();
         const dateStr = fmtDate(ev.data).toLowerCase();
-        const editorModel = (resolveEventEditorModel(ev)?.nome || '').toLowerCase();
+        const editorModel = resolveEventEditorModels(ev)
+          .map((m) => m.nome)
+          .join(' ')
+          .toLowerCase();
         return clientName.includes(q) || local.includes(q) || dateStr.includes(q) || editorModel.includes(q);
       }
       return true;
     });
-  }, [recordingEvents, statusFilter, searchQuery, clients, isEventDoneForMode, resolveEventEditorModel]);
+  }, [recordingEvents, statusFilter, searchQuery, clients, isEventDoneForMode, resolveEventEditorModels]);
 
   const restaurantEvents = useMemo(() => {
     const groups = new Map<string, EventItem[]>();
@@ -1560,7 +1575,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               const assignedMembers = (ev.assigned_employee_ids || [])
                 .map((id) => employees.find((emp) => emp.id === id))
                 .filter(Boolean);
-              const editorModel = resolveEventEditorModel(ev);
+              const editorModels = resolveEventEditorModels(ev);
               const rawSource = briefingMode === 'edicao' ? ev.briefing_edicao : ev.briefing_gravacao;
               const parsedPreview = done && rawSource ? parseItems(rawSource) : [];
 
@@ -1636,11 +1651,11 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                         {briefingMode === 'edicao' ? 'vídeos para editar' : 'vídeos planejados'}
                       </p>
 
-                      {/* Destaque da Modelo Responsável pela Edição */}
-                      {editorModel && (
+                      {/* Destaque das Modelos Escaladas / Responsáveis pela Edição */}
+                      {editorModels.length > 0 && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-[11px] font-bold text-purple-200">
                           <Scissors className="w-3 h-3 text-purple-400" />
-                          <span>Edição: {editorModel.nome}</span>
+                          <span>Edição: {editorModels.map((m) => m.nome).join(', ')}</span>
                         </span>
                       )}
                     </div>
@@ -1788,8 +1803,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
   const displayDate = fmtDate(activeEvent.data);
   const isCurrentlyDone = isEventDoneForMode(activeEvent);
   const isCurrentlyApproved = isEventBriefingApproved(activeEvent, briefingMode);
+  const activeEditorModels = activeEvent ? resolveEventEditorModels(activeEvent) : [];
   const activeEditorModel =
-    employees.find((e) => e.id === selectedEditorModelId) || resolveEventEditorModel(activeEvent);
+    employees.find((e) => e.id === selectedEditorModelId) || activeEditorModels[0] || null;
 
   return (
     <div className="space-y-6">
@@ -2002,12 +2018,18 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               Modelo Responsável pela Edição dos Vídeos de {displayClient}
             </h3>
             <p className="text-xs text-zinc-300">
-              As modelos são responsáveis pela edição dos vídeos e possuem acesso de visualização a todos os cards separados abaixo.
+              Todas as modelos escaladas nesta gravação têm permissão total para editar e salvar o briefing de edição.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {activeEditorModel && <EmployeeBadge employee={activeEditorModel} size="md" />}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {activeEditorModels.length > 0 ? (
+              activeEditorModels.map((mod) => (
+                <EmployeeBadge key={mod.id} employee={mod} size="md" />
+              ))
+            ) : (
+              activeEditorModel && <EmployeeBadge employee={activeEditorModel} size="md" />
+            )}
             <label className="flex items-center gap-2 text-xs font-bold text-zinc-200">
               <span>Modelo Editora:</span>
               <select

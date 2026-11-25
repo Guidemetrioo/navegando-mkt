@@ -17,6 +17,17 @@ export function TypeLegend() {
           <span>{t.label}</span>
         </div>
       ))}
+      <span className="hidden sm:inline text-zinc-600">•</span>
+      <div className="flex items-center gap-1.5">
+        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--ui-accent)]/20 text-[var(--ui-accent)] border border-[var(--ui-accent)]/40">
+          Hoje
+        </span>
+        <span>Dia atual em destaque</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full shrink-0 bg-zinc-500" />
+        <span className="text-zinc-500">Já passou</span>
+      </div>
     </div>
   );
 }
