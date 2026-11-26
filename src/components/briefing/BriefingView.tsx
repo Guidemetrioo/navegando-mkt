@@ -136,18 +136,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     canManage,
   } = useAgenda();
 
-  // Categoria ativa dentro de Briefing: 'video' (Briefing do Vídeo) ou 'edicao' (Briefing de Edição - Modelos)
-  const [briefingMode, setBriefingMode] = useState<BriefingCategoryMode>(
-    initialMode || 'video'
-  );
-
-  // Sincroniza caso um initialMode específico seja passado
-  const [previousInitialMode, setPreviousInitialMode] = useState(initialMode);
-  if (previousInitialMode !== initialMode) {
-    setPreviousInitialMode(initialMode);
-    if (initialMode) setBriefingMode(initialMode);
-  }
-
   // Regras de permissão:
   // - Modelos podem editar APENAS o Briefing de Edição (no Briefing do Vídeo têm acesso somente leitura)
   // - Todos os outros membros podem alterar o Briefing dos Vídeos
@@ -156,6 +144,24 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     [employees, loggedEmployeeId]
   );
   const isModelMember = currentMember?.funcao === 'modelo' || currentMember?.funcao === 'criadora';
+
+  // Categoria ativa dentro de Briefing: 'video' (Briefing do Vídeo) ou 'edicao' (Briefing de Edição - Modelos)
+  const [briefingMode, setBriefingMode] = useState<BriefingCategoryMode>(
+    initialMode || (isModelMember ? 'edicao' : 'video')
+  );
+  const [didAutoSelectEdicao, setDidAutoSelectEdicao] = useState(Boolean(initialMode) || isModelMember);
+  if (!initialMode && isModelMember && !didAutoSelectEdicao) {
+    setDidAutoSelectEdicao(true);
+    setBriefingMode('edicao');
+  }
+
+  // Sincroniza caso um initialMode específico seja passado
+  const [previousInitialMode, setPreviousInitialMode] = useState(initialMode);
+  if (previousInitialMode !== initialMode) {
+    setPreviousInitialMode(initialMode);
+    if (initialMode) setBriefingMode(initialMode);
+  }
+
   const isReadOnly = briefingMode === 'video' ? isModelMember : false;
   const canApproveBriefing = useMemo(
     () => isVictorCordoba(currentMember, loggedEmployeeId),
@@ -587,7 +593,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
             ...activeEvent,
             briefing_edicao_videos: mappedVideos,
             briefing_edicao: raw || null,
-            briefing_edicao_aprovado: allCardsApproved || Boolean(activeEvent.briefing_edicao_aprovado),
+            ...(canManage
+              ? { briefing_edicao_aprovado: allCardsApproved || Boolean(activeEvent.briefing_edicao_aprovado) }
+              : {}),
             modelo_editora_id: selectedEditorModelId || activeEvent.modelo_editora_id || null,
           }
         : {
