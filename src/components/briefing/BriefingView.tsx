@@ -4,6 +4,7 @@ import { isFilmmaker } from '@/lib/team-functions';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAgenda } from '@/context/AgendaContext';
 import { todayInSaoPaulo } from '@/lib/date-utils';
+import { isEventAssignedToMember } from '@/lib/workspace';
 import { EventItem, EVENT_TYPE_LABELS, Employee } from '@/types/database';
 import { EmployeeBadge } from '../agenda/EmployeeBadge';
 import {
@@ -162,7 +163,7 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     if (initialMode) setBriefingMode(initialMode);
   }
 
-  const isReadOnly = briefingMode === 'video' ? isModelMember : false;
+  const isBaseReadOnly = briefingMode === 'video' ? isModelMember : false;
   const canApproveBriefing = useMemo(
     () => isVictorCordoba(currentMember, loggedEmployeeId),
     [currentMember, loggedEmployeeId]
@@ -262,16 +263,6 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     });
     return () => cancelAnimationFrame(frame);
   }, [activeEventId]);
-
-  useEffect(() => {
-    if (!activeEventId || isReadOnly || JSON.stringify(videoDrafts) === savedDrafts) return;
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [activeEventId, videoDrafts, savedDrafts, isReadOnly]);
 
   // Funções dependentes do modo atual ('video' vs 'edicao')
   const isEventDoneForMode = useCallback(
@@ -407,13 +398,55 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
     const groups = new Map<string, EventItem[]>();
     for (const event of filteredEvents) groups.set(event.client_id, [...(groups.get(event.client_id) || []), event]);
     const today = todayInSaoPaulo();
-    return [...groups.values()].map((group) => group.find((event) => event.data >= today) || group[group.length - 1]);
-  }, [filteredEvents]);
+    return [...groups.values()].map((group) => {
+      if (isModelMember && loggedEmployeeId) {
+        const myUpcoming = group.find(
+          (event) =>
+            event.data >= today &&
+            isEventAssignedToMember(event as unknown as Record<string, unknown>, loggedEmployeeId)
+        );
+        if (myUpcoming) return myUpcoming;
+        const myPast = [...group]
+          .reverse()
+          .find((event) =>
+            isEventAssignedToMember(event as unknown as Record<string, unknown>, loggedEmployeeId)
+          );
+        if (myPast) return myPast;
+      }
+      return group.find((event) => event.data >= today) || group[group.length - 1];
+    });
+  }, [filteredEvents, isModelMember, loggedEmployeeId]);
 
   const activeEvent = useMemo(
     () => recordingEvents.find((e) => e.id === activeEventId) || null,
     [recordingEvents, activeEventId]
   );
+
+  const isAssignedToActiveEvent =
+    !isModelMember ||
+    !activeEvent ||
+    isEventAssignedToMember(activeEvent as unknown as Record<string, unknown>, loggedEmployeeId);
+  const isReadOnly = isBaseReadOnly || !isAssignedToActiveEvent;
+
+  const editableRecordingEvents = useMemo(
+    () =>
+      isModelMember
+        ? recordingEvents.filter((ev) =>
+            isEventAssignedToMember(ev as unknown as Record<string, unknown>, loggedEmployeeId)
+          )
+        : recordingEvents,
+    [isModelMember, recordingEvents, loggedEmployeeId]
+  );
+
+  useEffect(() => {
+    if (!activeEventId || isReadOnly || JSON.stringify(videoDrafts) === savedDrafts) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [activeEventId, videoDrafts, savedDrafts, isReadOnly]);
 
   const activeClient = useMemo(() => {
     if (!activeEvent) return null;
@@ -631,9 +664,9 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
 
   const openCreateBriefingComposer = (preferredEventId?: string) => {
     const defaultEv =
-      (preferredEventId && recordingEvents.find((ev) => ev.id === preferredEventId)) ||
-      recordingEvents.find((ev) => !isEventDoneForMode(ev)) ||
-      recordingEvents[0];
+      (preferredEventId && editableRecordingEvents.find((ev) => ev.id === preferredEventId)) ||
+      editableRecordingEvents.find((ev) => !isEventDoneForMode(ev)) ||
+      editableRecordingEvents[0];
     const firstCard = createVideo();
     setComposerEventId(defaultEv?.id || '');
     setComposerDrafts([firstCard]);
@@ -1040,9 +1073,13 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
           <Lock className="w-4 h-4 text-purple-300 shrink-0" />
           <div>
             <span className="font-extrabold text-purple-100">
-              Modo Visualização no Briefing do Vídeo (Modelo):
+              {!isAssignedToActiveEvent
+                ? 'Somente leitura (você não está escalada nesta gravação):'
+                : 'Modo Visualização no Briefing do Vídeo (Modelo):'}
             </span>{' '}
-            O Briefing dos Vídeos pode ser alterado por toda a equipe, exceto pelas modelos. Você pode visualizar tudo aqui e editar normalmente na aba <strong>Briefing de Edição</strong>.
+            {!isAssignedToActiveEvent
+              ? 'Apenas modelos escaladas na gravação podem editar o Briefing de Edição deste restaurante.'
+              : 'O Briefing dos Vídeos pode ser alterado por toda a equipe, exceto pelas modelos. Você pode visualizar tudo aqui e editar normalmente na aba Briefing de Edição.'}
           </div>
         </div>
         <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-[10px] font-extrabold uppercase tracking-wider text-purple-200">
@@ -1124,9 +1161,11 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
               </button>
             </div>
 
-            {recordingEvents.length === 0 ? (
+            {editableRecordingEvents.length === 0 ? (
               <div className="p-4 rounded-xl bg-[var(--ui-raised)] border border-[var(--ui-border)] text-xs text-zinc-300">
-                Nenhuma gravação agendada na Agenda ainda. Clique em <strong>+ Agendar nova gravação</strong> para criar uma antes de linkar.
+                {isModelMember
+                  ? 'Nenhuma gravação com você escalada foi encontrada na Agenda.'
+                  : 'Nenhuma gravação agendada na Agenda ainda. Clique em + Agendar nova gravação para criar uma antes de linkar.'}
               </div>
             ) : (
               <select
@@ -1135,12 +1174,12 @@ export function BriefingView({ initialMode }: BriefingViewProps = {}) {
                 onChange={(e) => {
                   const nextId = e.target.value;
                   setComposerEventId(nextId);
-                  const found = recordingEvents.find((ev) => ev.id === nextId);
+                  const found = editableRecordingEvents.find((ev) => ev.id === nextId);
                   if (found) setComposerModelId(resolveEventEditorModel(found)?.id || '');
                 }}
                 className="w-full bg-[var(--ui-raised)] border border-[var(--ui-border)] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--ui-accent)]"
               >
-                {recordingEvents.map((ev) => {
+                {editableRecordingEvents.map((ev) => {
                   const clientName =
                     ev.client?.nome || clients.find((c) => c.id === ev.client_id)?.nome || 'Restaurante';
                   const addr =
