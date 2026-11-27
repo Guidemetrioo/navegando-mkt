@@ -244,7 +244,7 @@ export function EventBriefingReadOnly({ event }: { event: EventItem }) {
               className="px-3 py-2 rounded-xl border border-dashed border-purple-400/60 text-purple-300 hover:bg-purple-500/10 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Vídeo de Edição</span>
+              <span>Adicionar card</span>
             </button>
 
             <button

@@ -592,11 +592,6 @@ export function EventModal() {
             ========================================== */}
         {activeTab === 'agenda' && (
           <fieldset disabled={!canManage} className="flex flex-col gap-3.5 min-w-0">
-          {!canManage && (
-            <p className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2">
-              Modo consulta: apenas gestores podem alterar informações da agenda. Para editar o briefing de edição, acesse a aba <strong>Briefing</strong>.
-            </p>
-          )}
           {/* Cliente com Autocomplete */}
           <div className="relative">
             <label className="block text-xs font-semibold text-zinc-300 mb-1">
