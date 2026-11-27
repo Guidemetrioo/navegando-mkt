@@ -78,6 +78,7 @@ export function MobileMonthCalendar() {
               className="mobile-calendar-day"
               data-today={iso === today}
               data-past={isPastDay}
+              data-future={iso > today}
               data-selected={iso === chosen}
               data-weekend={index % 7 === 0 || index % 7 === 6}
               aria-label={`${day} de ${MONTH_NAMES[month]}, ${list.length} compromissos`}
@@ -172,12 +173,12 @@ export function MobileMonthCalendar() {
                 }}
                 className={`p-3.5 rounded-2xl border flex flex-col gap-2 cursor-pointer transition-all ${
                   isPastEvent
-                    ? 'bg-zinc-900/50 border-zinc-700/50 opacity-75'
+                    ? 'bg-zinc-900/40 border-zinc-800/70 opacity-55'
                     : isBriefingApproved
-                    ? 'bg-[var(--ui-surface)] border-2 border-[#38bdf8] ring-1 ring-[#38bdf8]/30'
+                    ? 'bg-[var(--ui-raised)] border-2 border-[#38bdf8] ring-1 ring-[#38bdf8]/35 shadow-md'
                     : isTodayEvent
-                    ? 'bg-[var(--ui-surface)] border-[var(--ui-accent)]/70 ring-1 ring-[var(--ui-accent)]/30 shadow-md shadow-[var(--ui-accent)]/10'
-                    : 'bg-[var(--ui-surface)] border-[var(--ui-border)] hover:border-[var(--ui-accent)]/50'
+                    ? 'bg-[var(--ui-raised)] border-2 border-[var(--ui-accent)] ring-1 ring-[var(--ui-accent)]/35 shadow-lg shadow-[var(--ui-accent)]/15'
+                    : 'bg-[var(--ui-raised)] border-[var(--ui-accent)]/40 shadow-md hover:border-[var(--ui-accent)]/70'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
